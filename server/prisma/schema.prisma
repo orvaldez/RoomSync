@@ -1,0 +1,13 @@
+// Models are added in issue #1, per proposal Section 7 and Figure 3.
+// Monetary values are stored as integer cents (FR-18).
+// No Balance model: balances are derived from ExpenseShare and Settlement
+// records at read time (NFR-03).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
