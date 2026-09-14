@@ -60,6 +60,8 @@ roomsync/
 ├── client/ # React frontend
 │ └── src/
 ├── server/ # Node/Express API
+│   ├── .env.example
+│   ├── .env
 │ ├── prisma/ # Database schema and migrations
 │ └── src/
 │ ├── routes/ # HTTP boundary, no business logic
@@ -86,7 +88,7 @@ a higher one. See `server/src/repositories/README.md`.
 ```bash
 git clone https://github.com/orvaldez/RoomSync.git
 cd RoomSync
-cp .env.example .env
+cp server/.env.example server/.env
 
 docker compose up -d          # starts PostgreSQL on port 5432
 docker compose ps             # confirm the db container is up
