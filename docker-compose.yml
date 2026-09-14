@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: roomsync-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: roomsync
+      POSTGRES_PASSWORD: roomsync
+      POSTGRES_DB: roomsync
+    ports:
+      - "5432:5432"
+    volumes:
+      - roomsync-pgdata:/var/lib/postgresql/data
+volumes:
+  roomsync-pgdata:

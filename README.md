@@ -13,15 +13,13 @@ Development course project.
 
 ## Status
 
-This repository is at **Milestone 0 (Propose)**. No application code has
-been written yet. This milestone establishes the project proposal,
-architecture, backlog, and repository structure that later milestones will
-build on.
+Milestone 1 (Build) in progress. The client and server workspaces are
+running end to end; feature work is underway.
 
 | Milestone | Goal | Status |
 |---|---|---|
-| Milestone 0 | Propose | In progress |
-| Milestone 1 | Build the MVP | Not started |
+| Milestone 0 | Propose | Complete |
+| Milestone 1 | Build the MVP | In progress |
 | Milestone 2 | Test, improve, and secure | Not started |
 | Milestone 3 | Deploy | Not started |
 
@@ -32,47 +30,110 @@ build on.
 | Orlando Rodriguez Valdez | orodriguezval@crimson.ua.edu | Accounts, auth/session, balances, settlements |
 | Agustin Lemuz-Juarez | alemuzjuarez@crimson.ua.edu | Households, invitations, expense entry/split logic |
 
-## Planned tech stack
+## Tech stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React + TypeScript |
-| Backend | Node.js + Express + TypeScript |
-| Database | PostgreSQL |
-| ORM | Prisma |
+| Frontend | React 19 + TypeScript, built with Vite 6 |
+| Backend | Node.js + Express 4 + TypeScript |
+| Database | PostgreSQL 16 |
+| ORM | Prisma 7 |
 | Auth | Session-based auth, bcrypt password hashing |
-| Containerization | Docker + Docker Compose |
+| Containerization | Docker Compose |
 | CI/CD | GitHub Actions |
-| Testing | Vitest or Jest + Supertest |
+| Testing | Vitest 2 + Supertest |
 | Deployment | Render |
+
+Version pins worth knowing: Vite 6 rather than 8, and Vitest 2 rather than 4,
+because the newer majors depend on Rolldown, whose native binding is blocked
+by Windows Application Control on a team member's machine. See
+[docs/security/dependency-audit.md](./docs/security/dependency-audit.md).
+
 
 See the [project proposal](./docs/proposal.pdf) for full justification of
 these choices.
 
-## Repository structure (planned)
+## Repository structure
 
 ```
 roomsync/
-├── client/          # React frontend
-├── server/          # Node/Express API
-├── prisma/          # Database schema and migrations
-├── docs/            # Proposal, diagrams, design artifacts
-├── .github/         # GitHub Actions workflows
+├── client/ # React frontend
+│ └── src/
+├── server/ # Node/Express API
+│   ├── .env.example
+│   ├── .env
+│ ├── prisma/ # Database schema and migrations
+│ └── src/
+│ ├── routes/ # HTTP boundary, no business logic
+│ ├── services/ # Business rules
+│ ├── repositories/# The only modules that touch Prisma
+│ └── middleware/
+├── docs/ # Proposal, diagrams, design artifacts
 └── docker-compose.yml
 ```
 
-This structure will be populated starting at Milestone 1.
+Layering is defined in ADR-001: routes call services, services call
+repositories, repositories call Prisma. A layer may not skip a layer or call
+a higher one. See `server/src/repositories/README.md`.
 
 ## Getting started
 
-Setup and run instructions will be added at Milestone 1, once the
-application is runnable end to end. At that point this section will include:
+### Prerequisites
 
-- Prerequisites (Node version, Docker)
-- Environment variable setup (`.env.example`)
-- Database migration and seed instructions
-- How to run the client and server locally
-- Demonstration account credentials
+- Node.js 20 or newer
+- Docker Desktop, running
+
+### Setup
+
+```bash
+git clone https://github.com/orvaldez/RoomSync.git
+cd RoomSync
+cp server/.env.example server/.env
+
+docker compose up -d          # starts PostgreSQL on port 5432
+docker compose ps             # confirm the db container is up
+
+cd server && npm install
+cd ../client && npm install
+```
+
+### Running
+
+Two terminals, both from the repo root.
+
+```bash
+cd server && npm run dev      # http://localhost:4000
+```
+
+```bash
+cd client && npm run dev      # http://localhost:5173
+```
+
+The Vite dev server proxies `/api` to the Express server, so no CORS
+configuration is needed in development.
+
+### Verifying
+
+```bash
+curl http://localhost:4000/api/health
+# -> {"status":"ok","service":"roomsync-api"}
+```
+
+Then open http://localhost:5173. The page should report
+`API status: ok (roomsync-api)`, which confirms the client, the proxy, and
+the server are all working together.
+
+### Tests
+
+```bash
+cd server && npm test
+```
+
+### Stopping
+
+```bash
+docker compose down           # data persists in a named volume
+```
 
 ## Documentation
 
