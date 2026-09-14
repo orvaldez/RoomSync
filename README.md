@@ -97,6 +97,35 @@ cd server && npm install
 cd ../client && npm install
 ```
 
+### Database
+
+The schema lives in `server/prisma/schema.prisma`. Prisma CLI configuration —
+schema path, migration path, and the connection string — lives in
+`server/prisma.config.ts`, which loads `server/.env` explicitly, since Prisma 7
+no longer reads `.env` on its own.
+
+```bash
+cd server
+npx prisma migrate dev     # apply migrations, creating the database if needed
+npx prisma generate        # regenerate the client after any schema change
+```
+
+`migrate dev` no longer runs `generate` automatically in Prisma 7, so run both
+after pulling a schema change.
+
+To inspect the data:
+
+```bash
+npx prisma studio
+docker compose exec db psql -U roomsync -d roomsync -c "\dt"
+```
+
+To start over from an empty database:
+
+```bash
+npx prisma migrate reset
+```
+
 ### Running
 
 Two terminals, both from the repo root.

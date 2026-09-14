@@ -1,7 +1,11 @@
-// Models are added in issue #1, per proposal Section 7 and Figure 3.
-// Monetary values are stored as integer cents (FR-18).
-// No Balance model: balances are derived from ExpenseShare and Settlement
-// records at read time (NFR-03).
+// RoomSync data model
+// Implements the entities and relationships in proposal Section 7 and Figure 3.
+//
+// Two proposal constraints are enforced here and must not be relaxed:
+//   FR-18  Every monetary value is an Int of cents. No Float or Decimal money.
+//   NFR-03 There is no Balance model. Balances are derived from ExpenseShare
+//          and Settlement rows at read time so they cannot drift from the
+//          underlying records.
 
 generator client {
   provider = "prisma-client-js"
@@ -9,5 +13,154 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+enum MembershipRole {
+  OWNER
+  MEMBER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+enum SplitMethod {
+  EQUAL
+  CUSTOM
+  PERCENTAGE
+}
+
+model User {
+  id           String   @id @default(cuid()) @map("user_id")
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  memberships         Membership[]
+  expensesPaid        Expense[]      @relation("ExpensePaidBy")
+  expenseShares       ExpenseShare[]
+  settlementsSent     Settlement[]   @relation("SettlementFrom")
+  settlementsReceived Settlement[]   @relation("SettlementTo")
+  choresAssigned      Chore[]        @relation("ChoreAssignee")
+
+  @@map("users")
+}
+
+model Household {
+  id        String   @id @default(cuid()) @map("household_id")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  memberships Membership[]
+  invitations Invitation[]
+  expenses    Expense[]
+  settlements Settlement[]
+  chores      Chore[]
+
+  @@map("households")
+}
+
+model Membership {
+  id          String         @id @default(cuid()) @map("membership_id")
+  userId      String         @map("user_id")
+  householdId String         @map("household_id")
+  role        MembershipRole @default(MEMBER)
+  joinedAt    DateTime       @default(now()) @map("joined_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, householdId])
+  @@index([householdId])
+  @@map("memberships")
+}
+
+model Invitation {
+  id          String           @id @default(cuid()) @map("invitation_id")
+  householdId String           @map("household_id")
+  token       String           @unique
+  status      InvitationStatus @default(PENDING)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  expiresAt   DateTime         @map("expires_at")
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  @@index([householdId])
+  @@map("invitations")
+}
+
+model Expense {
+  id               String      @id @default(cuid()) @map("expense_id")
+  householdId      String      @map("household_id")
+  description      String
+  totalAmountCents Int         @map("total_amount_cents")
+  paidByUserId     String      @map("paid_by_user_id")
+  splitMethod      SplitMethod @map("split_method")
+  expenseDate      DateTime    @default(now()) @map("expense_date")
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  household Household      @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  paidBy    User           @relation("ExpensePaidBy", fields: [paidByUserId], references: [id], onDelete: Restrict)
+  shares    ExpenseShare[]
+
+  @@index([householdId, expenseDate])
+  @@index([paidByUserId])
+  @@map("expenses")
+}
+
+model ExpenseShare {
+  id                 String @id @default(cuid()) @map("expense_share_id")
+  expenseId          String @map("expense_id")
+  userId             String @map("user_id")
+  amountOwedCents    Int    @map("amount_owed_cents")
+  percentBasisPoints Int?   @map("percent_basis_points")
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([expenseId, userId])
+  @@index([userId])
+  @@map("expense_shares")
+}
+
+model Settlement {
+  id          String   @id @default(cuid()) @map("settlement_id")
+  householdId String   @map("household_id")
+  fromUserId  String   @map("from_user_id")
+  toUserId    String   @map("to_user_id")
+  amountCents Int      @map("amount_cents")
+  settledAt   DateTime @default(now()) @map("settled_at")
+  note        String?
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  fromUser  User      @relation("SettlementFrom", fields: [fromUserId], references: [id], onDelete: Restrict)
+  toUser    User      @relation("SettlementTo", fields: [toUserId], references: [id], onDelete: Restrict)
+
+  @@index([householdId, settledAt])
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@map("settlements")
+}
+
+model Chore {
+  id             String    @id @default(cuid()) @map("chore_id")
+  householdId    String    @map("household_id")
+  title          String
+  description    String?
+  assignedUserId String?   @map("assigned_user_id")
+  dueDate        DateTime? @map("due_date")
+  isComplete     Boolean   @default(false) @map("is_complete")
+  completedAt    DateTime? @map("completed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  household    Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  assignedUser User?     @relation("ChoreAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
+
+  @@index([householdId, isComplete, dueDate])
+  @@index([assignedUserId])
+  @@map("chores")
 }
