@@ -9,7 +9,12 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:reset": "prisma migrate reset",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio"
   },
   "keywords": [],
   "author": "",
@@ -28,8 +33,5 @@
     "tsx": "^4.23.13",
     "typescript": "^5.9.3",
     "vitest": "^2.1.9"
-  },
-  "prisma": {
-    "schema": "prisma/schema.prisma"
   }
 }
