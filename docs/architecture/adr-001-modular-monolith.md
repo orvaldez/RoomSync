@@ -87,7 +87,7 @@ The layered monolith costs a little simplicity against a two-layer design, and w
 
 - The split and balance logic is pure service code, so it is unit-tested with Vitest and no database (SC-04, SC-10).
 - Household membership is checked in the service layer on every call, so authorization does not depend on each route remembering it (NFR-07).
-- One server and one database run with `docker compose up`, which keeps the TA's setup to a few commands (SC-11).
+- The database starts with `docker compose up` and the server with `npm run dev`, which keeps the TA's setup to a few commands (SC-11).
 - Because only repositories touch Prisma, changing the ORM or query strategy changes one layer and nothing above it.
 - Both members can work on different features without conflict, since each feature is its own file in each layer.
 
