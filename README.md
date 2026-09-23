@@ -158,6 +158,17 @@ the server are all working together.
 cd server && npm test
 ```
 
+The test suite imports the Express app, which reaches `@prisma/client`, so the
+Prisma client must be generated first:
+
+```bash
+cd server && npx prisma generate && npm test
+```
+
+`npm install` does not generate it, and Prisma 7 no longer generates it as part
+of `migrate dev`. On a fresh clone, run `npx prisma generate` once. The
+continuous integration workflow needs the same step before it runs the tests.
+
 ### Stopping
 
 ```bash
@@ -169,6 +180,7 @@ docker compose down           # data persists in a named volume
 - [Project proposal](./docs/proposal.pdf)
 - [Prioritized backlog](./BACKLOG.md)
 - [API contract](./docs/design/api-contract.md)
+- [Software process model](./docs/process-model.md)
 - [ADR-001: Architecture](./docs/architecture/adr-001-modular-monolith.md)
 - Architecture diagram — see proposal, Figure 2
 - Entity relationship diagram — see proposal, Figure 3

@@ -10,14 +10,15 @@ Issue #25 · Milestone 1 deliverable
 
 RoomSync is developed using an **iterative and incremental Agile process**, organized
 as two-week sprints and drawing its practices from Scrum, adapted for a two-person
-team. Each sprint produces a working increment of the application. Each of the four
-course milestones falls at the end of a sprint, so a milestone is never a separate
-phase of work — it is the increment a sprint already produced, plus its documentation.
+team. Each sprint produces a working increment of the application. Milestone 0
+preceded Sprint 1, but Milestones 1 through 3 each fall at the end of a sprint, so a
+milestone is never a separate phase of work — it is the increment a sprint already
+produced, plus its documentation.
 
 Concretely, the process consists of:
 
-- **Two-week sprints**, approximately six across the semester, with milestone
-  boundaries aligned to sprint boundaries
+- **Two-week sprints**, approximately six across the semester, with Milestones 1
+  through 3 aligned to sprint boundaries
 - **A single prioritized product backlog** of user stories, held in `BACKLOG.md` and
   tracked as GitHub Issues labeled by priority (P0/P1) and feature area
 - **Sprint planning** at the start of each sprint, selecting from the top of the
@@ -25,14 +26,15 @@ Concretely, the process consists of:
 - **A weekly check-in** to surface blockers and confirm what each member is working on
 - **A retrospective** at the end of each sprint
 - **A shared Definition of Done** that every story must satisfy before it closes
-- **Trunk-based development with mandatory peer review**: a protected `main`, all work
-  on short-lived branches, no pull request merged by its own author
+- **A feature-branch workflow with a protected `main` and mandatory peer review**:
+  all work on typed, short-lived branches (`feature/`, `fix/`, `test/`, `docs/`), no
+  pull request merged by its own author
 
 ## 2. Why this model fits RoomSync
 
 ### The requirements are stable, but our understanding of them is not
 
-RoomSync's scope was fixed at Milestone 0: eleven user stories, seventeen functional
+RoomSync's scope was fixed at Milestone 0: eleven user stories, eighteen functional
 requirements, a defined MVP, and an explicit out-of-scope list. That stability might
 appear to argue for a plan-driven process. It does not, because the requirements being
 stable is not the same as the *design* being understood.
@@ -114,8 +116,9 @@ each feature is owned end to end.
 
 ### Extreme Programming
 
-We adopt several XP practices — continuous integration, test-first discipline on the
-calculation logic, small releases, collective code ownership through mandatory review.
+We plan to adopt several XP practices — continuous integration from Milestone 2,
+test-first discipline on the calculation logic, small releases, and collective code
+ownership through mandatory review, which is the only one of the four in place today.
 We rejected XP as the governing model because pair programming is impractical on our
 schedules, and because XP's on-site customer role has no counterpart here. Our
 "customer" is a fixed proposal document approved at Milestone 0, not a stakeholder
@@ -158,8 +161,9 @@ enforced by mechanisms rather than intentions:
   For example, `server/src/repositories/README.md` states that repositories are the only
   modules permitted to import the Prisma client, so a developer working in that directory
   encounters the rule.
-- **Continuous integration from Milestone 2**, blocking merges when linting or tests
-  fail — moving enforcement from human review to automation.
+- **Continuous integration from Milestone 2**, running linting and tests on every
+  pull request. From Milestone 3 it blocks merges when those checks fail, which is
+  the point at which enforcement moves from human review to automation.
 
 ## 6. Evidence from Sprint 1
 
@@ -168,7 +172,7 @@ happened, because it is the first real test of the process.
 
 **What was completed:** client and server workspaces scaffolded with a verified
 end-to-end request path, PostgreSQL running in Docker Compose, the Prisma schema and
-initial migration for all eight entities, a triaged dependency audit, and ADR-001.
+initial migration for all eight entities, and a triaged dependency audit.
 
 **What did not start:** US-01, US-02, and US-03 — the three user stories the sprint was
 planned around. All three moved to Sprint 2.
