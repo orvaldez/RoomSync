@@ -170,6 +170,7 @@ docker compose down           # data persists in a named volume
 - [Prioritized backlog](./BACKLOG.md)
 - [API contract](./docs/design/api-contract.md)
 - [ADR-001: Architecture](./docs/architecture/adr-001-modular-monolith.md)
+- [Use case specifications](./docs/requirements/use-cases.md)
 - Architecture diagram — see proposal, Figure 2
 - Entity relationship diagram — see proposal, Figure 3
 
