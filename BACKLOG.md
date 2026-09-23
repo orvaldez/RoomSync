@@ -11,13 +11,14 @@ described in the proposal. Status values are **Not started**, **In progress**,
 **In review**, and **Done**; a story reaches Done only when it meets the
 Definition of Done at the bottom of this file.
 
-Last updated at the close of Sprint 1, September 17, 2026.
+Sprint 1 closed on September 16, 2026. This file was last updated on
+September 22, 2026.
 
 ## P0 — Required for Milestone 1 MVP
 
 | # | Story | Area | Owner | Sprint | Status |
 |---|---|---|---|---|---|
-| US-01 | As a new user, I want to create a RoomSync account so that I can access the application. | Account | Orlando | Sprint 2 | Not started |
+| US-01 | As a new user, I want to create a RoomSync account so that I can access the application. | Account | Orlando | Sprint 2 | In review |
 | US-02 | As a registered user, I want to log into RoomSync so that I can access my household information. | Account | Orlando | Sprint 2 | Not started |
 | US-03 | As a user, I want to create a household so that I can manage responsibilities with my roommates. | Household | Agustin | Sprint 2 | Not started |
 | US-04 | As a household owner, I want to invite another user so that they can join my household. | Household | Agustin | Sprint 2 | Not started |
@@ -36,10 +37,11 @@ Last updated at the close of Sprint 1, September 17, 2026.
 
 ## Sprint 1 outcome
 
-US-01, US-02, and US-03 were planned for Sprint 1 and did not start. Sprint 1
-went to the foundation those stories depend on: client and server workspaces,
-the database schema and initial migration, the layered server structure, and the
-API contract. All three move to Sprint 2, which now carries the entire P0 set.
+US-01, US-02, and US-03 were planned for Sprint 1 and none of them started
+within it. Sprint 1 went to the foundation those stories depend on: client and
+server workspaces, the database schema and initial migration, the layered server
+structure, and the API contract. All three moved to Sprint 2, which now carries
+the entire P0 set. US-01 has since been implemented and is in review.
 
 That is the main schedule risk going into Milestone 1 on September 30. The
 milestone requires a working end-to-end MVP and explicitly rules out a static
@@ -101,6 +103,8 @@ A story is not moved to Done until:
 - The implementation meets its acceptance criteria (see the proposal's
   Initial Requirements section).
 - The implementation follows project coding standards.
+- The implementation follows the Routes -> Services -> Repositories layering
+  defined in ADR-001.
 - Relevant unit or integration tests are written and passing.
 - Continuous integration checks pass (from Milestone 2 onward).
 - The change has been reviewed and approved by the other team member.
