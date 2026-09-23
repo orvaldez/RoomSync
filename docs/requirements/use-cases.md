@@ -35,7 +35,7 @@ case.
 | **Primary actor** | Visitor |
 | **Goal** | Create a RoomSync account that can be used to log in |
 | **Preconditions** | The visitor is not authenticated |
-| **Success guarantee** | A user record exists with a securely hashed password; the visitor can now log in |
+| **Postconditions** | A user record exists with a securely hashed password; the visitor can now log in |
  
 **Main success scenario**
  
@@ -74,29 +74,35 @@ case.
 | **Primary actor** | Visitor (login), Member (logout) |
 | **Goal** | Obtain an authenticated session, and end it on request |
 | **Preconditions** | For login: a registered account exists |
-| **Success guarantee** | A valid session exists and protected routes are accessible; after logout the session is invalidated |
+| **Postconditions** | A valid session exists and protected routes are accessible; after logout the session is invalidated |
  
-**Main success scenario**
- 
+**Main success scenario — logging in**
+
 1. Visitor opens the login page.
 2. Visitor enters an email and password.
 3. System normalizes the email and retrieves the matching user.
 4. System verifies the password against the stored hash.
 5. System establishes a session.
 6. System redirects the visitor, now a Member, to the household dashboard.
+
+**Main success scenario — logging out**
+
+7. Member selects log out.
+8. System invalidates the session and clears the session cookie.
+9. System redirects the Member to the login page.
+
 **Extensions**
- 
-- **3a–4a. No account matches, or the password does not verify.** System reports that the
-  credentials are invalid, using identical wording and comparable response time in both
-  cases so the response does not reveal which accounts exist. No session is created.
-  Returns to step 2.
-- **6a. The member belongs to no household.** System directs them to the create-or-join
-  screen instead of the dashboard (see UC-03, UC-04).
-- **Logout.** Member selects log out; System invalidates the session and redirects to the
-  login page. A subsequent request to a protected route is rejected.
-- **Unauthenticated access to a protected route.** System rejects the request and
-  redirects to login. This holds for direct API requests, not only for navigation
-  (FR-03).
+
+- **3a. No account matches the email.** System reports that the credentials are
+  invalid and creates no session. Returns to step 2.
+- **4a. The password does not verify.** System reports the same message as 3a, using
+  identical wording and comparable response time, so the response does not reveal
+  which accounts exist. No session is created. Returns to step 2.
+- **6a. The member belongs to no household.** System directs them to the
+  create-or-join screen instead of the dashboard (see UC-03, UC-04).
+- **9a. A request is made to a protected route without a valid session** — whether
+  after logout or without ever logging in. System rejects the request and redirects to
+  login. This holds for direct API requests, not only for navigation (FR-03).
 ---
  
 ## UC-03 — Create Household
@@ -107,7 +113,7 @@ case.
 | **Primary actor** | Member |
 | **Goal** | Create a household to manage with roommates |
 | **Preconditions** | The member is authenticated and belongs to no household |
-| **Success guarantee** | A household exists with a unique identifier; the creator is a member of it with the `OWNER` role |
+| **Postconditions** | A household exists with a unique identifier; the creator is a member of it with the `OWNER` role |
  
 **Main success scenario**
  
@@ -120,14 +126,16 @@ case.
 6. System displays the household dashboard (UC-10).
 **Extensions**
  
-- **3a. The name is empty or only whitespace.** System reports the error; no household is
-  created. Returns to step 2.
 - **1a. The member already belongs to a household.** System does not offer creation. The
   MVP supports one active household per user; this is enforced as a service-layer check
   rather than a database constraint, so the post-MVP multiple-households feature does not
   require a migration.
-- **4a–5a. Either write fails.** The household and the membership are created in a single
-  transaction. A failure leaves neither, so no household exists without an owner.
+- **3a. The name is empty or only whitespace.** System reports the error; no household is
+  created. Returns to step 2.
+- **4a. The household write fails.** Steps 4 and 5 run in one transaction, so nothing is
+  created and no orphaned household exists.
+- **5a. The membership write fails.** The transaction from step 4 rolls back with it, so
+  no household is left without an owner.
 **Special requirements**
  
 - Steps 4 and 5 are atomic. A household with no owner would be unreachable and
@@ -142,7 +150,7 @@ case.
 | **Primary actor** | Owner (invitation), Visitor or Member (acceptance) |
 | **Goal** | Add another user to an existing household |
 | **Preconditions** | The owner is authenticated and holds the `OWNER` role in the household |
-| **Success guarantee** | The recipient is a member of the household with role `MEMBER`; the invitation is marked accepted |
+| **Postconditions** | The recipient is a member of the household with role `MEMBER`; the invitation is marked accepted |
  
 This use case spans two actors because US-04's acceptance criteria cover both ends of the
 exchange. The invitation flow and the acceptance flow are separated below.
@@ -196,7 +204,7 @@ exchange. The invitation flow and the acceptance flow are separated below.
 | **Primary actor** | Member |
 | **Goal** | Record an expense the household shares, so balances reflect it |
 | **Preconditions** | The member belongs to the household |
-| **Success guarantee** | An expense exists with shares summing exactly to its total; balances reflect it immediately |
+| **Postconditions** | An expense exists with shares summing exactly to its total; balances reflect it immediately |
  
 **Main success scenario**
  
@@ -243,46 +251,58 @@ exchange. The invitation flow and the acceptance flow are separated below.
 | **Primary actor** | Member |
 | **Goal** | Divide an expense so each participant's responsibility is exact |
 | **Preconditions** | A total amount in cents and at least one participant are given |
-| **Success guarantee** | Each participant has a share in whole cents; the shares sum exactly to the total |
+| **Postconditions** | Each participant has a share in whole cents; the shares sum exactly to the total |
  
 Included by UC-05 rather than invoked on its own. Separated here because it holds the
 project's most failure-prone logic — SC-04 requires shares to sum exactly to the total
 including any rounding remainder, and the risk register identifies rounding error as a
 high-impact data risk.
  
+Three splitting methods share this use case. Because their steps are numbered
+independently, each step carries its method's letter — **E** for equal, **C** for
+custom, **P** for percentage — and each extension is numbered against the step it
+branches from.
+
 **Main success scenario — equal split**
- 
-1. System divides the total in cents by the participant count using integer division.
-2. System computes the remainder.
-3. System distributes the remainder one cent at a time across participants by a
-   deterministic rule, so the shares sum exactly to the total.
-4. System returns the shares.
+
+- **E1.** System divides the total in cents by the participant count using integer
+  division.
+- **E2.** System computes the remainder.
+- **E3.** System distributes the remainder one cent at a time to participants in
+  request order, so the shares sum exactly to the total.
+- **E4.** System returns the shares.
+
 For example, $100.00 across three participants is 10000 cents ÷ 3 = 3333 cents each with
 a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not 9999.
- 
+
 **Main success scenario — custom split**
- 
-1. Member enters an explicit amount for each participant.
-2. System converts each to integer cents.
-3. System verifies the amounts sum exactly to the total.
-4. System returns the shares.
+
+- **C1.** Member enters an explicit amount for each participant.
+- **C2.** System converts each to integer cents.
+- **C3.** System verifies the amounts sum exactly to the total.
+- **C4.** System returns the shares.
+
 **Main success scenario — percentage split**
- 
-1. Member enters a percentage for each participant.
-2. System converts each to integer basis points, where 100% is 10000.
-3. System verifies the basis points sum to exactly 10000.
-4. System computes each share as `total_cents × basis_points ÷ 10000` using integer
-   arithmetic.
-5. System distributes any rounding remainder as in the equal split.
-6. System returns the shares.
+
+- **P1.** Member enters a percentage for each participant.
+- **P2.** System converts each to integer basis points, where 100% is 10000.
+- **P3.** System verifies the basis points sum to exactly 10000.
+- **P4.** System computes each share as `total_cents × basis_points ÷ 10000` using
+  integer arithmetic.
+- **P5.** System distributes any rounding remainder as in E3.
+- **P6.** System returns the shares.
+
 **Extensions**
- 
-- **Custom 3a. The amounts do not sum to the total.** System reports the difference and
+
+- **E1a. The participant list is empty.** System rejects the split rather than dividing
+  by zero. This also violates the precondition, so it should not be reachable from
+  UC-05, but the check is unconditional.
+- **C2a. A converted amount is negative.** System rejects the split.
+- **C3a. The amounts do not sum to the total.** System reports the difference and
   rejects the split. It does not silently adjust a participant's amount.
-- **Percentage 3a. The percentages do not sum to 100.** System reports the discrepancy
-  and rejects the split.
-- **Any method. A share is negative.** System rejects the split.
-- **Any method. The participant list is empty.** System rejects the split.
+- **P1a. A percentage is negative.** System rejects the split.
+- **P3a. The percentages do not sum to 100.** System reports the discrepancy and rejects
+  the split.
 **Special requirements**
  
 - All arithmetic is integer. No floating-point type appears anywhere in the money path
@@ -290,7 +310,7 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
 - Remainder distribution is deterministic, so the same inputs always produce the same
   shares and the behavior is unit-testable (SC-10).
 - Percentages are stored as basis points rather than decimals, so the percentage path is
-  integer end to end. (Pending review in PR #31 — see Open Questions.)
+  integer end to end. Settled by PR #31 and recorded in the API contract, Section 6.
 ---
  
 ## UC-07 — View Balances
@@ -301,7 +321,7 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
 | **Primary actor** | Member |
 | **Goal** | See what the member owes and what is owed to them |
 | **Preconditions** | The member belongs to the household |
-| **Success guarantee** | Balances shown reflect every recorded expense and settlement at the time of the request |
+| **Postconditions** | Balances shown reflect every recorded expense and settlement at the time of the request |
  
 **Main success scenario**
  
@@ -335,7 +355,7 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
 | **Primary actor** | Member |
 | **Goal** | Record that a debt was paid outside the application, so balances reflect it |
 | **Preconditions** | An outstanding balance exists between the two members |
-| **Success guarantee** | A settlement is recorded and the balance between the two members is reduced by that amount |
+| **Postconditions** | A settlement is recorded and the balance between the two members is reduced by that amount |
  
 **Main success scenario**
  
@@ -372,7 +392,7 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
 | **Primary actor** | Member |
 | **Goal** | Create, assign, and complete household chores |
 | **Preconditions** | The member belongs to the household |
-| **Success guarantee** | The chore exists with its assignment and due date; completed chores are distinguishable from outstanding ones |
+| **Postconditions** | The chore exists with its assignment and due date; completed chores are distinguishable from outstanding ones |
  
 **Main success scenario — creating a chore**
  
@@ -395,13 +415,13 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
 - **3a. The assignee is not a member of the household.** System rejects the assignment.
 - **4a. The due date is in the past.** System accepts it — a member may be recording a
   chore that was already overdue — but the interface marks it overdue.
-- **9a. The requester is not the assigned member.** System rejects the completion. FR-15
-  and US-09 both scope completion to the assigned user. See Open Questions — this is the
-  literal reading of the requirement, and it is worth confirming it is the intended one.
-- **9b. The chore has no assignee.** Any household member may complete it; there is no
-  assigned user to restrict it to.
 - **8a. The chore is already complete.** System takes no action rather than overwriting
   the original completion time.
+- **9a. The requester is not the assigned member.** System rejects the completion. FR-15
+  and US-09 both scope completion to the assigned user, and the API contract Section 6
+  confirms that reading (`CHORE_NOT_ASSIGNED_TO_YOU`, 403).
+- **9b. The chore has no assignee.** Any household member may complete it; there is no
+  assigned user to restrict it to.
 **Special requirements**
  
 - Completion stores a timestamp, not only a flag. UC-10's recent-activity view and US-11's
@@ -416,7 +436,7 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
 | **Primary actor** | Member |
 | **Goal** | Understand household responsibilities at a glance, in one place |
 | **Preconditions** | The member belongs to a household |
-| **Success guarantee** | The member sees current members, their own balances, their upcoming chores, and recent household activity |
+| **Postconditions** | The member sees current members, their own balances, their upcoming chores, and recent household activity |
  
 **Main success scenario**
  
@@ -431,12 +451,15 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
 7. System presents all of it on one screen, with navigation to expenses and chores.
 **Extensions**
  
+- **1a. The member is not authenticated.** System redirects to login (UC-02).
 - **2a. The member belongs to no household.** System shows the create-or-join screen
   instead (UC-03, UC-04).
-- **3a–6a. The household is new and has no expenses or chores.** System shows the
-  dashboard with empty-state guidance rather than blank panels, so a new household has a
-  visible next step.
-- **1a. The member is not authenticated.** System redirects to login (UC-02).
+- **4a. The member has no balances.** System shows a zero balance rather than an empty
+  panel.
+- **5a. The member has no chores assigned.** System shows empty-state guidance naming
+  the next action rather than a blank panel.
+- **6a. The household has no recorded activity.** System shows empty-state guidance, so
+  a new household has a visible next step rather than three blank panels.
 **Special requirements**
  
 - Loads in under two seconds for a household of five with 500 recorded expenses (NFR-02)
@@ -466,27 +489,21 @@ request) underpin all ten and are not listed per-row.
  
 ---
  
-## Open questions
- 
-Four points where the use cases commit to behavior the proposal left unspecified, or where
-the literal requirement may not be the intended one. Each needs agreement before the
-corresponding story is implemented.
- 
-1. **Invitation expiration window.** The proposal says an invitation "expires after a set
-   period" without naming one. Seven days is suggested — long enough for a roommate to
-   act, short enough that a leaked link does not stay live all semester.
-2. **Who may complete a chore.** FR-15 says "allow assigned users to mark chores as
-   completed," and US-09's criteria say "the assigned user can mark the chore completed."
-   UC-09 implements that literally: only the assignee may complete an assigned chore. That
-   may not be what we meant — a roommate doing a task that was not theirs is normal
-   household behavior, and the restriction produces a chore nobody can close if the
-   assignee is away. If the permissive reading is intended, FR-15 should be reworded
-   rather than silently implemented differently.
-3. **Remainder distribution rule.** UC-06 requires the rule to be deterministic but does
-   not specify it. Assigning extra cents to the earliest participants by a stable ordering
-   is the simplest option and is easy to test; assigning them to the payer is also
-   defensible. This must be fixed before the splitting logic is written, since the unit
-   tests encode whichever rule is chosen (SC-10).
-4. **Percentage storage.** UC-06 assumes integer basis points, matching the schema in
-   PR #31. That PR is still open and the decision is not final. If it changes to
-   `Decimal(5,2)`, the percentage flow in UC-06 changes with it.
+## Resolved questions
+
+These four points were open when this document was drafted. All four are now settled in
+the API contract, `docs/design/api-contract.md`, Section 6, which is the authority if the
+two ever disagree.
+
+1. **Invitation expiry: 7 days.** Long enough for a roommate to act on it, short enough
+   that a leaked link does not stay live all semester. UC-04 step 2 and extension 6b.
+2. **Chore completion: the assigned member only**, as FR-15 and US-09 literally say. An
+   unassigned chore may be completed by anyone. The restriction means a chore cannot be
+   closed while its assignee is away; if that proves wrong in use, FR-15 is reworded
+   first and the contract second. UC-09 steps 8-9 and extensions 9a, 9b.
+3. **Remainder rule: extra cents go to participants in request order.** Deterministic, so
+   the same input always produces the same shares and the SC-10 tests can encode it. The
+   client sends participants in household join order, so results are stable across
+   screens. UC-06 step E3.
+4. **Percentages: integer basis points.** Settled by PR #31, now merged. UC-06 steps
+   P2-P4.
