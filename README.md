@@ -158,6 +158,16 @@ the server are all working together.
 cd server && npm test
 ```
 
+The test suite imports the Express app, which reaches `@prisma/client`, so the
+Prisma client must be generated first:
+
+```bash
+cd server && npx prisma generate && npm test
+```
+
+`npm install` does not generate it, and Prisma 7 no longer generates it as part
+of `migrate dev`. On a fresh clone, run `npx prisma generate` once. The
+continuous integration workflow needs the same step before it runs the tests.
 ### Stopping
 
 ```bash

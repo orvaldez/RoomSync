@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import * as userRepository from "../repositories/user.repository";
+import { UniqueConstraintError } from "../repositories/errors";
 import { EmailTakenError, ValidationError } from "./errors";
 import {
   normalizeEmail,
@@ -75,7 +76,17 @@ export async function register(input: RegisterInput): Promise<PublicUser> {
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
 
-  const user = await userRepository.create({ name, email, passwordHash });
-
-  return toPublicUser(user);
+  try {
+    const user = await userRepository.create({ name, email, passwordHash });
+    return toPublicUser(user);
+  } catch (error) {
+    // The availability check above is not a lock. Two concurrent registrations
+    // of the same address both pass it, and the unique index rejects the
+    // second. Report that as the same 409 the first check would have produced,
+    // not a 500.
+    if (error instanceof UniqueConstraintError && error.field === "email") {
+      throw new EmailTakenError();
+    }
+    throw error;
+  }
 }

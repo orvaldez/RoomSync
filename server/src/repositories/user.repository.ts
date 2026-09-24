@@ -1,4 +1,5 @@
 import { getPrisma } from "./prisma";
+import { UniqueConstraintError, isUniqueViolation } from "./errors";
 
 /**
  * A user as stored. `passwordHash` is included because the auth service needs
@@ -37,6 +38,22 @@ export async function findById(id: string): Promise<UserRecord | null> {
   return getPrisma().user.findUnique({ where: { id } });
 }
 
+/**
+ * Insert a user.
+ *
+ * Throws `UniqueConstraintError("email")` when the address is already taken.
+ * A caller that checked availability first can still land here: between that
+ * check and this insert, a concurrent request can register the same address,
+ * and only the unique index catches it. Without this the second request would
+ * surface as a 500.
+ */
 export async function create(user: NewUser): Promise<UserRecord> {
-  return getPrisma().user.create({ data: user });
+  try {
+    return await getPrisma().user.create({ data: user });
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      throw new UniqueConstraintError("email");
+    }
+    throw error;
+  }
 }

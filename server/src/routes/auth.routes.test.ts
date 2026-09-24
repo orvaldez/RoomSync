@@ -11,6 +11,7 @@ vi.mock("../repositories/user.repository", () => ({
 }));
 
 import * as userRepository from "../repositories/user.repository";
+import { UniqueConstraintError } from "../repositories/errors";
 import app from "../app";
 
 const findByEmail = vi.mocked(userRepository.findByEmail);
@@ -59,6 +60,7 @@ describe("POST /api/auth/register", () => {
       .send({ name: "", email: "nope", password: "short" });
 
     expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_FAILED");
     expect(res.body.error.fields).toHaveProperty("name");
     expect(res.body.error.fields).toHaveProperty("email");
     expect(res.body.error.fields).toHaveProperty("password");
@@ -88,6 +90,7 @@ describe("POST /api/auth/register", () => {
     const res = await request(app).post("/api/auth/register").send(VALID);
 
     expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("EMAIL_UNAVAILABLE");
     expect(res.body.error.message).not.toContain(VALID.email);
   });
 
@@ -100,11 +103,38 @@ describe("POST /api/auth/register", () => {
     const res = await request(app).post("/api/auth/register").send(VALID);
 
     expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("INTERNAL_ERROR");
     // The underlying error names a table; the response must not.
     expect(JSON.stringify(res.body)).not.toContain("users");
     expect(JSON.stringify(res.body)).not.toContain("relation");
 
     consoleError.mockRestore();
+  });
+
+
+  it("returns 400 INVALID_JSON for a malformed body", async () => {
+    const res = await request(app)
+      .post("/api/auth/register")
+      .set("Content-Type", "application/json")
+      .send('{"name": "Orlando", ');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("INVALID_JSON");
+    // Express's default handler returns an HTML page; the contract requires JSON.
+    expect(res.headers["content-type"]).toMatch(/application\/json/);
+  });
+
+  it("maps a concurrent duplicate registration to 409, not 500", async () => {
+    // Both requests pass findByEmail; the unique index rejects the second.
+    // The repository turns Prisma's P2002 into this, so the mock throws what
+    // the real repository would.
+    findByEmail.mockResolvedValue(null);
+    create.mockRejectedValue(new UniqueConstraintError("email"));
+
+    const res = await request(app).post("/api/auth/register").send(VALID);
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("EMAIL_UNAVAILABLE");
   });
 
   it("ignores extra fields a client tries to set", async () => {

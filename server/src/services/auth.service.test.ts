@@ -12,6 +12,7 @@ vi.mock("../repositories/user.repository", () => ({
 import * as userRepository from "../repositories/user.repository";
 import { register } from "./auth.service";
 import { EmailTakenError, ValidationError } from "./errors";
+import { UniqueConstraintError } from "../repositories/errors";
 
 const findByEmail = vi.mocked(userRepository.findByEmail);
 const create = vi.mocked(userRepository.create);
@@ -192,5 +193,22 @@ describe("register — extension 6a: the write fails", () => {
     create.mockRejectedValue(new Error("connection terminated"));
 
     await expect(register(VALID)).rejects.toThrow("connection terminated");
+  });
+});
+
+describe("register — concurrent duplicate (repository-level conflict)", () => {
+  it("converts a unique-constraint violation on email into EmailTakenError", async () => {
+    // findByEmail says the address is free, then the insert loses the race.
+    findByEmail.mockResolvedValue(null);
+    create.mockRejectedValue(new UniqueConstraintError("email"));
+
+    await expect(register(VALID)).rejects.toThrow(EmailTakenError);
+  });
+
+  it("does not swallow a unique violation on some other field", async () => {
+    findByEmail.mockResolvedValue(null);
+    create.mockRejectedValue(new UniqueConstraintError("somethingElse"));
+
+    await expect(register(VALID)).rejects.toThrow(UniqueConstraintError);
   });
 });
