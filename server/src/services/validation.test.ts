@@ -8,6 +8,8 @@ import {
   validateEmail,
   validateName,
   validatePassword,
+  HOUSEHOLD_NAME_MAX_LENGTH,
+  validateHouseholdName,
 } from "./validation";
 
 describe("normalizeEmail", () => {
@@ -102,5 +104,35 @@ describe("validatePassword", () => {
     const emoji = "😀".repeat(20);
     expect(Buffer.byteLength(emoji, "utf8")).toBeGreaterThan(PASSWORD_MAX_BYTES);
     expect(validatePassword(emoji)).not.toBeNull();
+  });
+});
+
+describe("validateHouseholdName", () => {
+  it("accepts an ordinary household name", () => {
+    expect(validateHouseholdName("Apartment 4B")).toBeNull();
+  });
+
+  it("rejects an empty value, whitespace, or a non-string", () => {
+    expect(validateHouseholdName("")).not.toBeNull();
+    expect(validateHouseholdName("   ")).not.toBeNull();
+    expect(validateHouseholdName(undefined)).not.toBeNull();
+    expect(validateHouseholdName(42)).not.toBeNull();
+  });
+
+  it("measures length after trimming", () => {
+    const name = "a".repeat(HOUSEHOLD_NAME_MAX_LENGTH);
+    expect(validateHouseholdName(`  ${name}  `)).toBeNull();
+  });
+
+  it("accepts a name at exactly the limit", () => {
+    expect(
+      validateHouseholdName("a".repeat(HOUSEHOLD_NAME_MAX_LENGTH))
+    ).toBeNull();
+  });
+
+  it("rejects a name past the limit", () => {
+    expect(
+      validateHouseholdName("a".repeat(HOUSEHOLD_NAME_MAX_LENGTH + 1))
+    ).not.toBeNull();
   });
 });
