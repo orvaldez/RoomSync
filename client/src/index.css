@@ -109,3 +109,170 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* ---------------------------------------------------------------------------
+   RoomSync application styles (US-02).
+
+   Built on the tokens already defined above, so light and dark mode both work
+   without a second palette. Layout is fluid and usable at 375px (NFR-05), and
+   focus is never removed — only restyled — so the interface stays keyboard
+   operable (NFR-04).
+   --------------------------------------------------------------------------- */
+
+#root {
+  text-align: left;
+}
+
+.centered,
+.auth-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  padding: 24px 16px;
+  box-sizing: border-box;
+}
+
+.auth-page h1 {
+  text-align: center;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 15px;
+  color: var(--text-h);
+}
+
+.field input {
+  font: inherit;
+  font-size: 16px; /* below 16px, iOS Safari zooms the page on focus */
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.field input:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.field input[aria-invalid="true"] {
+  border-color: #d92d20;
+}
+
+.field-error,
+.form-error {
+  color: #d92d20;
+  font-size: 14px;
+}
+
+.form-error {
+  padding: 10px 12px;
+  border: 1px solid #d92d20;
+  border-radius: 6px;
+  background: rgba(217, 45, 32, 0.08);
+}
+
+.field-hint,
+.muted {
+  color: var(--text);
+  font-size: 14px;
+}
+
+button {
+  font: inherit;
+  font-size: 16px;
+  padding: 10px 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  background: var(--accent-bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-switch {
+  margin-top: 20px;
+  font-size: 15px;
+}
+
+a {
+  color: var(--accent);
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.shell-brand {
+  font-family: var(--heading);
+  font-size: 20px;
+  color: var(--text-h);
+}
+
+.shell-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shell-user button {
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.page {
+  padding: 24px 16px;
+  flex: 1;
+}
+
+.page h1 {
+  margin-top: 0;
+}
+
+.panel {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}

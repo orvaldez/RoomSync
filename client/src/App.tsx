@@ -1,20 +1,35 @@
-import { useEffect, useState } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AuthProvider } from "./auth/AuthProvider";
+import { RequireAuth } from "./auth/RequireAuth";
+import { AppShell } from "./components/AppShell";
+import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
+import { DashboardPage } from "./pages/DashboardPage";
 
 export default function App() {
-  const [health, setHealth] = useState<string>("checking...");
-
-  useEffect(() => {
-    fetch("/api/health")
-      .then((r) => r.json())
-      .then((d) => setHealth(`${d.status} (${d.service})`))
-      .catch(() => setHealth("unreachable"));
-  }, []);
-
   return (
-    <main style={{ fontFamily: "system-ui", padding: "2rem" }}>
-      <h1>RoomSync</h1>
-      <p>Shared expenses and chores for your household.</p>
-      <p>API status: <strong>{health}</strong></p>
-    </main>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          <Route
+            path="/"
+            element={
+              <RequireAuth>
+                <AppShell>
+                  <DashboardPage />
+                </AppShell>
+              </RequireAuth>
+            }
+          />
+
+          {/* Unknown paths go to the dashboard, which sends anonymous
+              visitors on to login via RequireAuth. */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
