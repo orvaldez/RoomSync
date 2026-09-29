@@ -83,3 +83,20 @@ export class UnauthenticatedError extends AppError {
     this.name = "UnauthenticatedError";
   }
 }
+
+/**
+ * 409 — the requester already belongs to a household.
+ *
+ * The MVP supports one active household per user (UC-03 extension 1a). This is
+ * enforced here rather than with a database constraint, so the post-MVP
+ * multiple-households feature does not require a migration.
+ */
+export class AlreadyInHouseholdError extends AppError {
+  readonly code = "ALREADY_IN_HOUSEHOLD";
+  readonly status = 409;
+
+  constructor() {
+    super("You already belong to a household.");
+    this.name = "AlreadyInHouseholdError";
+  }
+}

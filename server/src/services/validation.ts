@@ -74,3 +74,22 @@ export function validatePassword(value: unknown): string | null {
   }
   return null;
 }
+
+export const HOUSEHOLD_NAME_MAX_LENGTH = 100;
+
+/**
+ * Household name, per the API contract Section 4: 1-100 characters after trim.
+ *
+ * Separate from `validateName` even though the limits currently match, because
+ * these name two different things — a person and a household — and a change to
+ * one should not silently move the other.
+ */
+export function validateHouseholdName(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return "Household name is required.";
+  }
+  if (value.trim().length > HOUSEHOLD_NAME_MAX_LENGTH) {
+    return `Household name must be ${HOUSEHOLD_NAME_MAX_LENGTH} characters or fewer.`;
+  }
+  return null;
+}
