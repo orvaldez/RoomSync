@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type Household } from "../lib/api";
 import { useAuth } from "../auth/useAuth";
 import { CreateHouseholdPage } from "./CreateHouseholdPage";
+import { MembersPanel } from "../components/MembersPanel";
 
 /**
  * UC-10, as far as the endpoints allow.
@@ -94,6 +95,7 @@ export function DashboardPage() {
       </p>
 
       <div className="panel-grid">
+        <MembersPanel householdId={household.id} />
         <section className="panel">
           <h2>Your balance</h2>
           <p className="muted">

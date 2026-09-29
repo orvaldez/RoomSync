@@ -47,6 +47,14 @@ export type Household = {
   role: MembershipRole;
 };
 
+/** Matches the contract's `MemberPublic`. No email — the server never sends one. */
+export type Member = {
+  userId: string;
+  name: string;
+  role: MembershipRole;
+  joinedAt: string;
+};
+
 /**
  * `body` is whatever the caller wants to send, serialized below — hence the
  * Omit: intersecting with RequestInit directly would keep the DOM's BodyInit
@@ -147,5 +155,9 @@ export const api = {
    */
   currentHousehold() {
     return request<{ household: Household | null }>("/households/current");
+  },
+
+  members(householdId: string) {
+    return request<{ members: Member[] }>(`/households/${householdId}/members`);
   },
 };
