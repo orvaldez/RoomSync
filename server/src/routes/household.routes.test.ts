@@ -14,6 +14,8 @@ vi.mock("../repositories/household.repository", () => ({
   createWithOwner: vi.fn(),
   findCurrentForUser: vi.fn(),
   hasMembership: vi.fn(),
+  findRole: vi.fn(),
+  listMembers: vi.fn(),
 }));
 
 import * as userRepository from "../repositories/user.repository";
@@ -24,6 +26,8 @@ const findByEmail = vi.mocked(userRepository.findByEmail);
 const createWithOwner = vi.mocked(householdRepository.createWithOwner);
 const findCurrentForUser = vi.mocked(householdRepository.findCurrentForUser);
 const hasMembership = vi.mocked(householdRepository.hasMembership);
+const findRole = vi.mocked(householdRepository.findRole);
+const listMembers = vi.mocked(householdRepository.listMembers);
 
 const PASSWORD = "correct-horse";
 const USER = {
@@ -244,5 +248,126 @@ describe("FR-03 — household routes reject unauthenticated requests", () => {
 
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe("UNAUTHENTICATED");
+  });
+});
+
+describe("GET /api/households/:householdId/members", () => {
+  const MEMBERS = [
+    {
+      userId: USER.id,
+      name: "Agustin",
+      role: "OWNER" as const,
+      joinedAt: new Date("2026-09-28T00:00:00Z"),
+    },
+    {
+      userId: "clx2222222222222222222222",
+      name: "Orlando",
+      role: "MEMBER" as const,
+      joinedAt: new Date("2026-09-29T00:00:00Z"),
+    },
+  ];
+
+  it("returns 200 with the members for a member of the household", async () => {
+    const agent = await signedInAgent();
+    findRole.mockResolvedValue("MEMBER");
+    listMembers.mockResolvedValue(MEMBERS);
+
+    const res = await agent.get(`/api/households/${HOUSEHOLD.id}/members`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.members).toEqual([
+      {
+        userId: USER.id,
+        name: "Agustin",
+        role: "OWNER",
+        joinedAt: "2026-09-28T00:00:00.000Z",
+      },
+      {
+        userId: "clx2222222222222222222222",
+        name: "Orlando",
+        role: "MEMBER",
+        joinedAt: "2026-09-29T00:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("checks membership for the session's user and the household in the URL", async () => {
+    const agent = await signedInAgent();
+    findRole.mockResolvedValue("OWNER");
+    listMembers.mockResolvedValue(MEMBERS);
+
+    await agent.get(`/api/households/${HOUSEHOLD.id}/members`);
+
+    expect(findRole).toHaveBeenCalledWith(USER.id, HOUSEHOLD.id);
+    expect(listMembers).toHaveBeenCalledWith(HOUSEHOLD.id);
+  });
+
+  it("never includes a member's email (MemberPublic, NFR-06)", async () => {
+    const agent = await signedInAgent();
+    findRole.mockResolvedValue("MEMBER");
+    listMembers.mockResolvedValue(MEMBERS);
+
+    const res = await agent.get(`/api/households/${HOUSEHOLD.id}/members`);
+
+    for (const member of res.body.members) {
+      expect(member).not.toHaveProperty("email");
+    }
+  });
+});
+
+/**
+ * Contract Section 1 and decision 5: a household the requester does not
+ * belong to answers exactly like one that does not exist. These pin that
+ * down on the first household-scoped route, since every later one reuses the
+ * same guard.
+ */
+describe("requireHouseholdMember — non-members get 404 HOUSEHOLD_NOT_FOUND", () => {
+  it("returns 404 when the requester is not a member", async () => {
+    const agent = await signedInAgent();
+    findRole.mockResolvedValue(null);
+
+    const res = await agent.get(`/api/households/${HOUSEHOLD.id}/members`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("HOUSEHOLD_NOT_FOUND");
+  });
+
+  it("answers a real household and a made-up id identically", async () => {
+    const agent = await signedInAgent();
+    findRole.mockResolvedValue(null);
+
+    const real = await agent.get(`/api/households/${HOUSEHOLD.id}/members`);
+    const madeUp = await agent.get("/api/households/does-not-exist/members");
+
+    expect(madeUp.status).toBe(real.status);
+    expect(madeUp.body).toEqual(real.body);
+  });
+
+  it("reads nothing from the household when membership fails", async () => {
+    const agent = await signedInAgent();
+    findRole.mockResolvedValue(null);
+
+    await agent.get(`/api/households/${HOUSEHOLD.id}/members`);
+
+    expect(listMembers).not.toHaveBeenCalled();
+  });
+
+  it("returns 401, not 404, without a session", async () => {
+    const res = await request(app).get(
+      `/api/households/${HOUSEHOLD.id}/members`
+    );
+
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe("UNAUTHENTICATED");
+    expect(findRole).not.toHaveBeenCalled();
+  });
+
+  it("does not treat /households/current as a household id", async () => {
+    const agent = await signedInAgent();
+
+    const res = await agent.get("/api/households/current");
+
+    expect(res.status).toBe(200);
+    expect(findRole).not.toHaveBeenCalled();
   });
 });

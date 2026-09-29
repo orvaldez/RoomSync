@@ -96,3 +96,59 @@ export async function hasMembership(userId: string): Promise<boolean> {
   const count = await getPrisma().membership.count({ where: { userId } });
   return count > 0;
 }
+
+/**
+ * This user's role in this household, or null when they are not a member.
+ *
+ * Null covers both "no such household" and "not a member of it". The caller
+ * treats them the same (contract decision 5), so there is no reason to spend
+ * a second query telling them apart.
+ */
+export async function findRole(
+  userId: string,
+  householdId: string
+): Promise<MembershipRole | null> {
+  const membership = await getPrisma().membership.findUnique({
+    where: { userId_householdId: { userId, householdId } },
+    select: { role: true },
+  });
+
+  return membership ? (membership.role as MembershipRole) : null;
+}
+
+/** A household member with the account fields the contract exposes. */
+export type MemberRecord = {
+  userId: string;
+  name: string;
+  role: MembershipRole;
+  joinedAt: Date;
+};
+
+/**
+ * Every member of a household, earliest to join first.
+ *
+ * Selects only the user's name, never the whole user row: that row carries
+ * the email and password hash, and `MemberPublic` deliberately exposes
+ * neither (contract Section 2, NFR-06).
+ */
+export async function listMembers(
+  householdId: string
+): Promise<MemberRecord[]> {
+  const memberships = await getPrisma().membership.findMany({
+    where: { householdId },
+    orderBy: { joinedAt: "asc" },
+    select: {
+      userId: true,
+      role: true,
+      joinedAt: true,
+      user: { select: { name: true } },
+    },
+  });
+
+  return memberships.map((membership) => ({
+    userId: membership.userId,
+    name: membership.user.name,
+    role: membership.role as MembershipRole,
+    joinedAt: membership.joinedAt,
+  }));
+}

@@ -6,15 +6,28 @@ vi.mock("../repositories/household.repository", () => ({
   createWithOwner: vi.fn(),
   findCurrentForUser: vi.fn(),
   hasMembership: vi.fn(),
+  findRole: vi.fn(),
+  listMembers: vi.fn(),
 }));
 
 import * as householdRepository from "../repositories/household.repository";
-import { createHousehold, getCurrentHousehold } from "./household.service";
-import { AlreadyInHouseholdError, ValidationError } from "./errors";
+import {
+  createHousehold,
+  getCurrentHousehold,
+  listMembers as listHouseholdMembers,
+  requireMembership,
+} from "./household.service";
+import {
+  AlreadyInHouseholdError,
+  HouseholdNotFoundError,
+  ValidationError,
+} from "./errors";
 
 const createWithOwner = vi.mocked(householdRepository.createWithOwner);
 const findCurrentForUser = vi.mocked(householdRepository.findCurrentForUser);
 const hasMembership = vi.mocked(householdRepository.hasMembership);
+const findRole = vi.mocked(householdRepository.findRole);
+const listMembers = vi.mocked(householdRepository.listMembers);
 
 const USER_ID = "clx0000000000000000000000";
 
@@ -183,5 +196,79 @@ describe("getCurrentHousehold", () => {
     findCurrentForUser.mockResolvedValue(null);
 
     await expect(getCurrentHousehold(USER_ID)).resolves.toBeNull();
+  });
+});
+
+const HOUSEHOLD_ID = "clx1111111111111111111111";
+
+describe("requireMembership", () => {
+  it("returns the requester's role when they are a member", async () => {
+    findRole.mockResolvedValue("MEMBER");
+
+    await expect(requireMembership(USER_ID, HOUSEHOLD_ID)).resolves.toBe(
+      "MEMBER"
+    );
+    expect(findRole).toHaveBeenCalledWith(USER_ID, HOUSEHOLD_ID);
+  });
+
+  it("returns OWNER for the household's owner", async () => {
+    findRole.mockResolvedValue("OWNER");
+
+    await expect(requireMembership(USER_ID, HOUSEHOLD_ID)).resolves.toBe(
+      "OWNER"
+    );
+  });
+
+  it("rejects a non-member with HOUSEHOLD_NOT_FOUND (contract decision 5)", async () => {
+    findRole.mockResolvedValue(null);
+
+    await expect(
+      requireMembership(USER_ID, HOUSEHOLD_ID)
+    ).rejects.toThrow(HouseholdNotFoundError);
+  });
+
+  it("maps to 404, not 403, so another household's existence is not confirmed", async () => {
+    findRole.mockResolvedValue(null);
+
+    await expect(
+      requireMembership(USER_ID, HOUSEHOLD_ID)
+    ).rejects.toMatchObject({ code: "HOUSEHOLD_NOT_FOUND", status: 404 });
+  });
+});
+
+describe("listMembers", () => {
+  const OWNER = {
+    userId: USER_ID,
+    name: "Agustin",
+    role: "OWNER" as const,
+    joinedAt: new Date("2026-09-28T00:00:00Z"),
+  };
+  const ROOMMATE = {
+    userId: "clx2222222222222222222222",
+    name: "Orlando",
+    role: "MEMBER" as const,
+    joinedAt: new Date("2026-09-29T00:00:00Z"),
+  };
+
+  it("returns every member in the order the repository gives them", async () => {
+    listMembers.mockResolvedValue([OWNER, ROOMMATE]);
+
+    await expect(listHouseholdMembers(HOUSEHOLD_ID)).resolves.toEqual([
+      OWNER,
+      ROOMMATE,
+    ]);
+    expect(listMembers).toHaveBeenCalledWith(HOUSEHOLD_ID);
+  });
+
+  it("returns exactly the MemberPublic fields, with no email", async () => {
+    listMembers.mockResolvedValue([
+      { ...OWNER, email: "agustin@crimson.ua.edu" } as typeof OWNER,
+    ]);
+
+    const [member] = await listHouseholdMembers(HOUSEHOLD_ID);
+
+    expect(Object.keys(member).sort()).toEqual(
+      ["joinedAt", "name", "role", "userId"].sort()
+    );
   });
 });

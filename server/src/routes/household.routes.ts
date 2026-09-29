@@ -2,6 +2,10 @@ import { Router, type Request, type Response } from "express";
 import * as householdService from "../services/household.service";
 import { asyncHandler } from "../middleware/async-handler";
 import { currentUserId, requireAuth } from "../middleware/require-auth";
+import {
+  currentMembership,
+  requireHouseholdMember,
+} from "../middleware/require-household-member";
 
 const router = Router();
 
@@ -50,6 +54,25 @@ router.get(
     );
 
     res.status(200).json({ household });
+  })
+);
+
+/**
+ * GET /api/households/:householdId/members — contract Section 4.
+ *
+ * 200 { members: MemberPublic[] }   ordered by joinedAt
+ * 404 HOUSEHOLD_NOT_FOUND           no such household, or not a member of it
+ * 401 UNAUTHENTICATED               no session
+ */
+router.get(
+  "/households/:householdId/members",
+  requireAuth,
+  requireHouseholdMember,
+  asyncHandler(async (_req: Request, res: Response) => {
+    const { householdId } = currentMembership(res);
+    const members = await householdService.listMembers(householdId);
+
+    res.status(200).json({ members });
   })
 );
 

@@ -1,5 +1,9 @@
 import * as householdRepository from "../repositories/household.repository";
-import { AlreadyInHouseholdError, ValidationError } from "./errors";
+import {
+  AlreadyInHouseholdError,
+  HouseholdNotFoundError,
+  ValidationError,
+} from "./errors";
 import { validateHouseholdName } from "./validation";
 
 /**
@@ -73,4 +77,55 @@ export async function getCurrentHousehold(
 ): Promise<PublicHousehold | null> {
   const household = await householdRepository.findCurrentForUser(userId);
   return household ? toPublicHousehold(household) : null;
+}
+
+/**
+ * The requester's role in a household, or `HOUSEHOLD_NOT_FOUND` when they are
+ * not a member of it.
+ *
+ * This is the membership check every `/api/households/:householdId` endpoint
+ * makes (contract Section 1, NFR-07). Routes reach it through the
+ * `requireHouseholdMember` middleware; other services can call it directly
+ * when they need the role, for example to allow an OWNER-only action.
+ */
+export async function requireMembership(
+  userId: string,
+  householdId: string
+): Promise<householdRepository.MembershipRole> {
+  const role = await householdRepository.findRole(userId, householdId);
+
+  if (!role) {
+    throw new HouseholdNotFoundError();
+  }
+
+  return role;
+}
+
+/** A member as the API contract publishes one (`MemberPublic`, Section 2). */
+export type PublicMember = {
+  userId: string;
+  name: string;
+  role: householdRepository.MembershipRole;
+  joinedAt: Date;
+};
+
+/**
+ * Everyone in the household, earliest to join first.
+ *
+ * Does not check membership itself: the route is behind
+ * `requireHouseholdMember`, and checking twice would be a second query for an
+ * answer already in hand. A caller outside that route must call
+ * `requireMembership` first.
+ */
+export async function listMembers(
+  householdId: string
+): Promise<PublicMember[]> {
+  const members = await householdRepository.listMembers(householdId);
+
+  return members.map((member) => ({
+    userId: member.userId,
+    name: member.name,
+    role: member.role,
+    joinedAt: member.joinedAt,
+  }));
 }
