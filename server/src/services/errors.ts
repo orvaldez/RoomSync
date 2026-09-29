@@ -100,3 +100,20 @@ export class AlreadyInHouseholdError extends AppError {
     this.name = "AlreadyInHouseholdError";
   }
 }
+
+/**
+ * 404 — the household does not exist, or the requester is not a member of it.
+ *
+ * One error for both on purpose (contract decision 5). Answering 403 to a
+ * non-member would confirm that the household exists, and household ids appear
+ * in URLs that get shared.
+ */
+export class HouseholdNotFoundError extends AppError {
+  readonly code = "HOUSEHOLD_NOT_FOUND";
+  readonly status = 404;
+
+  constructor() {
+    super("Household not found.");
+    this.name = "HouseholdNotFoundError";
+  }
+}
