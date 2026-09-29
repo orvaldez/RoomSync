@@ -15,6 +15,24 @@ import type { RequestHandler } from "express";
 /** Two weeks. Long enough that a roommate is not logged out mid-lease. */
 const SESSION_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 
+/**
+ * Whether the session cookie is restricted to HTTPS, and whether Express
+ * should believe the proxy's `X-Forwarded-Proto` header.
+ *
+ * These two must agree. Render terminates TLS at its proxy and forwards plain
+ * HTTP, so `req.secure` is false even though the browser connected over
+ * HTTPS. With `secure: true` and no `trust proxy`, express-session decides the
+ * connection is insecure, silently refuses to set the cookie, and every login
+ * in production appears to succeed while leaving the user logged out.
+ *
+ * Exported as a pair so the coupling is visible and testable, rather than two
+ * unrelated `NODE_ENV` checks in different files that someone can change one
+ * of.
+ */
+export function isBehindTlsProxy(nodeEnv = process.env.NODE_ENV): boolean {
+  return nodeEnv === "production";
+}
+
 declare module "express-session" {
   interface SessionData {
     userId?: string;
@@ -48,7 +66,8 @@ export function buildSessionMiddleware(): RequestHandler {
     cookie: {
       httpOnly: true, // not readable from JavaScript, so XSS cannot steal it
       sameSite: "lax", // blocks the cookie on cross-site POSTs (CSRF)
-      secure: process.env.NODE_ENV === "production", // HTTPS only once deployed
+      // Paired with `trust proxy` in app.ts — see isBehindTlsProxy.
+      secure: isBehindTlsProxy(),
       maxAge: SESSION_MAX_AGE_MS,
     },
   });

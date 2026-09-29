@@ -1,10 +1,20 @@
 import express from "express";
 import healthRoutes from "./routes/health.routes";
 import authRoutes from "./routes/auth.routes";
-import { buildSessionMiddleware } from "./middleware/session";
+import { buildSessionMiddleware, isBehindTlsProxy } from "./middleware/session";
 import { errorHandler } from "./middleware/error-handler";
 
 const app = express();
+
+// Trust the first proxy hop, so `req.secure` reflects the browser's
+// connection rather than the plain HTTP the proxy forwards. Required for the
+// `secure: true` session cookie to be set at all in production.
+//
+// Deliberately not enabled outside production: trusting a proxy that isn't
+// there lets any client spoof its address through X-Forwarded-For.
+if (isBehindTlsProxy()) {
+  app.set("trust proxy", 1);
+}
 
 app.use(express.json());
 
