@@ -10,11 +10,16 @@ vi.mock("../repositories/user.repository", () => ({
 }));
 
 import * as userRepository from "../repositories/user.repository";
-import { register } from "./auth.service";
-import { EmailTakenError, ValidationError } from "./errors";
+import { register, login, findCurrentUser } from "./auth.service";
+import {
+  EmailTakenError,
+  InvalidCredentialsError,
+  ValidationError,
+} from "./errors";
 import { UniqueConstraintError } from "../repositories/errors";
 
 const findByEmail = vi.mocked(userRepository.findByEmail);
+const findById = vi.mocked(userRepository.findById);
 const create = vi.mocked(userRepository.create);
 
 const VALID = {
@@ -210,5 +215,98 @@ describe("register — concurrent duplicate (repository-level conflict)", () => 
     create.mockRejectedValue(new UniqueConstraintError("somethingElse"));
 
     await expect(register(VALID)).rejects.toThrow(UniqueConstraintError);
+  });
+});
+
+describe("login", () => {
+  const PASSWORD = "correct-horse";
+
+  function realUser() {
+    return {
+      ...storedUser(),
+      passwordHash: bcrypt.hashSync(PASSWORD, 10),
+    };
+  }
+
+  it("returns the public user on correct credentials", async () => {
+    findByEmail.mockResolvedValue(realUser());
+
+    const user = await login({ email: VALID.email, password: PASSWORD });
+
+    expect(user).not.toHaveProperty("passwordHash");
+    expect(user.email).toBe(VALID.email);
+  });
+
+  it("rejects a wrong password", async () => {
+    findByEmail.mockResolvedValue(realUser());
+
+    await expect(
+      login({ email: VALID.email, password: "wrong" })
+    ).rejects.toThrow(InvalidCredentialsError);
+  });
+
+  it("rejects an unknown email with the same error", async () => {
+    findByEmail.mockResolvedValue(null);
+
+    await expect(
+      login({ email: "nobody@example.com", password: PASSWORD })
+    ).rejects.toThrow(InvalidCredentialsError);
+  });
+
+  it("still verifies a password when no account matched", async () => {
+    // Equal work on both paths is what keeps response time from revealing
+    // which addresses are registered. Skipping the compare would make the
+    // unknown-email path measurably faster.
+    findByEmail.mockResolvedValue(null);
+    const compare = vi.spyOn(bcrypt, "compare");
+
+    await login({ email: "nobody@example.com", password: PASSWORD }).catch(
+      () => {}
+    );
+
+    expect(compare).toHaveBeenCalled();
+    compare.mockRestore();
+  });
+
+  it("normalizes the email before lookup", async () => {
+    findByEmail.mockResolvedValue(realUser());
+
+    await login({ email: "  ORLANDO@CRIMSON.UA.EDU ", password: PASSWORD });
+
+    expect(findByEmail).toHaveBeenCalledWith("orlando@crimson.ua.edu");
+  });
+
+  it("requires both fields", async () => {
+    await expect(login({ email: "", password: "" })).rejects.toThrow(
+      ValidationError
+    );
+    expect(findByEmail).not.toHaveBeenCalled();
+  });
+
+  it("does not enforce the registration password rules", async () => {
+    findByEmail.mockResolvedValue(realUser());
+
+    // Below the registration minimum, but login must answer with
+    // InvalidCredentials, not a validation error naming the rule.
+    await expect(
+      login({ email: VALID.email, password: "short" })
+    ).rejects.toThrow(InvalidCredentialsError);
+  });
+});
+
+describe("findCurrentUser", () => {
+  it("returns the public user when the id exists", async () => {
+    findById.mockResolvedValue(storedUser());
+
+    const user = await findCurrentUser("clx0000000000000000000000");
+
+    expect(user).not.toBeNull();
+    expect(user).not.toHaveProperty("passwordHash");
+  });
+
+  it("returns null for a deleted account", async () => {
+    findById.mockResolvedValue(null);
+
+    await expect(findCurrentUser("gone")).resolves.toBeNull();
   });
 });

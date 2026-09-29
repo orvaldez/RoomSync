@@ -1,7 +1,11 @@
 import bcrypt from "bcryptjs";
 import * as userRepository from "../repositories/user.repository";
 import { UniqueConstraintError } from "../repositories/errors";
-import { EmailTakenError, ValidationError } from "./errors";
+import {
+  EmailTakenError,
+  InvalidCredentialsError,
+  ValidationError,
+} from "./errors";
 import {
   normalizeEmail,
   validateEmail,
@@ -89,4 +93,72 @@ export async function register(input: RegisterInput): Promise<PublicUser> {
     }
     throw error;
   }
+}
+
+export type LoginInput = {
+  email?: unknown;
+  password?: unknown;
+};
+
+/**
+ * A bcrypt hash of a throwaway value, used to spend the same time verifying a
+ * password when no account matched as when one did. Without it, a login for an
+ * unknown address returns measurably faster than one with a wrong password,
+ * and that timing difference reveals which addresses are registered — the same
+ * leak UC-02 extensions 3a and 4a close in the response body.
+ *
+ * Generated once at module load rather than per request.
+ */
+const DUMMY_HASH = bcrypt.hashSync("timing-equalizer", BCRYPT_COST);
+
+/**
+ * Log in, per UC-02 steps 3-4.
+ *
+ * Returns the user on success. Does not create the session — that is the
+ * route's job, because sessions are an HTTP concern and services know nothing
+ * about HTTP (ADR-001).
+ */
+export async function login(input: LoginInput): Promise<PublicUser> {
+  const fields: Record<string, string> = {};
+
+  // Presence only. Applying the registration rules here would reject a
+  // legitimate attempt by someone whose password predates a rule change, and
+  // would report "password must be 8 characters" to whoever is guessing.
+  if (typeof input.email !== "string" || input.email.trim().length === 0) {
+    fields.email = "Email is required.";
+  }
+  if (typeof input.password !== "string" || input.password.length === 0) {
+    fields.password = "Password is required.";
+  }
+
+  if (Object.keys(fields).length > 0) {
+    throw new ValidationError(fields);
+  }
+
+  const email = normalizeEmail(input.email as string);
+  const password = input.password as string;
+
+  const user = await userRepository.findByEmail(email);
+
+  // Compare against the dummy hash when there is no user, so both paths cost
+  // the same. Assigning the result keeps a compiler or runtime from eliding
+  // the call.
+  const passwordMatches = await bcrypt.compare(
+    password,
+    user?.passwordHash ?? DUMMY_HASH
+  );
+
+  if (!user || !passwordMatches) {
+    throw new InvalidCredentialsError();
+  }
+
+  return toPublicUser(user);
+}
+
+/** Look up the signed-in user for `GET /api/auth/me`. */
+export async function findCurrentUser(
+  userId: string
+): Promise<PublicUser | null> {
+  const user = await userRepository.findById(userId);
+  return user ? toPublicUser(user) : null;
 }
