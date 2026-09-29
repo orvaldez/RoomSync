@@ -164,3 +164,20 @@ model Chore {
   @@index([assignedUserId])
   @@map("chores")
 }
+/// Session store for express-session, via connect-pg-simple.
+///
+/// Modeled here rather than letting the store run its own CREATE TABLE, so
+/// `prisma migrate dev` owns it. Left unmanaged, every later migration would
+/// see an unknown `session` table as drift and offer to drop it.
+///
+/// Column types match connect-pg-simple's table.sql exactly: `sess` must be
+/// `json` (Prisma's default for Json is `jsonb`) and `expire` must carry
+/// microsecond precision.
+model Session {
+  sid    String   @id @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "IDX_session_expire")
+  @@map("session")
+}

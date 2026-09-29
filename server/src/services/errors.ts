@@ -55,3 +55,31 @@ export class EmailTakenError extends AppError {
     this.name = "EmailTakenError";
   }
 }
+
+/**
+ * 401 — the email and password did not match an account.
+ *
+ * Deliberately one error for both "no such account" and "wrong password".
+ * Distinguishing them tells an unauthenticated caller which addresses are
+ * registered (UC-02 extensions 3a and 4a).
+ */
+export class InvalidCredentialsError extends AppError {
+  readonly code = "INVALID_CREDENTIALS";
+  readonly status = 401;
+
+  constructor() {
+    super("Invalid email or password.");
+    this.name = "InvalidCredentialsError";
+  }
+}
+
+/** 401 — the endpoint requires a session and the request has none. */
+export class UnauthenticatedError extends AppError {
+  readonly code = "UNAUTHENTICATED";
+  readonly status = 401;
+
+  constructor() {
+    super("You must be logged in to do that.");
+    this.name = "UnauthenticatedError";
+  }
+}
