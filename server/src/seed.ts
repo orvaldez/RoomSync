@@ -17,10 +17,8 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { getPrisma } from "./repositories/prisma";
+import { BCRYPT_COST } from "./services/auth.service";
 import { splitExpense } from "./services/split.service";
-
-/** Matches the cost used when a real account registers (auth.service). */
-const BCRYPT_COST = 12;
 
 /** Documented in the README so a reviewer can sign in as either member. */
 const PASSWORD = "roomsync123";
