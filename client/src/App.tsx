@@ -5,6 +5,7 @@ import { AppShell } from "./components/AppShell";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { JoinPage } from "./pages/JoinPage";
 
 export default function App() {
   return (
@@ -20,6 +21,19 @@ export default function App() {
               <RequireAuth>
                 <AppShell>
                   <DashboardPage />
+                </AppShell>
+              </RequireAuth>
+            }
+          />
+
+          {/* Invitation links (UC-04). RequireAuth sends a signed-out
+              visitor to log in or register and back here afterwards. */}
+          <Route
+            path="/join/:token"
+            element={
+              <RequireAuth>
+                <AppShell>
+                  <JoinPage />
                 </AppShell>
               </RequireAuth>
             }

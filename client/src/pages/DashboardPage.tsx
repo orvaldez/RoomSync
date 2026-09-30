@@ -101,7 +101,10 @@ export function DashboardPage() {
       </p>
 
       <div className="panel-grid">
-        <MembersPanel householdId={household.id} />
+        <MembersPanel
+          householdId={household.id}
+          canInvite={household.role === "OWNER"}
+        />
         <section className="panel">
           <h2>Your balance</h2>
           <p className="muted">

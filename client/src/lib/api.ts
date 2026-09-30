@@ -65,6 +65,21 @@ export type Member = {
   joinedAt: string;
 };
 
+/** Matches the contract's `InvitationPublic`. */
+export type Invitation = {
+  id: string;
+  token: string;
+  status: "PENDING" | "ACCEPTED" | "EXPIRED" | "REVOKED";
+  expiresAt: string;
+  createdAt: string;
+};
+
+/** What `GET /invitations/:token` reveals: only the household name. */
+export type InvitationPreview = {
+  householdName: string;
+  expiresAt: string;
+};
+
 /**
  * `body` is whatever the caller wants to send, serialized below — hence the
  * Omit: intersecting with RequestInit directly would keep the DOM's BodyInit
@@ -169,5 +184,27 @@ export const api = {
 
   members(householdId: string) {
     return request<{ members: Member[] }>(`/households/${householdId}/members`);
+  },
+
+  /** OWNER only; a member gets 403 NOT_HOUSEHOLD_OWNER. */
+  createInvitation(householdId: string) {
+    return request<{ invitation: Invitation }>(
+      `/households/${householdId}/invitations`,
+      { method: "POST" }
+    );
+  },
+
+  /** The household name for the confirmation screen (UC-04 step 8). */
+  invitation(token: string) {
+    return request<{ invitation: InvitationPreview }>(
+      `/invitations/${encodeURIComponent(token)}`
+    );
+  },
+
+  acceptInvitation(token: string) {
+    return request<{ household: Household }>(
+      `/invitations/${encodeURIComponent(token)}/accept`,
+      { method: "POST" }
+    );
   },
 };

@@ -2,6 +2,7 @@ import express from "express";
 import healthRoutes from "./routes/health.routes";
 import authRoutes from "./routes/auth.routes";
 import householdRoutes from "./routes/household.routes";
+import invitationRoutes from "./routes/invitation.routes";
 import expenseRoutes from "./routes/expense.routes";
 import { buildSessionMiddleware, isBehindTlsProxy } from "./middleware/session";
 import { errorHandler } from "./middleware/error-handler";
@@ -26,6 +27,7 @@ app.use(buildSessionMiddleware());
 app.use("/api", healthRoutes);
 app.use("/api", authRoutes);
 app.use("/api", householdRoutes);
+app.use("/api", invitationRoutes);
 app.use("/api", expenseRoutes);
 
 // Registered last: Express only reaches an error handler after the routes.

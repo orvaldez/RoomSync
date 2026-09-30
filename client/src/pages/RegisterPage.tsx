@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError, api } from "../lib/api";
 import { useAuth } from "../auth/useAuth";
+import { returnPath } from "../auth/returnPath";
 import { Field } from "../components/Field";
 
 export function RegisterPage() {
   const { logIn } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -28,7 +30,7 @@ export function RegisterPage() {
       // deliberately does not create a session (contract Section 6). Doing it
       // for them here keeps the flow to one step without changing that.
       await logIn(email, password);
-      navigate("/", { replace: true });
+      navigate(returnPath(location.state), { replace: true });
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.code === "VALIDATION_FAILED") {
@@ -97,7 +99,9 @@ export function RegisterPage() {
       </form>
 
       <p className="auth-switch">
-        Already have an account? <Link to="/login">Log in</Link>
+        Already have an account? <Link to="/login" state={location.state}>
+          Log in
+        </Link>
       </p>
     </main>
   );

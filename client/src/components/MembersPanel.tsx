@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, isUnauthenticated, type Member } from "../lib/api";
 import { useAuth } from "../auth/useAuth";
+import { InviteRoommate } from "./InviteRoommate";
 
 /**
  * The household's members, from GET /households/:householdId/members.
@@ -14,7 +15,14 @@ type LoadState =
   | { status: "ready"; members: Member[] }
   | { status: "error" };
 
-export function MembersPanel({ householdId }: { householdId: string }) {
+export function MembersPanel({
+  householdId,
+  canInvite,
+}: {
+  householdId: string;
+  /** Whether to offer "Invite a roommate" — the owner only (UC-04 1a). */
+  canInvite: boolean;
+}) {
   const { refresh } = useAuth();
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
@@ -63,6 +71,8 @@ export function MembersPanel({ householdId }: { householdId: string }) {
           ))}
         </ul>
       )}
+
+      {canInvite && <InviteRoommate householdId={householdId} />}
     </section>
   );
 }
