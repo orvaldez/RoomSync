@@ -10,6 +10,11 @@ import {
   validatePassword,
   HOUSEHOLD_NAME_MAX_LENGTH,
   validateHouseholdName,
+  MAX_AMOUNT_CENTS,
+  validateAmountCents,
+  EXPENSE_DESCRIPTION_MAX_LENGTH,
+  validateExpenseDescription,
+  validateCalendarDate,
 } from "./validation";
 
 describe("normalizeEmail", () => {
@@ -134,5 +139,74 @@ describe("validateHouseholdName", () => {
     expect(
       validateHouseholdName("a".repeat(HOUSEHOLD_NAME_MAX_LENGTH + 1))
     ).not.toBeNull();
+  });
+});
+
+describe("validateAmountCents", () => {
+  it("accepts a positive whole number of cents", () => {
+    expect(validateAmountCents(1)).toBeNull();
+    expect(validateAmountCents(1234)).toBeNull();
+    expect(validateAmountCents(MAX_AMOUNT_CENTS)).toBeNull();
+  });
+
+  it("rejects zero and negative amounts", () => {
+    expect(validateAmountCents(0)).not.toBeNull();
+    expect(validateAmountCents(-1)).not.toBeNull();
+  });
+
+  it("rejects fractions of a cent rather than rounding them", () => {
+    expect(validateAmountCents(12.34)).not.toBeNull();
+    expect(validateAmountCents(0.5)).not.toBeNull();
+  });
+
+  it("rejects non-numbers, including numeric strings", () => {
+    expect(validateAmountCents("1234")).not.toBeNull();
+    expect(validateAmountCents(undefined)).not.toBeNull();
+    expect(validateAmountCents(null)).not.toBeNull();
+    expect(validateAmountCents(NaN)).not.toBeNull();
+    expect(validateAmountCents(Infinity)).not.toBeNull();
+  });
+
+  it("rejects an amount the database column cannot hold", () => {
+    expect(validateAmountCents(MAX_AMOUNT_CENTS + 1)).not.toBeNull();
+  });
+});
+
+describe("validateExpenseDescription", () => {
+  it("accepts an ordinary description", () => {
+    expect(validateExpenseDescription("Groceries")).toBeNull();
+  });
+
+  it("rejects an empty, blank, or non-string description", () => {
+    expect(validateExpenseDescription("")).not.toBeNull();
+    expect(validateExpenseDescription("   ")).not.toBeNull();
+    expect(validateExpenseDescription(undefined)).not.toBeNull();
+    expect(validateExpenseDescription(42)).not.toBeNull();
+  });
+
+  it("rejects a description past the length limit", () => {
+    const max = EXPENSE_DESCRIPTION_MAX_LENGTH;
+    expect(validateExpenseDescription("a".repeat(max))).toBeNull();
+    expect(validateExpenseDescription("a".repeat(max + 1))).not.toBeNull();
+  });
+});
+
+describe("validateCalendarDate", () => {
+  it("accepts a real YYYY-MM-DD date, including a leap day", () => {
+    expect(validateCalendarDate("2026-09-29")).toBeNull();
+    expect(validateCalendarDate("2028-02-29")).toBeNull();
+  });
+
+  it("rejects other formats", () => {
+    expect(validateCalendarDate("09/29/2026")).not.toBeNull();
+    expect(validateCalendarDate("2026-9-29")).not.toBeNull();
+    expect(validateCalendarDate("2026-09-29T00:00:00.000Z")).not.toBeNull();
+    expect(validateCalendarDate(undefined)).not.toBeNull();
+  });
+
+  it("rejects dates that match the pattern but do not exist", () => {
+    expect(validateCalendarDate("2026-02-30")).not.toBeNull();
+    expect(validateCalendarDate("2027-02-29")).not.toBeNull();
+    expect(validateCalendarDate("2026-13-01")).not.toBeNull();
   });
 });

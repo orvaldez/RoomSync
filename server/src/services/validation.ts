@@ -93,3 +93,64 @@ export function validateHouseholdName(value: unknown): string | null {
   }
   return null;
 }
+
+/**
+ * The largest amount the database can store. Money columns are PostgreSQL
+ * `integer` (Prisma `Int`), so a larger value would pass here and then fail on
+ * insert with a far less useful error.
+ */
+export const MAX_AMOUNT_CENTS = 2_147_483_647;
+
+/**
+ * A money amount in integer cents (FR-18): a positive whole number.
+ *
+ * The client converts "$12.34" to `1234` before sending, so a fraction here is
+ * a client bug or a hand-built request, and is rejected rather than rounded.
+ */
+export function validateAmountCents(value: unknown): string | null {
+  if (typeof value !== "number" || !Number.isInteger(value)) {
+    return "Amount must be a whole number of cents.";
+  }
+  if (value <= 0) {
+    return "Amount must be greater than zero.";
+  }
+  if (value > MAX_AMOUNT_CENTS) {
+    return "Amount is too large.";
+  }
+  return null;
+}
+
+export const EXPENSE_DESCRIPTION_MAX_LENGTH = 200;
+
+/** Expense description, per the API contract: 1-200 characters after trim. */
+export function validateExpenseDescription(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return "Description is required.";
+  }
+  if (value.trim().length > EXPENSE_DESCRIPTION_MAX_LENGTH) {
+    return `Description must be ${EXPENSE_DESCRIPTION_MAX_LENGTH} characters or fewer.`;
+  }
+  return null;
+}
+
+const CALENDAR_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * A date the user picks, sent as `YYYY-MM-DD` (contract Section 1, "Dates").
+ *
+ * The round trip through `Date` catches dates that match the pattern but do
+ * not exist, such as 2026-02-30, which `Date` would otherwise roll over into
+ * March without complaint.
+ */
+export function validateCalendarDate(value: unknown): string | null {
+  if (typeof value !== "string" || !CALENDAR_DATE_PATTERN.test(value)) {
+    return "Enter a date as YYYY-MM-DD.";
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    return "Enter a real calendar date.";
+  }
+
+  return null;
+}
