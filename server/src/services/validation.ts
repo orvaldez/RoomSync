@@ -154,3 +154,34 @@ export function validateCalendarDate(value: unknown): string | null {
 
   return null;
 }
+
+export const CHORE_TITLE_MAX_LENGTH = 100;
+export const CHORE_DESCRIPTION_MAX_LENGTH = 500;
+
+/** Chore title, per the API contract: 1-100 characters after trim (UC-09 2a). */
+export function validateChoreTitle(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return "Title is required.";
+  }
+  if (value.trim().length > CHORE_TITLE_MAX_LENGTH) {
+    return `Title must be ${CHORE_TITLE_MAX_LENGTH} characters or fewer.`;
+  }
+  return null;
+}
+
+/**
+ * Optional chore description: at most 500 characters. Absent, null, and blank
+ * are all fine; they mean "no description".
+ */
+export function validateChoreDescription(value: unknown): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value !== "string") {
+    return "Description must be text.";
+  }
+  if (value.trim().length > CHORE_DESCRIPTION_MAX_LENGTH) {
+    return `Description must be ${CHORE_DESCRIPTION_MAX_LENGTH} characters or fewer.`;
+  }
+  return null;
+}

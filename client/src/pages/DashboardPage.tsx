@@ -114,6 +114,9 @@ export function DashboardPage() {
       <p className="page-actions">
         <Link className="button-link" to="/expenses/new">
           + Add expense
+        </Link>{" "}
+        <Link className="button-link" to="/chores">
+          Chores
         </Link>
       </p>
 

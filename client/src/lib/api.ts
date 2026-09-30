@@ -108,6 +108,27 @@ export type Expense = {
  * in household join order: remainder cents are handed out in request order,
  * so a stable order keeps the same expense splitting the same way everywhere.
  */
+/** Matches the contract's `ChorePublic`. */
+export type Chore = {
+  id: string;
+  title: string;
+  description: string | null;
+  assignee: { userId: string; name: string } | null;
+  /** `YYYY-MM-DD`, or null when there is no due date. */
+  dueDate: string | null;
+  isComplete: boolean;
+  completedAt: string | null;
+  createdAt: string;
+};
+
+/** The create body. Omit `assignedUserId` or `dueDate` for none. */
+export type ChoreInput = {
+  title: string;
+  description?: string;
+  assignedUserId?: string;
+  dueDate?: string;
+};
+
 export type ExpenseInput = {
   description: string;
   totalAmountCents: number;
@@ -266,5 +287,25 @@ export const api = {
       method: "POST",
       body: input,
     });
+  },
+
+  /** Outstanding chores first (soonest due), then completed (newest first). */
+  chores(householdId: string) {
+    return request<{ chores: Chore[] }>(`/households/${householdId}/chores`);
+  },
+
+  createChore(householdId: string, input: ChoreInput) {
+    return request<{ chore: Chore }>(`/households/${householdId}/chores`, {
+      method: "POST",
+      body: input,
+    });
+  },
+
+  /** Assigned member only (403 CHORE_NOT_ASSIGNED_TO_YOU); anyone if unassigned. */
+  completeChore(householdId: string, choreId: string) {
+    return request<{ chore: Chore }>(
+      `/households/${householdId}/chores/${choreId}/complete`,
+      { method: "POST" }
+    );
   },
 };
