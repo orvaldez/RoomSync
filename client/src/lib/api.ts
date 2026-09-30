@@ -267,4 +267,11 @@ export const api = {
       body: input,
     });
   },
+
+  /** Every expense in the household, newest date first (contract Section 4). */
+  expenses(householdId: string) {
+    return request<{ expenses: Expense[] }>(
+      `/households/${householdId}/expenses`
+    );
+  },
 };
