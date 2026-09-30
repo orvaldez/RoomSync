@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { api, type Member } from "../lib/api";
+import { api, isUnauthenticated, type Member } from "../lib/api";
+import { useAuth } from "../auth/useAuth";
 
 /**
  * The household's members, from GET /households/:householdId/members.
@@ -14,6 +15,7 @@ type LoadState =
   | { status: "error" };
 
 export function MembersPanel({ householdId }: { householdId: string }) {
+  const { refresh } = useAuth();
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
   useEffect(() => {
@@ -24,8 +26,12 @@ export function MembersPanel({ householdId }: { householdId: string }) {
         const { members } = await api.members(householdId);
         if (cancelled) return;
         setState({ status: "ready", members });
-      } catch {
+      } catch (error) {
         if (cancelled) return;
+        if (isUnauthenticated(error)) {
+          void refresh();
+          return;
+        }
         setState({ status: "error" });
       }
     }
@@ -35,7 +41,7 @@ export function MembersPanel({ householdId }: { householdId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [householdId]);
+  }, [householdId, refresh]);
 
   return (
     <section className="panel" aria-busy={state.status === "loading"}>

@@ -30,6 +30,16 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Whether a request failed because the session is gone — it expired, or the
+ * user logged out in another tab. Pages pass this to `refresh()` from
+ * `useAuth`, which asks the server again and lets `RequireAuth` send the user
+ * to log in, rather than showing a generic error they cannot fix by retrying.
+ */
+export function isUnauthenticated(error: unknown): boolean {
+  return error instanceof ApiError && error.code === "UNAUTHENTICATED";
+}
+
 export type User = {
   id: string;
   name: string;

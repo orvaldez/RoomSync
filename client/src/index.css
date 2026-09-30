@@ -312,3 +312,9 @@ a {
 .member-list li:last-child {
   border-bottom: none;
 }
+
+/* The grid's gap spaces the panels; .panel's own top margin would add to it
+   and leave uneven gaps between rows. */
+.panel-grid .panel {
+  margin-top: 0;
+}
