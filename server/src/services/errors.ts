@@ -117,3 +117,95 @@ export class HouseholdNotFoundError extends AppError {
     this.name = "HouseholdNotFoundError";
   }
 }
+
+/** 400 — an expense split names no participants (UC-05 4a, UC-06 E1a). */
+export class NoParticipantsError extends AppError {
+  readonly code = "NO_PARTICIPANTS";
+  readonly status = 400;
+
+  constructor() {
+    super("Select at least one participant.");
+    this.name = "NoParticipantsError";
+  }
+}
+
+/**
+ * 400 — the same member appears twice in one split.
+ *
+ * Rejected rather than merged: the schema allows one share per member per
+ * expense, and silently combining two entries would hide a client bug.
+ */
+export class DuplicateParticipantError extends AppError {
+  readonly code = "DUPLICATE_PARTICIPANT";
+  readonly status = 400;
+
+  constructor() {
+    super("A participant appears more than once.");
+    this.name = "DuplicateParticipantError";
+  }
+}
+
+/**
+ * 400 — custom split amounts do not add up to the expense total (UC-06 C3a).
+ *
+ * The split is rejected, never adjusted: quietly moving a cent onto someone's
+ * share would change what they owe without them seeing it.
+ */
+export class SplitSumMismatchError extends AppError {
+  readonly code = "SPLIT_SUM_MISMATCH";
+  readonly status = 400;
+
+  constructor() {
+    super("Custom amounts must add up to the total.");
+    this.name = "SplitSumMismatchError";
+  }
+}
+
+/** 400 — percentage split basis points do not sum to 10000 (UC-06 P3a). */
+export class PercentSumInvalidError extends AppError {
+  readonly code = "PERCENT_SUM_INVALID";
+  readonly status = 400;
+
+  constructor() {
+    super("Percentages must add up to 100.");
+    this.name = "PercentSumInvalidError";
+  }
+}
+
+/** 400 — the expense's payer does not belong to this household (UC-05 3a). */
+export class PayerNotMemberError extends AppError {
+  readonly code = "PAYER_NOT_MEMBER";
+  readonly status = 400;
+
+  constructor() {
+    super("The payer must be a household member.");
+    this.name = "PayerNotMemberError";
+  }
+}
+
+/** 400 — a participant in the split does not belong to this household. */
+export class ParticipantNotMemberError extends AppError {
+  readonly code = "PARTICIPANT_NOT_MEMBER";
+  readonly status = 400;
+
+  constructor() {
+    super("Every participant must be a household member.");
+    this.name = "ParticipantNotMemberError";
+  }
+}
+
+/**
+ * 404 — no expense with this id in this household.
+ *
+ * An expense that exists in a different household gets the same answer, so a
+ * member cannot confirm another household's expense ids.
+ */
+export class ExpenseNotFoundError extends AppError {
+  readonly code = "EXPENSE_NOT_FOUND";
+  readonly status = 404;
+
+  constructor() {
+    super("Expense not found.");
+    this.name = "ExpenseNotFoundError";
+  }
+}
