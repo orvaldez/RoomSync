@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { api, isUnauthenticated, type Household } from "../lib/api";
 import { useAuth } from "../auth/useAuth";
 import { CreateHouseholdPage } from "./CreateHouseholdPage";
@@ -22,6 +23,10 @@ type LoadState =
 export function DashboardPage() {
   const { user, refresh } = useAuth();
   const [state, setState] = useState<LoadState>({ status: "loading" });
+
+  // Set by the add-expense page after a save, so the member sees it landed.
+  const location = useLocation();
+  const notice = (location.state as { notice?: string } | null)?.notice;
 
   // Bumped by "Try again" to re-run the effect below, so retrying uses the
   // same loading logic as the first load instead of a second copy of it.
@@ -98,6 +103,18 @@ export function DashboardPage() {
       <p className="muted">
         Signed in as {user?.name}
         {household.role === "OWNER" && " · You own this household"}
+      </p>
+
+      {notice && (
+        <p className="notice" role="status">
+          {notice}
+        </p>
+      )}
+
+      <p className="page-actions">
+        <Link className="button-link" to="/expenses/new">
+          + Add expense
+        </Link>
       </p>
 
       <div className="panel-grid">
