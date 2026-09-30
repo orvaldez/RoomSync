@@ -169,6 +169,16 @@ cd server && npx prisma generate && npm test
 of `migrate dev`. On a fresh clone, run `npx prisma generate` once. The
 continuous integration workflow needs the same step before it runs the tests.
 
+The client has its own suite, which needs no database or server:
+
+```bash
+cd client && npm test
+```
+
+It covers the pure logic in `client/src/lib/`, starting with `money.ts`, which
+turns what a user types into the integer cents the server stores. Component
+tests are planned with the Milestone 2 test plan.
+
 ### Stopping
 
 ```bash
