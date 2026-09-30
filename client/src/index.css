@@ -318,3 +318,45 @@ a {
 .panel-grid .panel {
   margin-top: 0;
 }
+
+/* Inviting a roommate (UC-04). The link and its Copy button share a row
+   where there is room and wrap below 375px rather than overflowing. */
+.invite {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.invite-link {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.invite-link input {
+  flex: 1 1 200px;
+  min-width: 0;
+  font: inherit;
+  font-size: 16px; /* below 16px, iOS Safari zooms the page on focus */
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--code-bg);
+  color: var(--text-h);
+}
+
+.invite-link input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.join-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+}

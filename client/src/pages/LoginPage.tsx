@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../lib/api";
 import { useAuth } from "../auth/useAuth";
+import { returnPath } from "../auth/returnPath";
 import { Field } from "../components/Field";
 
 export function LoginPage() {
   const { logIn } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,7 +24,7 @@ export function LoginPage() {
 
     try {
       await logIn(email, password);
-      navigate("/", { replace: true });
+      navigate(returnPath(location.state), { replace: true });
     } catch (error) {
       if (error instanceof ApiError) {
         // Branch on code, never on message (contract Section 1).
@@ -84,7 +86,9 @@ export function LoginPage() {
       </form>
 
       <p className="auth-switch">
-        No account yet? <Link to="/register">Create one</Link>
+        No account yet? <Link to="/register" state={location.state}>
+          Create one
+        </Link>
       </p>
     </main>
   );

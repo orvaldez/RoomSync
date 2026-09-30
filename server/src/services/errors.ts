@@ -209,3 +209,45 @@ export class ExpenseNotFoundError extends AppError {
     this.name = "ExpenseNotFoundError";
   }
 }
+
+/**
+ * 403 — the requester is a member, but the action is for the household's
+ * OWNER only (UC-04 1a). Checked on the server rather than by hiding the
+ * control, which any client can un-hide (FR-06, SC-09).
+ */
+export class NotHouseholdOwnerError extends AppError {
+  readonly code = "NOT_HOUSEHOLD_OWNER";
+  readonly status = 403;
+
+  constructor() {
+    super("Only the household owner can invite roommates.");
+    this.name = "NotHouseholdOwnerError";
+  }
+}
+
+/**
+ * 404 — the invitation token matches nothing usable (UC-04 6a, 6c).
+ *
+ * One error for a token that never existed and one already accepted or
+ * revoked, so the response does not confirm which tokens were ever real.
+ */
+export class InvitationInvalidError extends AppError {
+  readonly code = "INVITATION_INVALID";
+  readonly status = 404;
+
+  constructor() {
+    super("This invitation is not valid.");
+    this.name = "InvitationInvalidError";
+  }
+}
+
+/** 410 — the invitation existed but has expired (UC-04 6b). */
+export class InvitationExpiredError extends AppError {
+  readonly code = "INVITATION_EXPIRED";
+  readonly status = 410;
+
+  constructor() {
+    super("This invitation has expired. Ask for a new one.");
+    this.name = "InvitationExpiredError";
+  }
+}
