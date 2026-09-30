@@ -37,6 +37,24 @@ export type User = {
   createdAt: string;
 };
 
+export type MembershipRole = "OWNER" | "MEMBER";
+
+/** Matches the contract's `HouseholdPublic`. `role` is the requester's own. */
+export type Household = {
+  id: string;
+  name: string;
+  createdAt: string;
+  role: MembershipRole;
+};
+
+/** Matches the contract's `MemberPublic`. No email — the server never sends one. */
+export type Member = {
+  userId: string;
+  name: string;
+  role: MembershipRole;
+  joinedAt: string;
+};
+
 /**
  * `body` is whatever the caller wants to send, serialized below — hence the
  * Omit: intersecting with RequestInit directly would keep the DOM's BodyInit
@@ -119,5 +137,27 @@ export const api = {
 
   me() {
     return request<{ user: User }>("/auth/me");
+  },
+
+  createHousehold(input: { name: string }) {
+    return request<{ household: Household }>("/households", {
+      method: "POST",
+      body: input,
+    });
+  },
+
+  /**
+   * The signed-in user's household, or null.
+   *
+   * Belonging to no household is a normal state rather than an error, so the
+   * server answers 200 with null and the client chooses between the create
+   * screen and the dashboard without treating it as a failure.
+   */
+  currentHousehold() {
+    return request<{ household: Household | null }>("/households/current");
+  },
+
+  members(householdId: string) {
+    return request<{ members: Member[] }>(`/households/${householdId}/members`);
   },
 };
