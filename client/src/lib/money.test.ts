@@ -95,8 +95,18 @@ describe("formatBasisPoints", () => {
     [3330, "33.30%"],
     [1, "0.01%"],
     [0, "0%"],
+    [-50, "-0.50%"],
+    [-2500, "-25%"],
+    [-3333, "-33.33%"],
+    [-1, "-0.01%"],
   ])("formats %i as %j", (points, text) => {
     expect(formatBasisPoints(points)).toBe(text);
+  });
+
+  it("round-trips non-negative values with parsePercentToBasisPoints", () => {
+    for (const points of [0, 1, 50, 3333, 10000]) {
+      expect(parsePercentToBasisPoints(formatBasisPoints(points))).toBe(points);
+    }
   });
 });
 

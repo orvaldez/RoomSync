@@ -43,13 +43,17 @@ export function formatCents(cents: number): string {
   return `${sign}$${dollars}.${String(abs % 100).padStart(2, "0")}`;
 }
 
-/** 3333 -> "33.33%", 5000 -> "50%". */
+/** 3333 -> "33.33%", 5000 -> "50%", -50 -> "-0.50%". */
 export function formatBasisPoints(basisPoints: number): string {
-  const whole = Math.floor(basisPoints / 100);
-  const fraction = basisPoints % 100;
+  // Split the sign off first, as formatCents does: Math.floor and % on a
+  // negative number would otherwise give "-1.-50%" for -50.
+  const sign = basisPoints < 0 ? "-" : "";
+  const abs = Math.abs(basisPoints);
+  const whole = Math.floor(abs / 100);
+  const fraction = abs % 100;
   return fraction === 0
-    ? `${whole}%`
-    : `${whole}.${String(fraction).padStart(2, "0")}%`;
+    ? `${sign}${whole}%`
+    : `${sign}${whole}.${String(fraction).padStart(2, "0")}%`;
 }
 
 /** Today in the user's own time zone, as the contract's `YYYY-MM-DD`. */
