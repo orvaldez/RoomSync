@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { api, type Household } from "../lib/api";
+import { useEffect, useState } from "react";
+import { api, isUnauthenticated, type Household } from "../lib/api";
 import { useAuth } from "../auth/useAuth";
 import { CreateHouseholdPage } from "./CreateHouseholdPage";
 import { MembersPanel } from "../components/MembersPanel";
@@ -20,17 +20,12 @@ type LoadState =
   | { status: "error" };
 
 export function DashboardPage() {
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
-  const load = useCallback(async () => {
-    try {
-      const { household } = await api.currentHousehold();
-      setState({ status: "ready", household });
-    } catch {
-      setState({ status: "error" });
-    }
-  }, []);
+  // Bumped by "Try again" to re-run the effect below, so retrying uses the
+  // same loading logic as the first load instead of a second copy of it.
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,8 +35,14 @@ export function DashboardPage() {
         const { household } = await api.currentHousehold();
         if (cancelled) return;
         setState({ status: "ready", household });
-      } catch {
+      } catch (error) {
         if (cancelled) return;
+        if (isUnauthenticated(error)) {
+          // Retrying cannot fix a missing session. Re-checking it lets
+          // RequireAuth send the user to log in; stay on "loading" until then.
+          void refresh();
+          return;
+        }
         setState({ status: "error" });
       }
     }
@@ -51,7 +52,12 @@ export function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt, refresh]);
+
+  function retry() {
+    setState({ status: "loading" });
+    setAttempt((n) => n + 1);
+  }
 
   if (state.status === "loading") {
     return (
@@ -68,7 +74,7 @@ export function DashboardPage() {
         <p className="muted">
           We could not load your household. Check that the server is running.
         </p>
-        <button type="button" onClick={() => void load()}>
+        <button type="button" onClick={retry}>
           Try again
         </button>
       </main>

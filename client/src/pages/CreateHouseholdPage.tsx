@@ -1,6 +1,17 @@
 import { useState, type FormEvent } from "react";
-import { ApiError, api, type Household } from "../lib/api";
+import { ApiError, api, isUnauthenticated, type Household } from "../lib/api";
+import { useAuth } from "../auth/useAuth";
 import { Field } from "../components/Field";
+
+/** The user's current household, or null if that lookup fails as well. */
+async function findExistingHousehold(): Promise<Household | null> {
+  try {
+    const { household } = await api.currentHousehold();
+    return household;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * UC-03 — shown when the signed-in user belongs to no household.
@@ -12,8 +23,10 @@ import { Field } from "../components/Field";
 export function CreateHouseholdPage({
   onCreated,
 }: {
+  /** Called with the user's household once they have one. */
   onCreated: (household: Household) => void;
 }) {
+  const { refresh } = useAuth();
   const [name, setName] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -29,13 +42,27 @@ export function CreateHouseholdPage({
       const { household } = await api.createHousehold({ name });
       onCreated(household);
     } catch (error) {
+      if (isUnauthenticated(error)) {
+        void refresh();
+        return;
+      }
+
+      if (error instanceof ApiError && error.code === "ALREADY_IN_HOUSEHOLD") {
+        // Another tab or device created one since this screen loaded. Show
+        // that household rather than leaving the user on a form that can
+        // never succeed; fall back to the server's message only if the
+        // lookup fails too.
+        const existing = await findExistingHousehold();
+        if (existing) {
+          onCreated(existing);
+          return;
+        }
+      }
+
       if (error instanceof ApiError) {
         if (error.code === "VALIDATION_FAILED") {
           setFieldErrors(error.fields);
         } else {
-          // ALREADY_IN_HOUSEHOLD lands here. It means another tab or device
-          // created one since this screen loaded, so the message is the
-          // server's rather than something invented here.
           setFormError(error.message);
         }
       } else {
