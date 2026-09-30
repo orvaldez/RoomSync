@@ -6,6 +6,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { JoinPage } from "./pages/JoinPage";
+import { AddExpensePage } from "./pages/AddExpensePage";
 
 export default function App() {
   return (
@@ -34,6 +35,17 @@ export default function App() {
               <RequireAuth>
                 <AppShell>
                   <JoinPage />
+                </AppShell>
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/expenses/new"
+            element={
+              <RequireAuth>
+                <AppShell>
+                  <AddExpensePage />
                 </AppShell>
               </RequireAuth>
             }

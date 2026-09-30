@@ -80,6 +80,47 @@ export type InvitationPreview = {
   expiresAt: string;
 };
 
+export type SplitMethod = "EQUAL" | "CUSTOM" | "PERCENTAGE";
+
+/** Matches the contract's `SharePublic`. */
+export type Share = {
+  userId: string;
+  name: string;
+  amountOwedCents: number;
+  percentBasisPoints: number | null;
+};
+
+/** Matches the contract's `ExpensePublic`. */
+export type Expense = {
+  id: string;
+  description: string;
+  totalAmountCents: number;
+  /** `YYYY-MM-DD` */
+  expenseDate: string;
+  paidBy: { userId: string; name: string };
+  splitMethod: SplitMethod;
+  shares: Share[];
+  createdAt: string;
+};
+
+/**
+ * The contract's expense body, shared by preview and create. Participants go
+ * in household join order: remainder cents are handed out in request order,
+ * so a stable order keeps the same expense splitting the same way everywhere.
+ */
+export type ExpenseInput = {
+  description: string;
+  totalAmountCents: number;
+  expenseDate: string;
+  paidByUserId: string;
+  splitMethod: SplitMethod;
+  participants: {
+    userId: string;
+    amountCents?: number;
+    percentBasisPoints?: number;
+  }[];
+};
+
 /**
  * `body` is whatever the caller wants to send, serialized below — hence the
  * Omit: intersecting with RequestInit directly would keep the DOM's BodyInit
@@ -206,5 +247,24 @@ export const api = {
       `/invitations/${encodeURIComponent(token)}/accept`,
       { method: "POST" }
     );
+  },
+
+  /**
+   * The shares the server would calculate for this expense, without saving
+   * it (UC-05 step 7). The split is only ever calculated on the server, so
+   * what the preview shows is exactly what create will store.
+   */
+  previewExpense(householdId: string, input: ExpenseInput) {
+    return request<{ shares: Share[] }>(
+      `/households/${householdId}/expenses/preview`,
+      { method: "POST", body: input }
+    );
+  },
+
+  createExpense(householdId: string, input: ExpenseInput) {
+    return request<{ expense: Expense }>(`/households/${householdId}/expenses`, {
+      method: "POST",
+      body: input,
+    });
   },
 };
