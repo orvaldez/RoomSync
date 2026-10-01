@@ -13,14 +13,15 @@ Development course project.
 
 ## Status
 
-Milestone 1 (Build): every P0 user story, US-01 through US-10, is built and
-merged, with its design documentation. What remains is the Milestone 1
-submission itself (#22).
+Milestone 1 (Build) is complete: every P0 user story, US-01 through US-10, is
+built and merged, with its design documentation. The submitted version is the
+commit tagged `milestone-1`. Next is Milestone 2: testing, CI, and security
+review, plus the P1 history story (US-11).
 
 | Milestone | Goal | Status |
 |---|---|---|
 | Milestone 0 | Propose | Complete |
-| Milestone 1 | Build the MVP | In progress |
+| Milestone 1 | Build the MVP | Complete |
 | Milestone 2 | Test, improve, and secure | Not started |
 | Milestone 3 | Deploy | Not started |
 

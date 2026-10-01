@@ -484,12 +484,13 @@ them by approving this pull request.
    household exists.
 6. **Registration does not log the user in**, following UC-01 step 7.
 
-## 7. Changes existing code needs
+## 7. Changes existing code needed
 
-- **PR #34 (`POST /api/auth/register`)** returns `{ error: { message, fields } }`
-  with no `code`. It needs `code` added: `VALIDATION_FAILED` for 400,
-  `EMAIL_UNAVAILABLE` for 409, `INTERNAL_ERROR` for 500. Status codes, messages,
-  and the service layer are already correct.
-- **`express.json()` parse failures** currently fall through to Express's
-  default HTML error page. A JSON error handler in `server/src/middleware/`
-  should return `400 INVALID_JSON`.
+Both changes this contract asked of code written before it are made:
+
+- **`POST /api/auth/register` (#34)** returns the contract error shape with a
+  `code`: `VALIDATION_FAILED` for 400, `EMAIL_UNAVAILABLE` for 409,
+  `INTERNAL_ERROR` for 500.
+- **`express.json()` parse failures** are caught by the JSON error handler in
+  `server/src/middleware/error-handler.ts`, which returns `400 INVALID_JSON`
+  instead of Express's default HTML error page.

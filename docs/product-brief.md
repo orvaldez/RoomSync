@@ -3,10 +3,10 @@
 RoomSync — Software Design and Development
 Issue #26 · Milestone 1 deliverable
 
-Updates the Milestone 0 executive summary with what a sprint of building
-taught us. The product thesis has not changed. The scope has, and this records
-the change deliberately rather than letting the gap between the proposal and
-the repository go unstated.
+Updates the Milestone 0 executive summary with what two sprints of building
+taught us. Neither the product thesis nor the MVP scope changed. The plan did:
+the first sprint went to foundation instead of features, and the second
+delivered every P0 story. This records both, including what is still missing.
 
 Status as of September 30, 2026.
 
@@ -43,91 +43,85 @@ from Milestone 0 that has held up well.
 
 ## 2. What is built
 
-Working end to end, merged or in review, as of this milestone:
+Every P0 story, US-01 through US-10, is built, merged, and working end to end:
 
-| Capability | Story | State | PR |
-|---|---|---|---|
-| Account registration | US-01 | Merged | #34 |
-| Login, logout, session | US-02 | Merged | #37 |
-| Household creation | US-03 | Merged | #39 |
-| Membership guard and members endpoint | — | Merged | #40 |
-| Registration and login screens | — | Merged | #38 |
-| Create-household screen, dashboard, members panel | — | Merged | #43 |
+| Capability | Story | PRs |
+|---|---|---|
+| Account registration | US-01 | #34, #38 |
+| Login, logout, session that survives a refresh and a restart | US-02 | #37, #38 |
+| Household creation, membership guard, members list | US-03 | #39, #40, #43, #48 |
+| Roommate invitations: create a link, preview, join | US-04 | #51 |
+| Record a shared expense, with a server-calculated preview | US-05 | #47, #50, #52 |
+| Split equally, by amount, or by percentage, exact to the cent | US-06 | #47, #50 |
+| Balances with each roommate, derived on every read | US-07 | #54 |
+| Record a settlement, checked against the balance at the moment of writing | US-08 | #54 |
+| Create, assign, edit and complete chores, with overdue marked | US-09 | #53 |
+| Household dashboard: members, balances, my chores, recent activity | US-10 | #58 |
+| Seed data: four demo accounts, every split method, settlements, chores | — | #52, #58 |
 
-A user can register, log in, stay logged in across a page refresh and a server
-restart, create a household, see it, and see who else belongs to it. That is a
-complete vertical slice — React through Express, service, repository, to
-PostgreSQL — with server-side authorization on every request.
+A new user can register, create a household, invite a roommate who joins
+through the link, record an expense and split it any of three ways, see who
+owes whom, record that a debt was paid, and share chores — and see all of it
+on one dashboard. Every screen talks to the real API and PostgreSQL; nothing is
+stubbed. The README's verification guide walks a reviewer through exactly that
+flow against the seed data.
 
-The members panel is worth singling out because it is the first screen showing
-real household data rather than a labelled empty state, and it goes through
-`requireHouseholdMember`: a household you do not belong to answers exactly like
-one that does not exist (404, never 403), so the API cannot be used to discover
-other households.
+Underneath it: the eight-entity schema, PostgreSQL-backed sessions, one error
+contract every endpoint shares, all 23 endpoints in the API contract, and a
+layered architecture whose dependency rules are written as checks that pass on
+`main`.
 
-Underneath it: the full eight-entity schema with a clean initial migration,
-PostgreSQL-backed sessions, an error contract every endpoint shares, and a
-layered architecture with the dependency rules written as checks that pass
-today.
-
-**135 server tests.** No client tests yet; see §5.
+**408 server tests and 91 client tests**, all passing. The server suite covers
+every service and route with the repositories mocked; the client suite covers
+the pure logic in `client/src/lib/` — money parsing and the wording of
+balances, due dates and activity.
 
 ---
 
 ## 3. What is not built
 
-Stated plainly because the proposal's MVP list and the repository do not match,
-and the difference is the most useful thing this document can record.
-
 | Capability | Story | State |
 |---|---|---|
-| Roommate invitations | US-04 | Not started |
-| Record a shared expense | US-05 | In review — PR #47 |
-| Split an expense (equal, custom, percentage) | US-06 | In review — PR #47 |
-| View balances | US-07 | Not started — needs US-05/06 |
-| Record a settlement | US-08 | Not started |
-| Create and assign chores | US-09 | Not started |
-| Full dashboard content | US-10 | Members panel live; other panels empty |
-| History | US-11 | P1, deferred to Sprint 3 |
+| History of expenses, settlements and completed chores | US-11 | P1, scheduled for Sprint 3 |
+| Expense detail screen | US-05, US-11 | Designed in the wireframes; the endpoint exists, the screen arrives with US-11 |
 
-The dashboard's members panel shows real data. Its balance, chores and activity
-panels are labelled empty states rather than real content, because the
-endpoints behind them do not exist yet.
+Outside the MVP, as the proposal set out and the analysis model records:
+editing or deleting an expense, removing a member, revoking an invitation,
+recurring expenses and chores, and anything that moves real money.
 
-### Why
+### How the plan changed
 
 Sprint 1 was planned around US-01 through US-03 and delivered none of them
 within the sprint. The time went to foundation the stories depend on: workspace
 scaffolding, the database schema and migration, the layered server structure,
-ADR-001, and the API contract. That work was necessary and is not wasted — US-02
-took roughly a sixth of the time US-01 did, because the patterns were already
-established — but it was not planned, which means the plan was wrong rather
-than the work being slow.
+ADR-001, and the API contract. That work was necessary — US-02 took roughly a
+sixth of the time US-01 did, because the patterns were already established —
+but it was not planned, which means the plan was wrong rather than the work
+being slow.
 
-Sprint 2 therefore began carrying the entire P0 set with one sprint's capacity,
-and that gap has not closed.
+Sprint 2 therefore began carrying the entire P0 set, and delivered it. The
+foundation is what made that possible: once one feature had gone through
+contract, repository, service, route and screen, the next nine followed the
+same shape. Several stories changed hands during the sprint to keep both
+members unblocked; the backlog's Owner column records who built each.
 
 ---
 
-## 4. MVP scope, revised
+## 4. MVP scope
 
-The Milestone 0 MVP remains the target. What changes is the order and the
-honest expectation of what lands when.
+The Milestone 0 MVP is the delivered MVP. Nothing was cut.
+
+Under time pressure the work was ordered in three tiers, and all of the first
+two landed:
 
 **Tier 1 — the demonstrable slice.** Register, log in, create a household,
 record an expense, split it, see the balance. US-01, 02, 03, 05, 06, 07.
-
-Chosen because it exercises every layer and the hardest logic in the system
-(exact-cent splitting, SC-04), and because a narrow path that genuinely works
-demonstrates the architecture. Six half-finished features demonstrate nothing.
+**Delivered.**
 
 **Tier 2 — completes the MVP.** Invitations (US-04), settlements (US-08),
-chores (US-09), the full dashboard (US-10).
+chores (US-09), the full dashboard (US-10). **Delivered.**
 
-**Tier 3 — P1.** History (US-11), already scheduled for Sprint 3.
-
-Nothing has been cut from the MVP. The tiers are a statement of order under
-time pressure, not a reduction in scope.
+**Tier 3 — P1.** History (US-11), scheduled for Sprint 3.
 
 ---
 
@@ -135,52 +129,62 @@ time pressure, not a reduction in scope.
 
 Recorded here so they are deliberate rather than discovered:
 
-**No client tests.** Vitest is not configured on the frontend. The server has
-135 tests; the client has none. This was a conscious trade — configuring React
-Testing Library costs time that went into features — and it belongs in
-Milestone 2, where the test plan and coverage report are deliverables.
-
 **No continuous integration.** Per the proposal, CI runs from Milestone 2 and
-blocks merges from Milestone 3. Until then the layering rules, the Definition
-of Done, and the no-self-merge rule are enforced by review.
+blocks merges from Milestone 3. Until then the tests, the layering checks in
+`docs/design/module-structure.md`, and the Definition of Done are run by hand.
+
+**Client tests cover logic, not components.** The client suite tests
+`client/src/lib/`; there are no component tests and no coverage report yet.
+Both belong to the Milestone 2 test plan.
+
+**NFR-02 is not load-tested.** The dashboard answers in about 60 ms against the
+seed data, and each activity source is capped before merging, but nobody has
+measured it against the 500 expenses NFR-02 names.
 
 **One accepted security limitation.** Registration returns 409 when an email is
 already taken, which reveals that the account exists even though the message
 does not. Closing it properly requires email verification, which the MVP does
 not have. Recorded for the Milestone 2 threat model.
 
-**One known race.** `hasMembership` and household creation are not atomic, so
-two concurrent creates from one user — a double-clicked button — could produce
-two households with no database constraint to catch it. Raised in review on
-#39, accepted as non-blocking, and due when US-04 forces the membership model
-to be revisited.
+**One known race.** The one-household-per-user check and the write that adds
+the membership are not one atomic step, in both household creation and
+accepting an invitation. A double-clicked button or two invitations accepted at
+the same instant could leave one user in two households. Raised in review on
+#39 and accepted as non-blocking; the fix is a database constraint or a lock
+around the check.
 
-**Untested on real devices.** The interface is verified at 375px in a headless
-browser but has not run on a physical phone. Cross-viewport evidence is a
-Milestone 2 deliverable.
+**Untested on real devices.** Every screen is verified at 375px and 1280px in a
+headless browser, with screenshots committed, but has not run on a physical
+phone, in landscape, or with text scaled to 200%.
+
+**Review was skipped twice.** #41 and #52 were merged by their author without
+the other member's review. Both were missing acceptance criteria, which were
+found afterwards and completed in #58. Every other pull request was approved or
+merged by the other member. The Milestone 2 fix is branch protection on `main`
+requiring one approval, so the Definition of Done's review step is enforced
+rather than remembered.
 
 ---
 
 ## 6. What Milestone 1 demonstrates
 
-Against the milestone's own criteria:
-
 - **A working end-to-end system, not a mock-up.** Every screen talks to a real
-  API backed by real PostgreSQL. Nothing is stubbed.
-- **The architecture holds.** The dependency rules are written as grep commands
-  that pass against `main` today, not aspirations. They live in the design
-  classes document, which is in review as PR #44.
+  API backed by real PostgreSQL, and a fresh clone runs from the README alone.
+- **Money is exact.** All amounts are integer cents and percentages integer
+  basis points. Splits pass through one function whose shares must sum exactly
+  to the total, with 41 tests on the rounding rules, and settlements are
+  checked under a per-household lock so two payments cannot together exceed a
+  debt.
+- **The architecture holds.** Routes, services and repositories stay in their
+  lanes, and the rules are grep commands in `module-structure.md` that return
+  nothing on `main`.
 - **The security decisions are real ones.** Session regeneration against
-  fixation, timing-equalized login, bcrypt with per-user salts, server-side
-  authorization on every request including direct API calls.
-- **The process produced correct code.** Every merged PR was reviewed by the
-  other member, and review caught real defects in both directions — a
-  concurrent-registration race in one, the same class of race in household
-  creation in the other.
-
-What it does not demonstrate is the full feature set. That is the honest
-summary: the foundation is solid and the architecture is sound, and there is
-less of the MVP built on top of it than the Milestone 0 plan projected.
+  fixation, timing-equalized login, bcrypt with per-user salts, and server-side
+  authorization on every household request — a household you do not belong to
+  answers 404, exactly like one that does not exist.
+- **Review caught real defects.** Review found a concurrent-registration race in
+  one feature and the same class of race in household creation in another, and
+  the gaps in two unreviewed merges were found and closed before submission.
 
 ---
 
@@ -189,15 +193,12 @@ less of the MVP built on top of it than the Milestone 0 plan projected.
 | | Criterion | State |
 |---|---|---|
 | SC-01 | Account access | Met |
-| SC-02 | Household management | Partly — creation and member listing work, joining does not exist |
-| SC-03 | Expense management | Not met — in review, PR #47 |
-| SC-04 | Accurate expense splitting | Not met |
-| SC-05 | Balance tracking | Not met |
-| SC-06 | Settlement recording | Not met |
-| SC-07 | Chore management | Not met |
-| SC-08 | Dashboard | Partly — members panel live, other panels labelled empty states |
-| SC-09 | Security | Met for what exists; extends with each endpoint |
-| SC-10 | Testing | Partly — 135 server tests, no client tests, no coverage report |
-| SC-11 | Independent execution | Met — clone, `docker compose up`, `npm install`, `migrate dev`, run |
-| SC-12 | Deployment | Milestone 3 |
-| SC-13 | Maintainability | Met — documented architecture, layering rules, ADR |
+| SC-02 | Household management | Met — create, invite, join, list members |
+| SC-03 | Expense management | Met |
+| SC-04 | Accurate expense splitting | Met — shares always sum exactly to the total; 41 tests |
+| SC-05 | Balance tracking | Met — derived on every read, never stored |
+| SC-06 | Settlement recording | Met |
+| SC-07 | Chore management | Met |
+| SC-08 | Dashboard | Met |
+| SC-09 | Security | Met — every household endpoint behind the membership guard |
+| SC-10 | Testing | Partly — 408 server and 91 client tests; CI and a coverage report are Milestone 2 |
