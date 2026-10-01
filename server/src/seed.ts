@@ -1,9 +1,10 @@
 /**
- * Seed data for review and demonstration.
+ * Seed data for review and demonstration (#16).
  *
- * Creates one household with two members and two expenses, so a reviewer can
- * log in and see real balances without registering accounts and typing in
- * expenses first.
+ * Creates one household of four members with expenses in all three split
+ * methods, two settlements, and chores both outstanding and completed, so a
+ * reviewer can sign in as any member and find every screen populated. What it
+ * creates is in `seed-data.ts`.
  *
  * Run with `npm run db:seed` from `server/`. Safe to run twice: it looks for
  * the seed household first and stops if it is already there, so it never
@@ -19,18 +20,31 @@ import bcrypt from "bcryptjs";
 import { getPrisma } from "./repositories/prisma";
 import { BCRYPT_COST } from "./services/auth.service";
 import { splitExpense } from "./services/split.service";
-
-/** Documented in the README so a reviewer can sign in as either member. */
-const PASSWORD = "roomsync123";
-
-const HOUSEHOLD_NAME = "Apartment 41";
-
-const PEOPLE = [
-  { name: "Orlando Rodriguez Valdez", email: "orlando@roomsync.test" },
-  { name: "Agustin Lemuz-Juarez", email: "agustin@roomsync.test" },
-] as const;
+import {
+  CHORES,
+  DEMO_PASSWORD,
+  EXPENSES,
+  HOUSEHOLD_NAME,
+  PEOPLE,
+  SETTLEMENTS,
+  calendarDate,
+  instantDaysAgo,
+  seedPlanProblems,
+  type PersonKey,
+} from "./seed-data";
 
 async function main(): Promise<void> {
+  // The demo password is public in the README. Accounts with it must never
+  // exist anywhere real.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Refusing to seed: NODE_ENV is production.");
+  }
+
+  const problems = seedPlanProblems();
+  if (problems.length > 0) {
+    throw new Error(`The seed plan is inconsistent:\n  ${problems.join("\n  ")}`);
+  }
+
   const prisma = getPrisma();
 
   const existing = await prisma.household.findFirst({
@@ -46,91 +60,114 @@ async function main(): Promise<void> {
     return;
   }
 
-  const passwordHash = await bcrypt.hash(PASSWORD, BCRYPT_COST);
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, BCRYPT_COST);
+  const now = new Date();
 
-  // upsert rather than create: the accounts may already exist from a previous
-  // seed whose household was deleted, and email is unique.
-  const [owner, member] = await Promise.all(
-    PEOPLE.map((person) =>
-      prisma.user.upsert({
+  // One transaction: a failure part-way leaves no half-built household that
+  // the "already exists" check above would then refuse to repair.
+  await prisma.$transaction(async (tx) => {
+    const ids = {} as Record<PersonKey, string>;
+
+    for (const person of PEOPLE) {
+      // upsert rather than create: the accounts may already exist from a
+      // previous seed whose household was deleted, and email is unique. The
+      // password is reset so the README's credentials always work.
+      const user = await tx.user.upsert({
         where: { email: person.email },
-        update: {},
+        update: { passwordHash },
         create: { name: person.name, email: person.email, passwordHash },
         select: { id: true },
-      })
-    )
-  );
+      });
+      ids[person.key] = user.id;
+    }
 
-  const household = await prisma.household.create({
-    data: {
-      name: HOUSEHOLD_NAME,
-      memberships: {
-        create: [
-          { userId: owner.id, role: "OWNER" },
-          { userId: member.id, role: "MEMBER" },
-        ],
-      },
-    },
-    select: { id: true },
+    const household = await tx.household.create({
+      data: { name: HOUSEHOLD_NAME },
+      select: { id: true },
+    });
+
+    // One at a time, so joinedAt follows PEOPLE's order and the owner is first.
+    for (const [index, person] of PEOPLE.entries()) {
+      await tx.membership.create({
+        data: {
+          userId: ids[person.key],
+          householdId: household.id,
+          role: person.role,
+          joinedAt: instantDaysAgo(now, 14, 9 + index),
+        },
+      });
+    }
+
+    for (const expense of EXPENSES) {
+      const shares = splitExpense({
+        totalAmountCents: expense.totalAmountCents,
+        splitMethod: expense.splitMethod,
+        participants: expense.participants.map(({ person, ...rest }) => ({
+          userId: ids[person],
+          ...rest,
+        })),
+      });
+
+      await tx.expense.create({
+        data: {
+          householdId: household.id,
+          description: expense.description,
+          totalAmountCents: expense.totalAmountCents,
+          expenseDate: new Date(`${calendarDate(now, -expense.daysAgo)}T00:00:00.000Z`),
+          createdAt: instantDaysAgo(now, expense.daysAgo),
+          paidByUserId: ids[expense.paidBy],
+          splitMethod: expense.splitMethod,
+          shares: {
+            create: shares.map((share) => ({
+              userId: share.userId,
+              amountOwedCents: share.amountOwedCents,
+              percentBasisPoints: share.percentBasisPoints,
+            })),
+          },
+        },
+      });
+    }
+
+    for (const [index, settlement] of SETTLEMENTS.entries()) {
+      await tx.settlement.create({
+        data: {
+          householdId: household.id,
+          fromUserId: ids[settlement.from],
+          toUserId: ids[settlement.to],
+          amountCents: settlement.amountCents,
+          note: settlement.note,
+          settledAt: instantDaysAgo(now, settlement.daysAgo, 12 + index),
+        },
+      });
+    }
+
+    for (const chore of CHORES) {
+      await tx.chore.create({
+        data: {
+          householdId: household.id,
+          title: chore.title,
+          description: chore.description,
+          assignedUserId: chore.assignee ? ids[chore.assignee] : null,
+          dueDate:
+            chore.dueInDays === null
+              ? null
+              : new Date(`${calendarDate(now, chore.dueInDays)}T00:00:00.000Z`),
+          isComplete: chore.completedDaysAgo !== null,
+          completedAt:
+            chore.completedDaysAgo === null ? null : instantDaysAgo(now, chore.completedDaysAgo, 10),
+          createdAt: instantDaysAgo(now, 7),
+        },
+      });
+    }
   });
 
-  // Participants go in join order, matching what the API sends: remainder
-  // cents are handed out in request order, so the order decides who absorbs
-  // an odd cent.
-  const participants = [{ userId: owner.id }, { userId: member.id }];
-
-  const expenses = [
-    {
-      description: "Groceries",
-      totalAmountCents: 8_451, // odd cent on purpose: 4226 / 4225
-      expenseDate: "2026-09-24",
-      paidByUserId: owner.id,
-      splitMethod: "EQUAL" as const,
-      participants,
-    },
-    {
-      description: "Internet",
-      totalAmountCents: 7_000,
-      expenseDate: "2026-09-27",
-      paidByUserId: member.id,
-      splitMethod: "PERCENTAGE" as const,
-      participants: [
-        { userId: owner.id, percentBasisPoints: 6_000 },
-        { userId: member.id, percentBasisPoints: 4_000 },
-      ],
-    },
-  ];
-
-  for (const expense of expenses) {
-    const shares = splitExpense({
-      totalAmountCents: expense.totalAmountCents,
-      splitMethod: expense.splitMethod,
-      participants: expense.participants,
-    });
-
-    await prisma.expense.create({
-      data: {
-        householdId: household.id,
-        description: expense.description,
-        totalAmountCents: expense.totalAmountCents,
-        expenseDate: new Date(`${expense.expenseDate}T00:00:00.000Z`),
-        paidByUserId: expense.paidByUserId,
-        splitMethod: expense.splitMethod,
-        shares: {
-          create: shares.map((share) => ({
-            userId: share.userId,
-            amountOwedCents: share.amountOwedCents,
-            percentBasisPoints: share.percentBasisPoints,
-          })),
-        },
-      },
-    });
-  }
-
-  console.log(`Seeded "${HOUSEHOLD_NAME}" with ${PEOPLE.length} members and ${expenses.length} expenses.`);
-  console.log("Sign in with either:");
+  console.log(
+    `Seeded "${HOUSEHOLD_NAME}": ${PEOPLE.length} members, ${EXPENSES.length} expenses, ` +
+      `${SETTLEMENTS.length} settlements, ${CHORES.length} chores.`
+  );
+  console.log(`Sign in as any member with the password ${DEMO_PASSWORD}:`);
   for (const person of PEOPLE) {
-    console.log(`  ${person.email}  /  ${PASSWORD}`);
+    console.log(`  ${person.email}  (${person.role.toLowerCase()})`);
   }
 }
 
