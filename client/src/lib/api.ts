@@ -321,6 +321,13 @@ export const api = {
     });
   },
 
+  /** Every expense in the household, newest date first (contract Section 4). */
+  expenses(householdId: string) {
+    return request<{ expenses: Expense[] }>(
+      `/households/${householdId}/expenses`
+    );
+  },
+
   /** Outstanding chores first (soonest due), then completed (newest first). */
   chores(householdId: string) {
     return request<{ chores: Chore[] }>(`/households/${householdId}/chores`);

@@ -487,6 +487,14 @@ a {
   font-size: 15px;
 }
 
+/* Expense list (UC-10). Two rows per entry: what it was and what it cost,
+   then when, who paid, and this member's share. */
+.expense-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 /* Chores (UC-09). A card per chore in one column at every width; outstanding
    and completed are separate sections, and overdue is marked in words and an
    icon, never colour alone. */
@@ -538,6 +546,31 @@ a {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.expense-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.expense-list li:last-child {
+  border-bottom: none;
+}
+
+.expense-main,
+.expense-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.expense-main {
+  color: var(--text-h);
+}
+
+.expense-meta {
+  margin-top: 2px;
+  font-size: 14px;
 }
 
 .balance-row {

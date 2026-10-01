@@ -126,6 +126,32 @@ To start over from an empty database:
 npx prisma migrate reset
 ```
 
+### Seed data
+
+```bash
+cd server && npm run db:seed
+```
+
+Creates the household **Apartment 41** with two members and two expenses — one
+split equally with an odd cent, one split 60/40 by percentage — so balances
+have something in them before you record anything yourself.
+
+Sign in as either member with the password `roomsync123`:
+
+| Email | Role |
+|---|---|
+| `orlando@roomsync.test` | Owner |
+| `agustin@roomsync.test` | Member |
+
+Running it twice is safe: it stops if the seed household is already there
+rather than duplicating anything. After `npx prisma migrate reset`, run the
+seed again — either `npm run db:seed` or `npx prisma db seed`, which uses the
+same command from `prisma.config.ts`.
+
+These accounts exist only in local development. The password is deliberately
+committed here because the data is fictional and the database is a throwaway
+container.
+
 ### Running
 
 Two terminals, both from the repo root.
@@ -143,14 +169,41 @@ configuration is needed in development.
 
 ### Verifying
 
+First, that the API is up:
+
 ```bash
 curl http://localhost:4000/api/health
 # -> {"status":"ok","service":"roomsync-api"}
 ```
 
-Then open http://localhost:5173. The page should report
-`API status: ok (roomsync-api)`, which confirms the client, the proxy, and
-the server are all working together.
+Then open http://localhost:5173. With the seed data loaded, this walkthrough
+exercises every layer — React, Express, service, repository, PostgreSQL:
+
+1. **Sign in** as `orlando@roomsync.test` / `roomsync123`. You land on the
+   dashboard for Apartment 41.
+2. **Check the members panel.** It lists both members with the owner marked.
+   This comes from a real query behind a membership guard, not fixture data.
+3. **Refresh the page.** You stay signed in — the session lives in PostgreSQL,
+   so it survives a page reload and a server restart.
+4. **Add an expense.** Use *Add expense*, enter an amount, choose a split, and
+   look at the preview before saving. The shares are calculated on the server,
+   so what the preview shows is exactly what gets stored.
+5. **Try an invalid split.** Give a custom split amounts that do not add up to
+   the total. It is rejected rather than silently adjusted.
+6. **Invite a roommate.** As the owner, generate an invitation link. Opening it
+   in a private window prompts for sign-in first.
+
+To confirm authorization is enforced server-side rather than only in the
+interface, ask for a household you do not belong to:
+
+```bash
+curl -i http://localhost:4000/api/households/some-other-id/members
+# -> 401 UNAUTHENTICATED without a session; 404 HOUSEHOLD_NOT_FOUND with one
+```
+
+The 404 is deliberate: a household you are not a member of answers exactly
+like one that does not exist, so the API cannot be used to discover other
+households.
 
 ### Tests
 

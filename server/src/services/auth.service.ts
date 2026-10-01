@@ -23,7 +23,7 @@ import {
  * installs identically everywhere at the cost of some speed on hashing —
  * which happens twice per session, not per request.
  */
-const BCRYPT_COST = 10;
+export const BCRYPT_COST = 10;
 
 /** A user as the rest of the application sees one. Never includes the hash. */
 export type PublicUser = {
