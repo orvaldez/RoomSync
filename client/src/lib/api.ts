@@ -154,6 +154,23 @@ export type Settlement = {
   settledAt: string;
 };
 
+/** One entry in the dashboard's recent activity, tagged by what happened. */
+export type ActivityItem =
+  | { type: "EXPENSE"; at: string; expense: Expense }
+  | { type: "SETTLEMENT"; at: string; settlement: Settlement }
+  | { type: "CHORE_COMPLETED"; at: string; chore: Chore };
+
+/** The contract's dashboard response: the whole screen in one request (NFR-02). */
+export type Dashboard = {
+  household: Household;
+  members: Member[];
+  balances: BalanceSummary;
+  /** Open chores assigned to the requester, soonest due first. */
+  upcomingChores: Chore[];
+  /** Newest first, at most 10. */
+  recentActivity: ActivityItem[];
+};
+
 export type SettlementInput = {
   fromUserId: string;
   toUserId: string;
@@ -366,5 +383,10 @@ export const api = {
       `/households/${householdId}/settlements`,
       { method: "POST", body: input }
     );
+  },
+
+  /** Members, balances, upcoming chores and recent activity in one response (UC-10). */
+  dashboard(householdId: string) {
+    return request<Dashboard>(`/households/${householdId}/dashboard`);
   },
 };

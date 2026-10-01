@@ -13,8 +13,9 @@ Development course project.
 
 ## Status
 
-Milestone 1 (Build) in progress. The client and server workspaces are
-running end to end; feature work is underway.
+Milestone 1 (Build): every P0 user story, US-01 through US-10, is built and
+merged, with its design documentation. What remains is the Milestone 1
+submission itself (#22).
 
 | Milestone | Goal | Status |
 |---|---|---|
@@ -97,6 +98,21 @@ cd server && npm install
 cd ../client && npm install
 ```
 
+### Environment variables
+
+The server reads `server/.env`, which `cp server/.env.example server/.env`
+creates above. The example values work as-is with the Docker Compose database;
+the client needs no environment variables.
+
+| Variable | Example value | What it is for |
+|---|---|---|
+| `DATABASE_URL` | `postgresql://roomsync:roomsync@localhost:5432/roomsync?schema=public` | PostgreSQL connection string, used by Prisma and by the session store. The user, password and database name match `docker-compose.yml` |
+| `PORT` | `4000` | Port the API listens on (default 4000). The Vite dev server proxies `/api` to 4000 (`client/vite.config.ts`), so change both together |
+| `SESSION_SECRET` | `change-me-in-your-local-env` | Signs the session cookie. Required: the server refuses to start without it, and in production refuses the example value |
+| `NODE_ENV` | unset | Leave unset in development. `production` turns on the secure cookie and trusted proxy and makes the seed refuse to run; `test` is set by the test runner and uses an in-memory session store |
+
+`server/.env` is ignored by Git. Never commit a real secret.
+
 ### Database
 
 The schema lives in `server/prisma/schema.prisma`. Prisma CLI configuration —
@@ -132,19 +148,35 @@ npx prisma migrate reset
 cd server && npm run db:seed
 ```
 
-Creates the household **Apartment 41** with two members and two expenses — one
-split equally with an odd cent, one split 60/40 by percentage — so balances
-have something in them before you record anything yourself.
+Creates the household **Apartment 41**, so every screen has something on it
+before you record anything yourself:
 
-Sign in as either member with the password `roomsync123`:
+- **Four members** (below).
+- **Five expenses** in all three split methods: equal (including one with an
+  odd cent, and one Priya is not part of), custom amounts, and percentages.
+- **Two settlements**: Marcus pays Orlando off exactly, so that pair reads
+  "settled up", and Agustin pays Priya part of what he owes.
+- **Seven chores**: outstanding ones for every member, one overdue, one
+  unassigned, and two completed.
 
-| Email | Role |
-|---|---|
-| `orlando@roomsync.test` | Owner |
-| `agustin@roomsync.test` | Member |
+Dates are relative to the day you run it, so the chores read "due tomorrow" and
+"overdue" rather than drifting into the past. What it creates is in
+`server/src/seed-data.ts`, and `seed-data.test.ts` checks it: every expense
+splits, and no settlement is more than was owed at the time.
+
+Sign in as any member with the password `roomsync123`:
+
+| Email | Name | Role |
+|---|---|---|
+| `orlando@roomsync.test` | Orlando Rodriguez Valdez | Owner |
+| `agustin@roomsync.test` | Agustin Lemuz-Juarez | Member |
+| `marcus@roomsync.test` | Marcus Lee | Member |
+| `priya@roomsync.test` | Priya Shah | Member |
 
 Running it twice is safe: it stops if the seed household is already there
-rather than duplicating anything. After `npx prisma migrate reset`, run the
+rather than duplicating anything. It writes everything in one transaction, so
+a failure leaves nothing half-created, and it refuses to run when `NODE_ENV` is
+`production`. After `npx prisma migrate reset`, run the
 seed again — either `npm run db:seed` or `npx prisma db seed`, which uses the
 same command from `prisma.config.ts`.
 
@@ -179,19 +211,36 @@ curl http://localhost:4000/api/health
 Then open http://localhost:5173. With the seed data loaded, this walkthrough
 exercises every layer — React, Express, service, repository, PostgreSQL:
 
-1. **Sign in** as `orlando@roomsync.test` / `roomsync123`. You land on the
+1. **Sign in** as `agustin@roomsync.test` / `roomsync123`. You land on the
    dashboard for Apartment 41.
-2. **Check the members panel.** It lists both members with the owner marked.
-   This comes from a real query behind a membership guard, not fixture data.
+2. **Read the dashboard.** Members lists all four, with the owner marked. Your
+   balance says you owe $10.88 and are owed $2.00: $4.88 to Orlando and $6.00
+   to Priya, with Marcus owing you $2.00. Your chores shows "Take out the
+   trash", due tomorrow. Recent activity lists the payments, completed chores
+   and expenses, newest first. All of it is one request to the server.
 3. **Refresh the page.** You stay signed in — the session lives in PostgreSQL,
    so it survives a page reload and a server restart.
-4. **Add an expense.** Use *Add expense*, enter an amount, choose a split, and
-   look at the preview before saving. The shares are calculated on the server,
-   so what the preview shows is exactly what gets stored.
-5. **Try an invalid split.** Give a custom split amounts that do not add up to
-   the total. It is rejected rather than silently adjusted.
-6. **Invite a roommate.** As the owner, generate an invitation link. Opening it
-   in a private window prompts for sign-in first.
+4. **Add an expense.** Use *Add expense*, type a description and an amount, and
+   look at the preview: every member is included and split equally by default.
+   Try *By amount* with amounts that do not add up to the total; it is
+   rejected rather than silently adjusted. Save an equal split and the
+   dashboard confirms it, with your balance updated.
+5. **Record a payment.** Open *Balances*, choose *Record payment* next to
+   Orlando, and save the suggested $4.88. That pair now reads "settled up".
+   Try paying more than you owe and it is refused.
+6. **Complete a chore.** Open *Chores* and mark "Take out the trash" complete.
+   Sign in as `marcus@roomsync.test` and his "Clean the bathroom" shows as
+   overdue; he cannot complete a chore assigned to someone else.
+7. **Invite a roommate.** Sign in as `orlando@roomsync.test`, the owner, and
+   choose *Invite a roommate*. Opening the link in a private window asks you to
+   sign in or create an account first, then offers to join. Members do not see
+   the invite button, and the server refuses them anyway.
+
+To start the walkthrough over, reset and seed again:
+
+```bash
+cd server && npx prisma migrate reset && npm run db:seed
+```
 
 To confirm authorization is enforced server-side rather than only in the
 interface, ask for a household you do not belong to:
@@ -228,8 +277,10 @@ The client has its own suite, which needs no database or server:
 cd client && npm test
 ```
 
-It covers the pure logic in `client/src/lib/`, starting with `money.ts`, which
-turns what a user types into the integer cents the server stores. Component
+It covers the pure logic in `client/src/lib/`: `money.ts`, which turns what a
+user types into the integer cents the server stores, and the wording of
+balances, chore due dates and dashboard activity, where the direction of a
+sentence ("you owe" or "owes you") is the easiest thing to get backwards. Component
 tests are planned with the Milestone 2 test plan.
 
 ### Stopping
@@ -248,7 +299,8 @@ docker compose down           # data persists in a named volume
 - [Use case specifications](./docs/requirements/use-cases.md)
 - [Analysis model](./docs/requirements/analysis-model.md)
 - [Design patterns](./docs/design/design-patterns.md)
-- [Responsive design considerations](./docs/design/responsive-design.md)
+- [Responsive design considerations](./docs/design/responsive-design.md), with
+  [screenshots of every screen at 375px and 1280px](./docs/design/screenshots/)
 - [Product brief and MVP scope](./docs/product-brief.md)
 - [UX wireframes](./docs/design/wireframes/README.md)
 - [Design classes](./docs/design/design-classes.md)

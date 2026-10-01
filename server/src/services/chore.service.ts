@@ -102,6 +102,28 @@ export async function listChores(
 }
 
 /**
+ * Outstanding chores assigned to this member, soonest due first with undated
+ * ones last (UC-10 step 5). Unassigned chores are left out: they are nobody's
+ * yet, so they are not "what I am supposed to do".
+ */
+export async function listUpcomingFor(
+  householdId: string,
+  userId: string
+): Promise<PublicChore[]> {
+  const chores = await choreRepository.listOpenAssignedTo(householdId, userId);
+  return chores.map(toPublicChore);
+}
+
+/** The most recently completed chores, newest first, at most `limit` (UC-10 step 6). */
+export async function listRecentlyCompleted(
+  householdId: string,
+  limit: number
+): Promise<PublicChore[]> {
+  const chores = await choreRepository.listCompleted(householdId, limit);
+  return chores.map(toPublicChore);
+}
+
+/**
  * Edit an outstanding chore: rename it, (re)assign or unassign it, or change or
  * clear its due date. Only the fields present in `input` change.
  */

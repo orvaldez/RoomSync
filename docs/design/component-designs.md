@@ -16,9 +16,9 @@ Both follow ADR-001's layering, with cross-cutting concerns in `middleware/`:
 
     Client → Routes → Services → Repositories → PostgreSQL
 
-The diagrams name the real modules and functions. Create Expense is on `main`
-(#47, #50). Record Settlement is in review in #54, and so is the ledger lock
-both flows take (marked where it appears). The module layout itself is in
+The diagrams name the real modules and functions. Both are on `main`:
+Create Expense from #47 and #50, Record Settlement and the ledger lock both
+flows take from #54. The module layout itself is in
 [module-structure.md](./module-structure.md).
 
 ---
@@ -155,7 +155,7 @@ sequenceDiagram
 
     ES->>ER: createWithShares(expense, shares)
     ER->>DB: BEGIN
-    Note over ER,DB: PR 54 adds lockLedger, pg_advisory_xact_lock for this household
+    Note over ER,DB: lockLedger takes pg_advisory_xact_lock for this household
     ER->>DB: INSERT expenses, INSERT expense_shares (one per participant)
     ER->>DB: COMMIT, or ROLLBACK and store nothing (UC-05 10a)
     DB-->>ER: expense with payer and share names
@@ -198,8 +198,7 @@ columns are `INTEGER`. No float appears anywhere in the path (FR-18).
 
 ## 3. UC-08 — Record Settlement
 
-`POST /api/households/:householdId/settlements`, from the Balances page. **In
-review: #54.**
+`POST /api/households/:householdId/settlements`, from the Balances page.
 
 ### 3.1 Components
 

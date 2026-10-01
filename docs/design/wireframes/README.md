@@ -23,12 +23,12 @@ Status as of September 30, 2026.
 | 3 | Create account | `/register` | US-01 | Built |
 | 4 | Set up your household | `/` (no household) | US-03 | Built |
 | 5 | Join a household | `/join/:token` | US-04 | Built |
-| 6 | Dashboard | `/` | US-10 | Built in part — members, invitations, links; balance, chores and activity panels are placeholders |
+| 6 | Dashboard | `/` | US-10 | Built |
 | 7 | Add an expense | `/expenses/new` | US-05, US-06 | Built |
-| 8 | Expenses list | dashboard panel | US-05, US-11 | In review (#52) |
+| 8 | Expenses list | dashboard panel | US-05, US-11 | Built |
 | 9 | Expense detail | `/expenses/:id` | US-05, US-11 | Designed, not built |
-| 10 | Chores | `/chores` | US-09 | In review (#53) |
-| 11 | Balances and record payment | `/balances` | US-07, US-08 | In review (#54) |
+| 10 | Chores | `/chores` | US-09 | Built |
+| 11 | Balances and record payment | `/balances` | US-07, US-08 | Built |
 
 Together these cover the screen list in #5: register, login, create or join a
 household, dashboard, expenses, expense detail, and chores — plus balances,
@@ -213,7 +213,7 @@ name is long, rather than shrinking the button.
 
 ---
 
-## 6. Dashboard — Built in part
+## 6. Dashboard — Built
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -227,16 +227,28 @@ name is long, rather than shrinking the button.
 │                                                              │
 │  ┌───────────────────────────┐  ┌───────────────────────────┐│
 │  │ Members                   │  │ Your balance              ││
-│  │ Agustin · owner           │  │ (placeholder until US-10) ││
-│  │ Orlando                   │  │                           ││
+│  │ Agustin · owner           │  │ You owe $10.88 and you    ││
+│  │ Orlando                   │  │ are owed $2.00.           ││
+│  │ Maya                      │  │ You owe Orlando $4.88     ││
 │  │ [ Invite a roommate ]     │◀─ owner only                  ││
+│  │                           │  │ Maya owes you $2.00       ││
+│  │                           │  │ Record a payment          ││
 │  └───────────────────────────┘  └───────────────────────────┘│
 │  ┌───────────────────────────┐  ┌───────────────────────────┐│
 │  │ Your chores               │  │ Recent activity           ││
-│  │ (placeholder until US-10) │  │ (placeholder until US-10) ││
+│  │ Take out trash  Due tmrw  │  │ You paid Maya $10   Sep 29││
+│  │ ⚠ Clean bathroom          │  │ Orlando added "Pa… Sep 28 ││
+│  │   Overdue by 2 days       │  │ You completed "Wa… Sep 27 ││
+│  │ Mark chores complete      │  │ … newest 10               ││
 │  └───────────────────────────┘  └───────────────────────────┘│
+│  ┌───────────────────────────┐                               │
+│  │ Expenses (screen 8)       │                               │
+│  └───────────────────────────┘                               │
 └──────────────────────────────────────────────────────────────┘
 ```
+
+Everything above the expenses panel comes from one request,
+`GET /api/households/:householdId/dashboard` (NFR-02).
 
 After the owner selects **Invite a roommate**, the Members panel shows the
 link to send (UC-04 steps 1-4; RoomSync sends no email in the MVP):
@@ -250,10 +262,18 @@ link to send (UC-04 steps 1-4; RoomSync sends no email in the MVP):
 │  Link copied to the clipboard.            ◀─ role="status"
 ```
 
-The Chores and Balances links arrive with #53 and #54. The three placeholder
-panels are labelled rather than hidden, so the screen's final shape is visible:
-US-10 fills them with the requester's balances, their upcoming chores, and
-recent activity.
+Each panel answers one of Marcus's questions (UC-10), and each has an empty
+state that names the next step instead of showing a blank panel:
+
+| Panel | Shows | Empty state |
+|---|---|---|
+| Your balance | A one-line summary, then one sentence per roommate | "You are all settled up.", with a zero row per roommate (UC-10 4a) |
+| Your chores | Open chores assigned to you, soonest due first, overdue marked in words | "Nothing is assigned to you", with a link to Chores (5a) |
+| Recent activity | Expenses, payments and completed chores, newest 10 | "Nothing has happened yet", with a link to Add an expense (6a) |
+
+From here, a typical expense takes four interactions (NFR-01): **Add expense**,
+type the description, type the amount, **Save expense**. The payer defaults to
+you, every member is included, the split is equal and the date is today.
 
 **At 375px:** the panels stack in one column (the grid is one column below
 768px and two above). The three links wrap. The invitation link and Copy
@@ -338,7 +358,7 @@ is one row per person with the amount right-aligned — never a table.
 
 ---
 
-## 8. Expenses list — In review (#52)
+## 8. Expenses list — Built
 
 The household's expenses, newest first: on the dashboard as a panel, and later
 as the full history view of US-11.
@@ -404,7 +424,7 @@ with a link back — the same for an expense in someone else's household.
 
 ---
 
-## 10. Chores — In review (#53)
+## 10. Chores — Built
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -461,7 +481,7 @@ with a link back — the same for an expense in someone else's household.
 
 ---
 
-## 11. Balances and record payment — In review (#54)
+## 11. Balances and record payment — Built
 
 ```
 ┌────────────────────────────────────────────────────────┐

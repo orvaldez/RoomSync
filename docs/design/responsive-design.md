@@ -4,13 +4,10 @@ RoomSync — Software Design and Development
 Issue #27 · Milestone 1 deliverable
 
 NFR-05 requires the application to be fully usable at a viewport width of 375
-pixels. This records the approach, the decisions behind it, and what is
-verified today versus what is still to build.
-
-The screens that exist — login, registration, and the dashboard shell — were
-rendered at 375px in a headless browser during development and produce no
-horizontal scrolling. Screens that do not exist yet are covered as intentions,
-labelled as such.
+pixels. This records the approach, the decisions behind it, and the evidence:
+every MVP screen captured at 375px and at 1280px, measured for horizontal
+overflow, with the screenshots committed under [`screenshots/`](screenshots/)
+(§5).
 
 ---
 
@@ -53,7 +50,13 @@ scroll.
 The existing `:root` rule from the scaffold reduces the base font size below
 1024px, which the new styles inherit rather than override.
 
-**Breakpoints used:** one, at 1024px, inherited from the scaffold's type scale.
+**Breakpoints used:** two.
+
+| Breakpoint | Rule | Why |
+|---|---|---|
+| `max-width: 1024px` | Smaller base font and headings | Inherited from the scaffold's type scale; a 56px heading does not fit a phone |
+| `min-width: 768px` | Dashboard panels go from one column to two | The only multi-column layout in the app (§3.4) |
+
 Everything else is fluid. Adding breakpoints per screen would mean maintaining
 several fixed layouts; the fluid approach adapts to widths nobody tested.
 
@@ -98,13 +101,55 @@ Apple's guidance is 44×44. 40px clears the standard the project is held to and
 is close to the more generous one; the full-width form submit button is
 comfortably larger than either.
 
-### 3.4 Single-column everywhere
+### 3.4 One column by default, two only where there is room
 
-No multi-column layout exists, so there is no reflow to get wrong. When the
-dashboard gains real panels they will stack vertically by default and may sit
-side by side above a breakpoint — the reverse is what tends to break, because a
-layout designed wide and then squeezed produces content that is too narrow to
-read rather than simply stacked.
+Every screen is a single column except the dashboard, whose panels sit two to
+a row at 768px and wider:
+
+```css
+.panel-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .panel-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+```
+
+The narrow layout is the default and the wide one the exception. The reverse
+is what tends to break: a layout designed wide and then squeezed produces
+content too narrow to read, rather than simply stacked.
+
+### 3.5 Rows wrap instead of truncating
+
+A row that pairs a sentence with a date or amount — a dashboard activity line,
+an expense, a balance with its Record payment button — uses
+`display: flex; flex-wrap: wrap; justify-content: space-between`. Where both fit
+they share a line; at 375px a long one, such as Orlando Rodriguez Valdez adding
+"Paper towels and dish soap", pushes the date onto its own line instead of
+cutting the sentence off. Nothing in the interface is truncated with an
+ellipsis, because the hidden part is usually the part that matters: a name or
+an amount.
+
+### 3.6 Checkboxes and radios: the row is the target
+
+The participant checkboxes and split-method radios on Add expense are 18px
+controls, below the 24px WCAG 2.2 minimum on their own. Each sits inside its
+`<label>`, and the label row is at least 36px tall and full width, so tapping
+anywhere on the row, the name included, toggles it:
+
+```css
+.choice {
+  display: flex;
+  min-height: 36px;
+}
+```
+
+The measurement in §5 flags these 18px inputs; they are the only small targets,
+and this is why they pass.
 
 ---
 
@@ -136,38 +181,69 @@ and on a narrow screen, "nearby" may not be nearby at all once things reflow.
 
 ---
 
-## 5. Verified so far
+## 5. Verified: every MVP screen at 375px and 1280px
 
-| Check | Status |
+Each screen was loaded in headless Microsoft Edge (Chromium) at a 375×812
+viewport and at 1280×800, signed in as the seed accounts (`npm run db:seed`)
+so every panel holds real data rather than an empty state. On each, a script
+checked that `document.documentElement.scrollWidth` equals the viewport width
+(no horizontal scroll) and that no element's right edge passes the viewport,
+then saved a full-page screenshot.
+
+| Screen | Use case | 375px | 1280px | Horizontal overflow |
+|---|---|---|---|---|
+| Log in | UC-02 | [mobile](screenshots/mobile/01-login.png) | [desktop](screenshots/desktop/01-login.png) | None |
+| Create account | UC-01 | [mobile](screenshots/mobile/02-register.png) | [desktop](screenshots/desktop/02-register.png) | None |
+| Set up your household | UC-03 | [mobile](screenshots/mobile/03-create-household.png) | [desktop](screenshots/desktop/03-create-household.png) | None |
+| Join a household | UC-04 | [mobile](screenshots/mobile/04-join-household.png) | [desktop](screenshots/desktop/04-join-household.png) | None |
+| Dashboard, owner with an invitation link open | UC-04, UC-10 | [mobile](screenshots/mobile/05-dashboard-owner-invite.png) | [desktop](screenshots/desktop/05-dashboard-owner-invite.png) | None |
+| Dashboard, member | UC-10 | [mobile](screenshots/mobile/06-dashboard.png) | [desktop](screenshots/desktop/06-dashboard.png) | None |
+| Add an expense, with the split preview | UC-05, UC-06 | [mobile](screenshots/mobile/07-add-expense.png) | [desktop](screenshots/desktop/07-add-expense.png) | None |
+| Chores | UC-09 | [mobile](screenshots/mobile/08-chores.png) | [desktop](screenshots/desktop/08-chores.png) | None |
+| Balances, recording a payment | UC-07, UC-08 | [mobile](screenshots/mobile/09-balances-record-payment.png) | [desktop](screenshots/desktop/09-balances-record-payment.png) | None |
+
+Every screen in the MVP is in the table; the expense list is a panel on the
+dashboard (rows 5 and 6). The one screen in the wireframes that is not here,
+expense detail, is not built (US-11, Sprint 3).
+
+| Check | Result |
 |---|---|
-| Login renders at 375px with no horizontal scroll | Verified — `document.scrollWidth === 375` in a headless browser |
-| Login renders at desktop width | Verified |
-| Registration, dashboard | Same components and styles; not separately measured |
+| No horizontal scroll at 375px, all nine screens | **Pass** — `scrollWidth` is 375 on every one |
+| No horizontal scroll at 1280px, all nine screens | **Pass** |
+| Interactive elements at least 24×24px | **Pass** — the only smaller ones are the 18px checkboxes and radios on Add expense, whose 36px label rows are the target (§3.6) |
+| Inputs at least 16px, so iOS does not zoom | **Pass** — set on `.field input`, `.field select` and the invitation link (§3.1) |
 | Real iOS or Android device | **Not tested** |
 | Landscape orientation on a phone | **Not tested** |
 | Text scaled to 200% (WCAG 1.4.4) | **Not tested** |
 
-The gaps are stated rather than glossed. Cross-viewport testing evidence is a
-Milestone 2 deliverable, and this list is the starting checklist for it.
+The untested rows are stated rather than glossed. Real-device and zoom testing
+are Milestone 2 work (testing and improvement), and this list is the starting
+checklist for it.
+
+To re-check after a layout change, run the seed, open each screen in a
+browser's device toolbar at 375px signed in as a seed account, and compare
+against the screenshots.
 
 ---
 
-## 6. Planned, for screens not yet built
+## 6. How each screen handles 375px
 
 | Screen | Approach at 375px |
 |---|---|
-| Household dashboard | Panels stack in one column; balances as a list, not a table |
-| Expense list | Card per expense rather than a table — a table with five columns cannot be read at 375px without horizontal scroll |
-| Add expense | Full-width fields; the participant picker is a checkbox list, not a multi-select |
-| Split preview | Name and amount per row, right-aligned amounts |
-| Balances | One row per member, with owed and owing distinguished by label and sign rather than colour alone |
-| Chores | Card per chore with the due date beneath the title |
+| Log in, create account, set up household | One form, `width: 100%` up to 380px; inputs full width |
+| Join a household | One sentence and two actions that wrap below each other if needed |
+| Dashboard | Panels stack in one column below 768px (§3.4); balances and activity are lists of sentences, not tables |
+| Invitation link | The read-only link and its Copy button share a row, and wrap below it rather than overflowing |
+| Expense list | Two lines per expense (what and how much, then when, who paid and your share) rather than a five-column table |
+| Add expense | Full-width fields; participants are a checkbox list, not a multi-select; the split preview is name and amount per row, amounts right-aligned |
+| Chores | A card per chore, with the assignee and due date beneath the title |
+| Balances | One row per member, with owed and owing carried by the sentence ("You owe…", "…owes you") rather than colour alone; the payment form opens under its row |
 
-The recurring decision is **cards over tables**. Tabular data at 375px either
-scrolls horizontally or truncates; neither is usable. A card per record keeps
-every field visible and reads naturally in one column.
+The recurring decision is **lists over tables**. Tabular data at 375px either
+scrolls horizontally or truncates; neither is usable. A row or card per record
+keeps every field visible and reads naturally in one column.
 
-The other is **never colour alone**. Whether a balance is owed or owing is
-carried by a label and a sign, not only by red and green, which serves
-colour-blind users and survives the low-contrast conditions of a phone screen
-outdoors.
+The other is **never colour alone**. Whether a balance is owed or owing, and
+whether a chore is overdue, is carried by words ("You owe", "Overdue by 2
+days", with a ⚠ marker) and not only by colour, which serves colour-blind
+users and survives the low-contrast conditions of a phone screen outdoors.

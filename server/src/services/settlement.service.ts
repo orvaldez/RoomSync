@@ -96,9 +96,15 @@ export async function createSettlement(
   return toPublicSettlement(settlement);
 }
 
-/** Every settlement in the household, newest first, including fully paid-off ones. */
-export async function listSettlements(householdId: string): Promise<PublicSettlement[]> {
-  const settlements = await ledgerRepository.listSettlements(householdId);
+/**
+ * Every settlement in the household, newest first, including fully paid-off
+ * ones; or only the newest `limit` of them.
+ */
+export async function listSettlements(
+  householdId: string,
+  limit?: number
+): Promise<PublicSettlement[]> {
+  const settlements = await ledgerRepository.listSettlements(householdId, limit);
   return settlements.map(toPublicSettlement);
 }
 

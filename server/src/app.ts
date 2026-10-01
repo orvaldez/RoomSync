@@ -6,6 +6,7 @@ import invitationRoutes from "./routes/invitation.routes";
 import expenseRoutes from "./routes/expense.routes";
 import choreRoutes from "./routes/chore.routes";
 import balanceRoutes from "./routes/balance.routes";
+import dashboardRoutes from "./routes/dashboard.routes";
 import { buildSessionMiddleware, isBehindTlsProxy } from "./middleware/session";
 import { errorHandler } from "./middleware/error-handler";
 
@@ -33,6 +34,7 @@ app.use("/api", invitationRoutes);
 app.use("/api", expenseRoutes);
 app.use("/api", choreRoutes);
 app.use("/api", balanceRoutes);
+app.use("/api", dashboardRoutes);
 
 // Registered last: Express only reaches an error handler after the routes.
 app.use(errorHandler);

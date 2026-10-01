@@ -113,6 +113,15 @@ export async function listExpenses(householdId: string): Promise<PublicExpense[]
   return records.map(toPublicExpense);
 }
 
+/** The most recently recorded expenses, newest first, at most `limit` (UC-10 step 6). */
+export async function listRecentExpenses(
+  householdId: string,
+  limit: number
+): Promise<PublicExpense[]> {
+  const records = await expenseRepository.listRecent(householdId, limit);
+  return records.map(toPublicExpense);
+}
+
 /** One expense, or `EXPENSE_NOT_FOUND` when this household has no such expense. */
 export async function getExpense(
   householdId: string,

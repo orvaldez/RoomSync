@@ -87,6 +87,32 @@ export async function findCurrentForUser(
 }
 
 /**
+ * This household with this user's role in it, or null when they are not a
+ * member. Like `findRole`, null does not say which of "no such household" and
+ * "not a member" applies (contract decision 5).
+ */
+export async function findWithRole(
+  userId: string,
+  householdId: string
+): Promise<HouseholdWithRole | null> {
+  const membership = await getPrisma().membership.findUnique({
+    where: { userId_householdId: { userId, householdId } },
+    include: { household: true },
+  });
+
+  if (!membership) {
+    return null;
+  }
+
+  return {
+    id: membership.household.id,
+    name: membership.household.name,
+    createdAt: membership.household.createdAt,
+    role: membership.role as MembershipRole,
+  };
+}
+
+/**
  * Whether this user already belongs to any household.
  *
  * Separate from `findCurrentForUser` because the caller only needs the answer,
