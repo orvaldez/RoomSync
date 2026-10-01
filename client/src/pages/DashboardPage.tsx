@@ -4,6 +4,7 @@ import { api, isUnauthenticated, type Household } from "../lib/api";
 import { useAuth } from "../auth/useAuth";
 import { CreateHouseholdPage } from "./CreateHouseholdPage";
 import { MembersPanel } from "../components/MembersPanel";
+import { ExpensesPanel } from "../components/ExpensesPanel";
 
 /**
  * UC-10, as far as the endpoints allow.
@@ -114,6 +115,12 @@ export function DashboardPage() {
       <p className="page-actions">
         <Link className="button-link" to="/expenses/new">
           + Add expense
+        </Link>{" "}
+        <Link className="button-link" to="/chores">
+          Chores
+        </Link>{" "}
+        <Link className="button-link" to="/balances">
+          Balances
         </Link>
       </p>
 
@@ -122,11 +129,14 @@ export function DashboardPage() {
           householdId={household.id}
           canInvite={household.role === "OWNER"}
         />
+        <ExpensesPanel householdId={household.id} />
+
         <section className="panel">
           <h2>Your balance</h2>
           <p className="muted">
-            Nothing owed either way yet. Balances appear once expenses are
-            recorded.
+            Not built yet (US-07). Balances are derived from expense shares and
+            settlements when they are read rather than stored as a running
+            total, so they appear once that calculation lands.
           </p>
         </section>
 
@@ -138,7 +148,8 @@ export function DashboardPage() {
         <section className="panel">
           <h2>Recent activity</h2>
           <p className="muted">
-            Expenses, settlements and completed chores will show here.
+            Settlements and completed chores will show here as US-08 and US-09
+            land.
           </p>
         </section>
       </div>

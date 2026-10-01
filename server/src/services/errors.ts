@@ -251,3 +251,94 @@ export class InvitationExpiredError extends AppError {
     this.name = "InvitationExpiredError";
   }
 }
+
+/** 400 — a chore's assignee does not belong to this household (UC-09 3a). */
+export class AssigneeNotMemberError extends AppError {
+  readonly code = "ASSIGNEE_NOT_MEMBER";
+  readonly status = 400;
+
+  constructor() {
+    super("The assignee must be a household member.");
+    this.name = "AssigneeNotMemberError";
+  }
+}
+
+/**
+ * 404 — no chore with this id in this household. A chore belonging to another
+ * household gets the same answer.
+ */
+export class ChoreNotFoundError extends AppError {
+  readonly code = "CHORE_NOT_FOUND";
+  readonly status = 404;
+
+  constructor() {
+    super("Chore not found.");
+    this.name = "ChoreNotFoundError";
+  }
+}
+
+/** 400 — a settlement's payer and recipient are the same member (UC-08 4c). */
+export class SameMemberError extends AppError {
+  readonly code = "SAME_MEMBER";
+  readonly status = 400;
+
+  constructor() {
+    super("A member cannot settle with themselves.");
+    this.name = "SameMemberError";
+  }
+}
+
+/** 400 — one side of a settlement is not in this household (UC-08 4d). */
+export class MemberNotInHouseholdError extends AppError {
+  readonly code = "MEMBER_NOT_IN_HOUSEHOLD";
+  readonly status = 400;
+
+  constructor() {
+    super("Both members must belong to this household.");
+    this.name = "MemberNotInHouseholdError";
+  }
+}
+
+/**
+ * 409 — a completed chore cannot be edited. Completion is one-way in the MVP,
+ * and reassigning a finished chore would rewrite who did it.
+ */
+export class ChoreAlreadyCompleteError extends AppError {
+  readonly code = "CHORE_ALREADY_COMPLETE";
+  readonly status = 409;
+
+  constructor() {
+    super("A completed chore cannot be edited.");
+    this.name = "ChoreAlreadyCompleteError";
+  }
+}
+
+/**
+ * 403 — only the assigned member can complete a chore (FR-15, UC-09 9a,
+ * contract decision 2). An unassigned chore can be completed by anyone.
+ */
+export class ChoreNotAssignedToYouError extends AppError {
+  readonly code = "CHORE_NOT_ASSIGNED_TO_YOU";
+  readonly status = 403;
+
+  constructor() {
+    super("Only the assigned member can complete this chore.");
+    this.name = "ChoreNotAssignedToYouError";
+  }
+}
+
+/**
+ * 409 — the settlement is more than the payer currently owes the recipient
+ * (UC-08 4a, 4e). Recording it would invert the balance and invent a debt that
+ * does not exist. Checked against the balance at the moment of writing, not
+ * the one the member was shown.
+ */
+export class ExceedsBalanceError extends AppError {
+  readonly code = "EXCEEDS_BALANCE";
+  readonly status = 409;
+
+  constructor() {
+    super("That is more than is currently owed.");
+    this.name = "ExceedsBalanceError";
+  }
+}

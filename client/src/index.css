@@ -486,3 +486,136 @@ a {
   color: var(--text-h);
   font-size: 15px;
 }
+
+/* Expense list (UC-10). Two rows per entry: what it was and what it cost,
+   then when, who paid, and this member's share. */
+.expense-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Chores (UC-09). A card per chore in one column at every width; outstanding
+   and completed are separate sections, and overdue is marked in words and an
+   icon, never colour alone. */
+.chore-form {
+  max-width: 480px;
+}
+
+.chore-section {
+  margin-top: 32px;
+}
+
+.chore-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chore {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.chore-title {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+/* Balances and settlements (UC-07, UC-08). Who owes whom is carried by the
+   sentence itself; the colour on top is decoration, never the only signal. */
+.balance-totals {
+  margin-top: 16px;
+  color: var(--text-h);
+}
+
+.balance-section {
+  margin-top: 32px;
+}
+
+.balance-list,
+.settlement-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.expense-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.expense-list li:last-child {
+  border-bottom: none;
+}
+
+.expense-main,
+.expense-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.expense-main {
+  color: var(--text-h);
+}
+
+.expense-meta {
+  margin-top: 2px;
+  font-size: 14px;
+}
+
+.balance-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.balance-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.balance-text {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.chore-done .chore-title {
+  font-weight: 400;
+  text-decoration: line-through;
+}
+
+.overdue {
+  color: #d92d20;
+  font-weight: 600;
+}
+
+.balance-settled {
+  font-weight: 400;
+  color: var(--text);
+}
+
+.settlement-form {
+  max-width: 420px;
+  margin-top: 12px;
+}
+
+.settlement-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-h);
+}
