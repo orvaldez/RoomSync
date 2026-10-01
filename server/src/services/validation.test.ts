@@ -15,6 +15,10 @@ import {
   EXPENSE_DESCRIPTION_MAX_LENGTH,
   validateExpenseDescription,
   validateCalendarDate,
+  CHORE_TITLE_MAX_LENGTH,
+  CHORE_DESCRIPTION_MAX_LENGTH,
+  validateChoreTitle,
+  validateChoreDescription,
   SETTLEMENT_NOTE_MAX_LENGTH,
   validateSettlementNote,
 } from "./validation";
@@ -210,6 +214,36 @@ describe("validateCalendarDate", () => {
     expect(validateCalendarDate("2026-02-30")).not.toBeNull();
     expect(validateCalendarDate("2027-02-29")).not.toBeNull();
     expect(validateCalendarDate("2026-13-01")).not.toBeNull();
+  });
+});
+
+describe("validateChoreTitle", () => {
+  it("accepts a title up to the limit", () => {
+    expect(validateChoreTitle("Take out bins")).toBeNull();
+    expect(validateChoreTitle("a".repeat(CHORE_TITLE_MAX_LENGTH))).toBeNull();
+  });
+
+  it("rejects empty, blank, non-string and over-long titles", () => {
+    expect(validateChoreTitle("")).not.toBeNull();
+    expect(validateChoreTitle("   ")).not.toBeNull();
+    expect(validateChoreTitle(undefined)).not.toBeNull();
+    expect(validateChoreTitle("a".repeat(CHORE_TITLE_MAX_LENGTH + 1))).not.toBeNull();
+  });
+});
+
+describe("validateChoreDescription", () => {
+  it("treats absent, null and blank as no description", () => {
+    expect(validateChoreDescription(undefined)).toBeNull();
+    expect(validateChoreDescription(null)).toBeNull();
+    expect(validateChoreDescription("  ")).toBeNull();
+  });
+
+  it("rejects non-strings and descriptions past the limit", () => {
+    expect(validateChoreDescription(5)).not.toBeNull();
+    expect(validateChoreDescription("a".repeat(CHORE_DESCRIPTION_MAX_LENGTH))).toBeNull();
+    expect(
+      validateChoreDescription("a".repeat(CHORE_DESCRIPTION_MAX_LENGTH + 1))
+    ).not.toBeNull();
   });
 });
 
