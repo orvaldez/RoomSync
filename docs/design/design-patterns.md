@@ -3,14 +3,21 @@
 RoomSync — Software Design and Development
 Issue #28 · Milestone 1 deliverable
 
-The milestone asks for one or two design patterns with justification. Two are
-described here, both **already implemented and merged**, not proposed:
+The milestone asks for one or two design patterns with justification. The two
+are the ones `design-classes.md` §4 names, both **implemented and merged**:
 
-1. **Repository** — isolating data access
-2. **Chain of Responsibility** — Express middleware, used for cross-cutting concerns
+1. **Repository** (§1): isolating data access
+2. **Strategy** (§3): the three expense-splitting methods
 
-A third, **Strategy**, is described in §3 as the shape US-06 will take, and is
-labelled as planned rather than built.
+A third, **Chain of Responsibility** (§2), is recorded as well because the
+Express middleware is built on it and it carries the authorization guarantee,
+but it comes with the framework rather than being a design choice of ours.
+
+| Pattern | Files | What it buys | What it costs |
+|---|---|---|---|
+| Repository | `server/src/repositories/*.repository.ts` | Business rules testable without a database; one place for Prisma | More files per feature |
+| Chain of Responsibility | `server/src/app.ts`, `server/src/middleware/` | Auth, membership and error shape applied once, not per route | Order is load-bearing and invisible |
+| Strategy | `server/src/services/split.service.ts` | Each split method tested alone; the sums-to-total rule enforced once for all | An indirection where a `switch` would also work |
 
 ---
 
@@ -52,10 +59,11 @@ above it.
 
 ### What it buys, concretely
 
-**Services test without a database.** The 29 tests in `auth.service.test.ts`
-mock the repository module, so the Prisma client is never loaded. The same will
-hold for the splitting arithmetic, which is the logic that most needs
-exhaustive testing.
+**Services test without a database.** Every `*.service.test.ts` mocks the
+repository modules, so the Prisma client is never loaded: the 29 tests in
+`auth.service.test.ts`, and likewise for expenses, balances, settlements and
+chores. The splitting arithmetic needs no mocking at all, because the Strategy
+in §3 is pure.
 
 **Errors translate at the boundary.** `user.repository.create` catches Prisma's
 `P2002` unique-violation code and throws `UniqueConstraintError`. The service
@@ -145,33 +153,73 @@ pattern; Express 5 makes it unnecessary.
 
 ---
 
-## 3. Strategy (planned, US-06)
+## 3. Strategy (expense splitting, US-06)
 
-Included because it is the natural shape for the splitting logic and the
-decision is better recorded before the code exists than after.
+### The problem
 
-Three splitting methods — equal, custom, percentage — share a signature and
-differ only in how they compute shares:
+An expense can be split three ways: equally, by custom amounts, or by
+percentage (FR-08). Each has its own edge cases. An equal split has remainder
+cents to hand out ($100.00 across three is 3333, 3333, 3334). A custom split
+must sum exactly to the total. A percentage split works in basis points, which
+must sum to exactly 10000 and round to whole cents. One rule applies to all
+three: the shares must add up to the total exactly (FR-09, SC-04), because a
+share that is off by a cent is wrong in every balance derived from it.
 
+One function with a branch per method would put three algorithms in one body,
+and the shared rule would have to be remembered in each branch.
+
+### The implementation
+
+`server/src/services/split.service.ts`. The three methods are interchangeable
+functions behind one signature, chosen by the request's `splitMethod`:
+
+```ts
+type SplitStrategy = (totalCents: number, participants: SplitParticipant[]) => Share[];
+
+const strategies: Record<SplitMethod, SplitStrategy> = {
+  EQUAL: splitEqually,
+  CUSTOM: splitByAmount,
+  PERCENTAGE: splitByPercentage,
+};
+
+export function splitExpense(input: SplitInput): Share[] {
+  // ...checks common to every method: fields, at least one participant, no duplicates
+  const shares = strategies[splitMethod](totalAmountCents, participants);
+  assertSharesMatchTotal(shares, totalAmountCents);
+  return shares;
+}
 ```
-(totalCents, participants, input) -> Share[]
-```
 
-The alternative is a conditional inside one function, which would put three
-independent algorithms in one body and make the SC-04 rounding tests exercise
-all three through the same entry point.
+`SplitMethod` is the schema's enum, so the `Record` type makes the compiler
+reject a method with no strategy. The selector, the strategies and the
+post-condition are the same three parts `design-classes.md` §4.2 shows.
 
-Two things make Strategy worth the indirection here rather than reflexive
-pattern use:
+### What it buys, concretely
 
-- Each method is separately, exhaustively testable — the remainder distribution
-  in the equal split and the basis-point arithmetic in the percentage split
-  have different edge cases.
-- The shared post-condition (shares sum exactly to the total) is asserted once,
-  outside the strategies, so it cannot be forgotten in one of them.
+**Each method is tested on its own.** `split.service.test.ts` has 41 tests in
+one `describe` block per method plus one for the shared rules, covering the
+remainder order, mismatched custom sums, 0% participants, and basis-point
+rounding. Being pure (no I/O), they run without a database or mocks.
 
-`SplitMethod` already exists as an enum in the schema, so the selector is
-modelled; only the strategies themselves are unwritten.
+**The shared rule cannot be forgotten.** `assertSharesMatchTotal` runs after
+whichever strategy ran, outside all three. A bug in one strategy fails the
+request with a 500 rather than storing an expense whose shares drift from its
+total.
+
+**One split, everywhere.** `expense.service` calls `splitExpense` for both
+the preview and the save, and the seed (`server/src/seed.ts`) calls it too, so
+the preview a member sees, the shares stored, and the demonstration data all
+come from the same arithmetic.
+
+**Extending it is local.** A fourth method (by shares, say) is one function and
+one entry in `strategies`; nothing else in `splitExpense` changes.
+
+### The cost
+
+An indirection where a `switch` over three cases would also work, and one
+more name (`SplitStrategy`) for a reader to learn. It is worth it here because
+of the post-condition: keeping it outside the algorithms is what guarantees it
+applies to every one of them.
 
 ---
 
