@@ -108,6 +108,38 @@ export type Expense = {
  * in household join order: remainder cents are handed out in request order,
  * so a stable order keeps the same expense splitting the same way everywhere.
  */
+/**
+ * Matches the contract's `BalancePublic`, from the requester's side: positive
+ * `netCents` means that member owes the requester; negative, the reverse.
+ */
+export type Balance = {
+  userId: string;
+  name: string;
+  netCents: number;
+};
+
+export type BalanceSummary = {
+  balances: Balance[];
+  totals: { youOweCents: number; owedToYouCents: number };
+};
+
+/** Matches the contract's `SettlementPublic`: `from` paid `to`. */
+export type Settlement = {
+  id: string;
+  from: { userId: string; name: string };
+  to: { userId: string; name: string };
+  amountCents: number;
+  note: string | null;
+  settledAt: string;
+};
+
+export type SettlementInput = {
+  fromUserId: string;
+  toUserId: string;
+  amountCents: number;
+  note?: string;
+};
+
 export type ExpenseInput = {
   description: string;
   totalAmountCents: number;
@@ -266,5 +298,25 @@ export const api = {
       method: "POST",
       body: input,
     });
+  },
+
+  /** The requester's balance with each other member, derived on every request. */
+  balances(householdId: string) {
+    return request<BalanceSummary>(`/households/${householdId}/balances`);
+  },
+
+  /** Every settlement, newest first, including ones that paid a balance off. */
+  settlements(householdId: string) {
+    return request<{ settlements: Settlement[] }>(
+      `/households/${householdId}/settlements`
+    );
+  },
+
+  /** 409 EXCEEDS_BALANCE if `from` does not owe `to` at least `amountCents` right now. */
+  createSettlement(householdId: string, input: SettlementInput) {
+    return request<{ settlement: Settlement }>(
+      `/households/${householdId}/settlements`,
+      { method: "POST", body: input }
+    );
   },
 };

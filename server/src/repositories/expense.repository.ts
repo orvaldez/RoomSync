@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { getPrisma } from "./prisma";
+import { lockLedger } from "./ledger.repository";
 
 /**
  * Declared here rather than imported from the generated Prisma client, for the
@@ -87,27 +88,35 @@ function toExpenseRecord(row: ExpenseRow): ExpenseRecord {
 /**
  * Create an expense and all of its shares atomically (UC-05 10a).
  *
- * One nested write, which Prisma runs in a single transaction: if any share
- * fails to insert, the expense is rolled back with it. An expense with only
- * some of its shares would silently corrupt every balance derived from it.
+ * One transaction: if any share fails to insert, the expense is rolled back
+ * with it. An expense with only some of its shares would silently corrupt
+ * every balance derived from it.
+ *
+ * It takes the household's ledger lock first, because a new expense changes
+ * balances: a settlement being checked at the same moment must either see this
+ * expense or finish before it (UC-08 4e). See `lockLedger`.
  */
 export async function createWithShares(
   expense: NewExpense
 ): Promise<ExpenseRecord> {
-  const row = await getPrisma().expense.create({
-    data: {
-      householdId: expense.householdId,
-      description: expense.description,
-      totalAmountCents: expense.totalAmountCents,
-      expenseDate: expense.expenseDate,
-      paidByUserId: expense.paidByUserId,
-      splitMethod: expense.splitMethod,
-      shares: { create: expense.shares },
-    },
-    include: EXPENSE_INCLUDE,
-  });
+  return getPrisma().$transaction(async (tx) => {
+    await lockLedger(tx, expense.householdId);
 
-  return toExpenseRecord(row);
+    const row = await tx.expense.create({
+      data: {
+        householdId: expense.householdId,
+        description: expense.description,
+        totalAmountCents: expense.totalAmountCents,
+        expenseDate: expense.expenseDate,
+        paidByUserId: expense.paidByUserId,
+        splitMethod: expense.splitMethod,
+        shares: { create: expense.shares },
+      },
+      include: EXPENSE_INCLUDE,
+    });
+
+    return toExpenseRecord(row);
+  });
 }
 
 /** Every expense in a household, newest expenseDate first, then newest created. */

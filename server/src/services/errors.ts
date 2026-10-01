@@ -251,3 +251,41 @@ export class InvitationExpiredError extends AppError {
     this.name = "InvitationExpiredError";
   }
 }
+
+/** 400 — a settlement's payer and recipient are the same member (UC-08 4c). */
+export class SameMemberError extends AppError {
+  readonly code = "SAME_MEMBER";
+  readonly status = 400;
+
+  constructor() {
+    super("A member cannot settle with themselves.");
+    this.name = "SameMemberError";
+  }
+}
+
+/** 400 — one side of a settlement is not in this household (UC-08 4d). */
+export class MemberNotInHouseholdError extends AppError {
+  readonly code = "MEMBER_NOT_IN_HOUSEHOLD";
+  readonly status = 400;
+
+  constructor() {
+    super("Both members must belong to this household.");
+    this.name = "MemberNotInHouseholdError";
+  }
+}
+
+/**
+ * 409 — the settlement is more than the payer currently owes the recipient
+ * (UC-08 4a, 4e). Recording it would invert the balance and invent a debt that
+ * does not exist. Checked against the balance at the moment of writing, not
+ * the one the member was shown.
+ */
+export class ExceedsBalanceError extends AppError {
+  readonly code = "EXCEEDS_BALANCE";
+  readonly status = 409;
+
+  constructor() {
+    super("That is more than is currently owed.");
+    this.name = "ExceedsBalanceError";
+  }
+}

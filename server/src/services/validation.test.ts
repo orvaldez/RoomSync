@@ -15,6 +15,8 @@ import {
   EXPENSE_DESCRIPTION_MAX_LENGTH,
   validateExpenseDescription,
   validateCalendarDate,
+  SETTLEMENT_NOTE_MAX_LENGTH,
+  validateSettlementNote,
 } from "./validation";
 
 describe("normalizeEmail", () => {
@@ -208,5 +210,19 @@ describe("validateCalendarDate", () => {
     expect(validateCalendarDate("2026-02-30")).not.toBeNull();
     expect(validateCalendarDate("2027-02-29")).not.toBeNull();
     expect(validateCalendarDate("2026-13-01")).not.toBeNull();
+  });
+});
+
+describe("validateSettlementNote", () => {
+  it("treats absent, null and blank as no note", () => {
+    expect(validateSettlementNote(undefined)).toBeNull();
+    expect(validateSettlementNote(null)).toBeNull();
+    expect(validateSettlementNote("   ")).toBeNull();
+  });
+
+  it("rejects non-strings and notes past the limit", () => {
+    expect(validateSettlementNote(42)).not.toBeNull();
+    expect(validateSettlementNote("a".repeat(SETTLEMENT_NOTE_MAX_LENGTH))).toBeNull();
+    expect(validateSettlementNote("a".repeat(SETTLEMENT_NOTE_MAX_LENGTH + 1))).not.toBeNull();
   });
 });
