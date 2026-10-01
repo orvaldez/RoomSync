@@ -8,8 +8,7 @@ check that the rules hold. The classes inside these modules are described in
 [design-classes.md](./design-classes.md); the reasoning for the layering itself
 is ADR-001.
 
-Everything below is on `main` except the chore modules (#53) and the balance,
-settlement and ledger modules (#54), which are in review and drawn dashed.
+Everything below is on `main`.
 
 ---
 
@@ -35,8 +34,9 @@ flowchart TB
             r_house["household.routes"]
             r_inv["invitation.routes"]
             r_exp["expense.routes"]
-            r_chore["chore.routes"]:::review
-            r_bal["balance.routes"]:::review
+            r_chore["chore.routes"]
+            r_bal["balance.routes"]
+            r_dash["dashboard.routes"]
             r_health["health.routes"]
         end
 
@@ -46,9 +46,10 @@ flowchart TB
             s_inv["invitation.service"]
             s_exp["expense.service"]
             s_split["split.service"]
-            s_chore["chore.service"]:::review
-            s_bal["balance.service"]:::review
-            s_settle["settlement.service"]:::review
+            s_chore["chore.service"]
+            s_bal["balance.service"]
+            s_settle["settlement.service"]
+            s_dash["dashboard.service"]
             s_val["validation · errors"]
         end
 
@@ -57,8 +58,8 @@ flowchart TB
             p_house["household.repository"]
             p_inv["invitation.repository"]
             p_exp["expense.repository"]
-            p_chore["chore.repository"]:::review
-            p_ledger["ledger.repository"]:::review
+            p_chore["chore.repository"]
+            p_ledger["ledger.repository"]
             p_prisma["prisma · errors"]
         end
     end
@@ -73,7 +74,6 @@ flowchart TB
     member -. "membership rule" .-> s_house
     session -. "own session table" .-> db
 
-    classDef review stroke-dasharray: 5 5
 ```
 
 Requests enter through the middleware chain, are handled by a route, which
@@ -98,9 +98,10 @@ genuinely builds on another. The ones that exist:
 | From | To | Why |
 |---|---|---|
 | `expense.service` | `split.service` | Splitting is its own rule set (the Strategy pattern), used by preview and create |
-| `settlement.service` | `balance.service` | A settlement is checked against the same `netOwed` arithmetic balances use (#54) |
+| `settlement.service` | `balance.service` | A settlement is checked against the same `netOwed` arithmetic balances use |
+| `dashboard.service` | `household`, `balance`, `chore`, `expense`, `settlement` services | The dashboard is a view over the other features, so it composes their services rather than querying again, and cannot disagree with their screens |
 | `expense.service`, `invitation.service`, `chore.service`, `balance.service`, `settlement.service` | `household.repository` | Membership checks and member names |
-| `expense.repository` | `ledger.repository` | Expense creation takes the same per-household ledger lock as settlements (#54) |
+| `expense.repository` | `ledger.repository` | Expense creation takes the same per-household ledger lock as settlements |
 | `require-household-member` (middleware) | `household.service` | The membership rule is a business rule; the middleware only connects it to the request |
 
 ### The one exception
@@ -143,15 +144,16 @@ them.
 | `household.routes` | create, current, members |
 | `invitation.routes` | create invitation, preview, accept |
 | `expense.routes` | preview, create, list, get one |
-| `chore.routes` (#53) | create, list, edit, complete |
-| `balance.routes` (#54) | balances; create and list settlements |
+| `chore.routes` | create, list, edit, complete |
+| `balance.routes` | balances; create and list settlements |
+| `dashboard.routes` | the whole dashboard in one response |
 
 Each handler reads the body, calls one service function, and sets the status.
 None builds an error body or touches the database.
 
 ### services/
-`auth`, `household`, `invitation`, `expense`, `split`, and in review `chore`,
-`balance` and `settlement` — their operations are in
+`auth`, `household`, `invitation`, `expense`, `split`, `chore`, `balance`,
+`settlement` and `dashboard` — their operations are in
 [design-classes.md §2](./design-classes.md#2-service-classes). Alongside them:
 
 - `validation.ts` — pure field validators returning a message or `null`, so a
@@ -208,7 +210,7 @@ flowchart LR
 
 ## 6. Adding a feature
 
-The shape every feature so far has followed, and the one US-10 and US-11 will:
+The shape every feature so far has followed, US-10 included, and the one US-11 will:
 
 1. Endpoint and error codes in the API contract first.
 2. A repository function for each query, returning a record type declared in
@@ -232,6 +234,8 @@ The shape every feature so far has followed, and the one US-10 and US-11 will:
 - **`validation.ts` holds validators for every domain.** Fine at this size; the
   natural split is per feature once it becomes hard to navigate.
 - **The client has no data layer between pages and `lib/api.ts`.** Each page
-  loads what it needs. Adequate while pages are independent; the full US-10
-  dashboard, which draws on several endpoints at once, is the point at which a
-  shared hook layer would earn its place.
+  loads what it needs. The dashboard, the one screen that draws on every
+  feature, avoided needing one by composing on the server instead: one
+  `GET /dashboard` call, assembled by `dashboard.service` from the other
+  services. A shared hook layer would earn its place once several pages need
+  the same data kept in sync.

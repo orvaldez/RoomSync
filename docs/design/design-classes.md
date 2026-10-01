@@ -11,8 +11,7 @@ are arranged into layers, and which may call which, is in
 
 Entity attributes match `server/prisma/schema.prisma`. Operations match the
 exported functions in `server/src/services/`. Everything described is merged on
-`main` except chores (#53) and balances and settlements (#54), which are in
-review and marked as such.
+`main`.
 
 ---
 
@@ -183,6 +182,7 @@ classDiagram
         <<service>>
         +createHousehold(input) PublicHousehold
         +getCurrentHousehold(userId) PublicHousehold
+        +getHousehold(userId, householdId) PublicHousehold
         +requireMembership(userId, householdId) MembershipRole
         +listMembers(householdId) PublicMember[]
     }
@@ -199,6 +199,7 @@ classDiagram
         +previewExpense(householdId, input) PublicShare[]
         +createExpense(householdId, input) PublicExpense
         +listExpenses(householdId) PublicExpense[]
+        +listRecentExpenses(householdId, limit) PublicExpense[]
         +getExpense(householdId, expenseId) PublicExpense
     }
 
@@ -209,30 +210,43 @@ classDiagram
     }
 
     class ChoreService {
-        <<service · in review #53>>
+        <<service>>
         +createChore(householdId, input) PublicChore
         +listChores(householdId, status) PublicChore[]
+        +listUpcomingFor(householdId, userId) PublicChore[]
+        +listRecentlyCompleted(householdId, limit) PublicChore[]
         +updateChore(householdId, choreId, input) PublicChore
         +completeChore(householdId, choreId, userId) PublicChore
     }
 
     class BalanceService {
-        <<service · in review #54>>
+        <<service>>
         +netOwed(creditorId, debtorId, entries) Int
         +getBalances(householdId, userId) BalanceSummary
     }
 
     class SettlementService {
-        <<service · in review #54>>
+        <<service>>
         +createSettlement(householdId, input) PublicSettlement
-        +listSettlements(householdId) PublicSettlement[]
+        +listSettlements(householdId, limit?) PublicSettlement[]
+    }
+
+    class DashboardService {
+        <<service>>
+        +getDashboard(householdId, userId) Dashboard
+        +mergeActivity(expenses, settlements, chores, limit) ActivityItem[]
     }
 
     ExpenseService ..> SplitService : splits with
     SettlementService ..> BalanceService : checks against
+    DashboardService ..> HouseholdService : composes
+    DashboardService ..> BalanceService : composes
+    DashboardService ..> ChoreService : composes
+    DashboardService ..> ExpenseService : composes
+    DashboardService ..> SettlementService : composes
 ```
 
-`splitExpense`, `splitFieldErrors` and `netOwed` are synchronous and pure — no
+`splitExpense`, `splitFieldErrors`, `netOwed` and `mergeActivity` are synchronous and pure — no
 I/O at all — which is what lets the money arithmetic be tested exhaustively
 without a database.
 
@@ -303,8 +317,8 @@ Two patterns, both in use.
 
 **Where:** `server/src/repositories/` — `user.repository.ts`,
 `household.repository.ts`, `invitation.repository.ts`,
-`expense.repository.ts`, and in review `chore.repository.ts` (#53) and
-`ledger.repository.ts` (#54). `prisma.ts` holds the shared client.
+`expense.repository.ts`, `chore.repository.ts` and `ledger.repository.ts`.
+`prisma.ts` holds the shared client.
 
 **What it is:** these modules are the only ones that touch the database. Each
 exposes intention-named operations — `findByEmail`, `createWithOwner`,
@@ -364,9 +378,10 @@ method, and keeping it outside the algorithms is what guarantees that.
 | FR-04 – FR-06 households, roles | `HouseholdService`, `Membership`, `MembershipRole` |
 | US-04 invitations | `InvitationService`, `Invitation`, `InvitationStatus` |
 | FR-07 – FR-10 expenses and splitting | `ExpenseService`, `SplitService` (Strategy), `Expense`, `ExpenseShare` |
-| FR-11, FR-12 settlements | `SettlementService`, `Settlement` (#54) |
-| FR-13 – FR-15 chores | `ChoreService`, `Chore` (#53) |
+| FR-11, FR-12 settlements | `SettlementService`, `Settlement` |
+| FR-13 – FR-15 chores | `ChoreService`, `Chore` |
+| FR-16 dashboard | `DashboardService`, composing the five services it reads from |
 | FR-18 integer money | D5; every `*Cents` field |
-| NFR-03 derived balances | D4; `BalanceService.netOwed` (#54) |
+| NFR-03 derived balances | D4; `BalanceService.netOwed` |
 | NFR-06, NFR-07 authorization | `HouseholdService.requireMembership`; D8 |
 | SC-04 exact splitting | `SplitService`'s post-condition |
