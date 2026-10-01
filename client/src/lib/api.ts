@@ -108,6 +108,59 @@ export type Expense = {
  * in household join order: remainder cents are handed out in request order,
  * so a stable order keeps the same expense splitting the same way everywhere.
  */
+/** Matches the contract's `ChorePublic`. */
+export type Chore = {
+  id: string;
+  title: string;
+  description: string | null;
+  assignee: { userId: string; name: string } | null;
+  /** `YYYY-MM-DD`, or null when there is no due date. */
+  dueDate: string | null;
+  isComplete: boolean;
+  completedAt: string | null;
+  createdAt: string;
+};
+
+/** The create body. Omit `assignedUserId` or `dueDate` for none. */
+export type ChoreInput = {
+  title: string;
+  description?: string;
+  assignedUserId?: string;
+  dueDate?: string;
+};
+
+/**
+ * Matches the contract's `BalancePublic`, from the requester's side: positive
+ * `netCents` means that member owes the requester; negative, the reverse.
+ */
+export type Balance = {
+  userId: string;
+  name: string;
+  netCents: number;
+};
+
+export type BalanceSummary = {
+  balances: Balance[];
+  totals: { youOweCents: number; owedToYouCents: number };
+};
+
+/** Matches the contract's `SettlementPublic`: `from` paid `to`. */
+export type Settlement = {
+  id: string;
+  from: { userId: string; name: string };
+  to: { userId: string; name: string };
+  amountCents: number;
+  note: string | null;
+  settledAt: string;
+};
+
+export type SettlementInput = {
+  fromUserId: string;
+  toUserId: string;
+  amountCents: number;
+  note?: string;
+};
+
 export type ExpenseInput = {
   description: string;
   totalAmountCents: number;
@@ -272,6 +325,46 @@ export const api = {
   expenses(householdId: string) {
     return request<{ expenses: Expense[] }>(
       `/households/${householdId}/expenses`
+    );
+  },
+
+  /** Outstanding chores first (soonest due), then completed (newest first). */
+  chores(householdId: string) {
+    return request<{ chores: Chore[] }>(`/households/${householdId}/chores`);
+  },
+
+  createChore(householdId: string, input: ChoreInput) {
+    return request<{ chore: Chore }>(`/households/${householdId}/chores`, {
+      method: "POST",
+      body: input,
+    });
+  },
+
+  /** Assigned member only (403 CHORE_NOT_ASSIGNED_TO_YOU); anyone if unassigned. */
+  completeChore(householdId: string, choreId: string) {
+    return request<{ chore: Chore }>(
+      `/households/${householdId}/chores/${choreId}/complete`,
+      { method: "POST" }
+    );
+  },
+
+  /** The requester's balance with each other member, derived on every request. */
+  balances(householdId: string) {
+    return request<BalanceSummary>(`/households/${householdId}/balances`);
+  },
+
+  /** Every settlement, newest first, including ones that paid a balance off. */
+  settlements(householdId: string) {
+    return request<{ settlements: Settlement[] }>(
+      `/households/${householdId}/settlements`
+    );
+  },
+
+  /** 409 EXCEEDS_BALANCE if `from` does not owe `to` at least `amountCents` right now. */
+  createSettlement(householdId: string, input: SettlementInput) {
+    return request<{ settlement: Settlement }>(
+      `/households/${householdId}/settlements`,
+      { method: "POST", body: input }
     );
   },
 };

@@ -247,6 +247,9 @@ docker compose down           # data persists in a named volume
 - [ADR-001: Architecture](./docs/architecture/adr-001-modular-monolith.md)
 - [Use case specifications](./docs/requirements/use-cases.md)
 - [Product brief and MVP scope](./docs/product-brief.md)
+- [UX wireframes](./docs/design/wireframes/README.md)
+- [Design classes](./docs/design/design-classes.md)
+- [Module structure](./docs/design/module-structure.md)
 - Architecture diagram — see proposal, Figure 2
 - Entity relationship diagram — see proposal, Figure 3
 
