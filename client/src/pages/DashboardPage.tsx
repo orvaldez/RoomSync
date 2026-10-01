@@ -134,22 +134,25 @@ export function DashboardPage() {
         <section className="panel">
           <h2>Your balance</h2>
           <p className="muted">
-            Not built yet (US-07). Balances are derived from expense shares and
-            settlements when they are read rather than stored as a running
-            total, so they appear once that calculation lands.
+            <Link to="/balances">Balances</Link> shows what each roommate owes
+            you or you owe them, worked out from expenses and settlements each
+            time it is read rather than kept as a running total.
           </p>
         </section>
 
         <section className="panel">
           <h2>Your chores</h2>
-          <p className="muted">No chores assigned to you.</p>
+          <p className="muted">
+            <Link to="/chores">Chores</Link> lists what is outstanding, who it
+            is assigned to and what is overdue.
+          </p>
         </section>
 
         <section className="panel">
           <h2>Recent activity</h2>
           <p className="muted">
-            Settlements and completed chores will show here as US-08 and US-09
-            land.
+            One feed combining expenses, settlements and completed chores is
+            History (US-11), scheduled for Sprint 3.
           </p>
         </section>
       </div>
