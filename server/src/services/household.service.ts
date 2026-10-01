@@ -80,6 +80,23 @@ export async function getCurrentHousehold(
 }
 
 /**
+ * One household with the requester's role in it, or `HOUSEHOLD_NOT_FOUND` when
+ * they are not a member of it.
+ */
+export async function getHousehold(
+  userId: string,
+  householdId: string
+): Promise<PublicHousehold> {
+  const household = await householdRepository.findWithRole(userId, householdId);
+
+  if (!household) {
+    throw new HouseholdNotFoundError();
+  }
+
+  return toPublicHousehold(household);
+}
+
+/**
  * The requester's role in a household, or `HOUSEHOLD_NOT_FOUND` when they are
  * not a member of it.
  *

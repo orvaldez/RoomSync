@@ -133,6 +133,26 @@ export async function listForHousehold(
 }
 
 /**
+ * The household's most recently *recorded* expenses, newest first, at most
+ * `limit`. Ordered by createdAt rather than expenseDate: recent activity is
+ * about what just happened in the app, and an expense entered today for last
+ * week's groceries did just happen.
+ */
+export async function listRecent(
+  householdId: string,
+  limit: number
+): Promise<ExpenseRecord[]> {
+  const rows = await getPrisma().expense.findMany({
+    where: { householdId },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    include: EXPENSE_INCLUDE,
+  });
+
+  return rows.map(toExpenseRecord);
+}
+
+/**
  * One expense, or null when it does not exist *in this household*.
  *
  * Filtering on both ids means an expense id from another household is

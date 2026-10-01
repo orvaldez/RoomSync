@@ -160,12 +160,17 @@ export async function createSettlementChecked(
 
 /**
  * Every settlement in the household, newest first. Settlements stay listed
- * after the balance they paid off reaches zero (FR-12, US-08).
+ * after the balance they paid off reaches zero (FR-12, US-08). `limit` caps the
+ * rows read, for callers that only show the latest few.
  */
-export async function listSettlements(householdId: string): Promise<SettlementRecord[]> {
+export async function listSettlements(
+  householdId: string,
+  limit?: number
+): Promise<SettlementRecord[]> {
   const rows = await getPrisma().settlement.findMany({
     where: { householdId },
     orderBy: { settledAt: "desc" },
+    take: limit,
     include: SETTLEMENT_INCLUDE,
   });
 

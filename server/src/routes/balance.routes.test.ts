@@ -162,7 +162,7 @@ describe("GET /api/households/:householdId/settlements", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ settlements: [] });
-    expect(listSettlements).toHaveBeenCalledWith(HOUSEHOLD_ID);
+    expect(listSettlements).toHaveBeenCalledWith(HOUSEHOLD_ID, undefined); // no limit: every settlement
   });
 });
 

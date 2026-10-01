@@ -79,11 +79,32 @@ export async function listOpen(householdId: string): Promise<ChoreRecord[]> {
   return rows.map(toChoreRecord);
 }
 
-/** Completed chores, most recently completed first (contract: "completed"). */
-export async function listCompleted(householdId: string): Promise<ChoreRecord[]> {
+/** Outstanding chores assigned to this member, in the same order as `listOpen`. */
+export async function listOpenAssignedTo(
+  householdId: string,
+  userId: string
+): Promise<ChoreRecord[]> {
+  const rows = await getPrisma().chore.findMany({
+    where: { householdId, isComplete: false, assignedUserId: userId },
+    orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
+    include: CHORE_INCLUDE,
+  });
+
+  return rows.map(toChoreRecord);
+}
+
+/**
+ * Completed chores, most recently completed first (contract: "completed").
+ * `limit` caps the rows read, for callers that only show the latest few.
+ */
+export async function listCompleted(
+  householdId: string,
+  limit?: number
+): Promise<ChoreRecord[]> {
   const rows = await getPrisma().chore.findMany({
     where: { householdId, isComplete: true },
     orderBy: [{ completedAt: "desc" }, { createdAt: "desc" }],
+    take: limit,
     include: CHORE_INCLUDE,
   });
 
