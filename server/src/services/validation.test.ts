@@ -19,6 +19,8 @@ import {
   CHORE_DESCRIPTION_MAX_LENGTH,
   validateChoreTitle,
   validateChoreDescription,
+  SETTLEMENT_NOTE_MAX_LENGTH,
+  validateSettlementNote,
 } from "./validation";
 
 describe("normalizeEmail", () => {
@@ -242,5 +244,19 @@ describe("validateChoreDescription", () => {
     expect(
       validateChoreDescription("a".repeat(CHORE_DESCRIPTION_MAX_LENGTH + 1))
     ).not.toBeNull();
+  });
+});
+
+describe("validateSettlementNote", () => {
+  it("treats absent, null and blank as no note", () => {
+    expect(validateSettlementNote(undefined)).toBeNull();
+    expect(validateSettlementNote(null)).toBeNull();
+    expect(validateSettlementNote("   ")).toBeNull();
+  });
+
+  it("rejects non-strings and notes past the limit", () => {
+    expect(validateSettlementNote(42)).not.toBeNull();
+    expect(validateSettlementNote("a".repeat(SETTLEMENT_NOTE_MAX_LENGTH))).toBeNull();
+    expect(validateSettlementNote("a".repeat(SETTLEMENT_NOTE_MAX_LENGTH + 1))).not.toBeNull();
   });
 });

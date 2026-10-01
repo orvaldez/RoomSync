@@ -185,3 +185,19 @@ export function validateChoreDescription(value: unknown): string | null {
   }
   return null;
 }
+
+export const SETTLEMENT_NOTE_MAX_LENGTH = 200;
+
+/** Optional settlement note: at most 200 characters. Absent, null and blank are fine. */
+export function validateSettlementNote(value: unknown): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value !== "string") {
+    return "Note must be text.";
+  }
+  if (value.trim().length > SETTLEMENT_NOTE_MAX_LENGTH) {
+    return `Note must be ${SETTLEMENT_NOTE_MAX_LENGTH} characters or fewer.`;
+  }
+  return null;
+}

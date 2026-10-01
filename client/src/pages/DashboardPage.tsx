@@ -117,6 +117,9 @@ export function DashboardPage() {
         </Link>{" "}
         <Link className="button-link" to="/chores">
           Chores
+        </Link>{" "}
+        <Link className="button-link" to="/balances">
+          Balances
         </Link>
       </p>
 
