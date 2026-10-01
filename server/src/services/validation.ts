@@ -74,3 +74,130 @@ export function validatePassword(value: unknown): string | null {
   }
   return null;
 }
+
+export const HOUSEHOLD_NAME_MAX_LENGTH = 100;
+
+/**
+ * Household name, per the API contract Section 4: 1-100 characters after trim.
+ *
+ * Separate from `validateName` even though the limits currently match, because
+ * these name two different things — a person and a household — and a change to
+ * one should not silently move the other.
+ */
+export function validateHouseholdName(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return "Household name is required.";
+  }
+  if (value.trim().length > HOUSEHOLD_NAME_MAX_LENGTH) {
+    return `Household name must be ${HOUSEHOLD_NAME_MAX_LENGTH} characters or fewer.`;
+  }
+  return null;
+}
+
+/**
+ * The largest amount the database can store. Money columns are PostgreSQL
+ * `integer` (Prisma `Int`), so a larger value would pass here and then fail on
+ * insert with a far less useful error.
+ */
+export const MAX_AMOUNT_CENTS = 2_147_483_647;
+
+/**
+ * A money amount in integer cents (FR-18): a positive whole number.
+ *
+ * The client converts "$12.34" to `1234` before sending, so a fraction here is
+ * a client bug or a hand-built request, and is rejected rather than rounded.
+ */
+export function validateAmountCents(value: unknown): string | null {
+  if (typeof value !== "number" || !Number.isInteger(value)) {
+    return "Amount must be a whole number of cents.";
+  }
+  if (value <= 0) {
+    return "Amount must be greater than zero.";
+  }
+  if (value > MAX_AMOUNT_CENTS) {
+    return "Amount is too large.";
+  }
+  return null;
+}
+
+export const EXPENSE_DESCRIPTION_MAX_LENGTH = 200;
+
+/** Expense description, per the API contract: 1-200 characters after trim. */
+export function validateExpenseDescription(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return "Description is required.";
+  }
+  if (value.trim().length > EXPENSE_DESCRIPTION_MAX_LENGTH) {
+    return `Description must be ${EXPENSE_DESCRIPTION_MAX_LENGTH} characters or fewer.`;
+  }
+  return null;
+}
+
+const CALENDAR_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * A date the user picks, sent as `YYYY-MM-DD` (contract Section 1, "Dates").
+ *
+ * The round trip through `Date` catches dates that match the pattern but do
+ * not exist, such as 2026-02-30, which `Date` would otherwise roll over into
+ * March without complaint.
+ */
+export function validateCalendarDate(value: unknown): string | null {
+  if (typeof value !== "string" || !CALENDAR_DATE_PATTERN.test(value)) {
+    return "Enter a date as YYYY-MM-DD.";
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    return "Enter a real calendar date.";
+  }
+
+  return null;
+}
+
+export const CHORE_TITLE_MAX_LENGTH = 100;
+export const CHORE_DESCRIPTION_MAX_LENGTH = 500;
+
+/** Chore title, per the API contract: 1-100 characters after trim (UC-09 2a). */
+export function validateChoreTitle(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return "Title is required.";
+  }
+  if (value.trim().length > CHORE_TITLE_MAX_LENGTH) {
+    return `Title must be ${CHORE_TITLE_MAX_LENGTH} characters or fewer.`;
+  }
+  return null;
+}
+
+/**
+ * Optional chore description: at most 500 characters. Absent, null, and blank
+ * are all fine; they mean "no description".
+ */
+export function validateChoreDescription(value: unknown): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value !== "string") {
+    return "Description must be text.";
+  }
+  if (value.trim().length > CHORE_DESCRIPTION_MAX_LENGTH) {
+    return `Description must be ${CHORE_DESCRIPTION_MAX_LENGTH} characters or fewer.`;
+  }
+  return null;
+}
+
+export const SETTLEMENT_NOTE_MAX_LENGTH = 200;
+
+/** Optional settlement note: at most 200 characters. Absent, null and blank are fine. */
+export function validateSettlementNote(value: unknown): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (typeof value !== "string") {
+    return "Note must be text.";
+  }
+  if (value.trim().length > SETTLEMENT_NOTE_MAX_LENGTH) {
+    return `Note must be ${SETTLEMENT_NOTE_MAX_LENGTH} characters or fewer.`;
+  }
+  return null;
+}
