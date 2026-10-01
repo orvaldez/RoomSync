@@ -11,23 +11,23 @@ described in the proposal. Status values are **Not started**, **In progress**,
 **In review**, and **Done**; a story reaches Done only when it meets the
 Definition of Done at the bottom of this file.
 
-Sprint 1 closed on September 16, 2026. This file was last updated on
-September 22, 2026.
+Sprint 1 closed on September 16, 2026, and Sprint 2 on September 30, 2026,
+with Milestone 1. This file was last updated on September 30, 2026.
 
 ## P0 — Required for Milestone 1 MVP
 
 | # | Story | Area | Owner | Sprint | Status |
 |---|---|---|---|---|---|
-| US-01 | As a new user, I want to create a RoomSync account so that I can access the application. | Account | Orlando | Sprint 2 | In review |
-| US-02 | As a registered user, I want to log into RoomSync so that I can access my household information. | Account | Orlando | Sprint 2 | Not started |
-| US-03 | As a user, I want to create a household so that I can manage responsibilities with my roommates. | Household | Agustin | Sprint 2 | Not started |
-| US-04 | As a household owner, I want to invite another user so that they can join my household. | Household | Agustin | Sprint 2 | Not started |
-| US-05 | As a household member, I want to record a shared expense so that the household can track who owes money. | Expense | Agustin | Sprint 2 | Not started |
-| US-06 | As a household member, I want to split an expense so that each roommate's financial responsibility is calculated correctly. | Expense | Agustin | Sprint 2 | Not started |
-| US-07 | As a user, I want to see what I owe and what others owe me so that I understand my household balance. | Expense | Orlando | Sprint 2 | Not started |
-| US-08 | As a household member, I want to record that a debt has been paid so that balances reflect money that has already changed hands. | Expense | Orlando | Sprint 2 | Not started |
-| US-09 | As a household member, I want to create and assign chores so that household responsibilities are distributed among roommates. | Chore | Agustin | Sprint 2 | Not started |
-| US-10 | As a household member, I want to view a household dashboard so that I can quickly understand my responsibilities. | Dashboard | Orlando | Sprint 2 | Not started |
+| US-01 | As a new user, I want to create a RoomSync account so that I can access the application. | Account | Orlando | Sprint 2 | Done |
+| US-02 | As a registered user, I want to log into RoomSync so that I can access my household information. | Account | Orlando | Sprint 2 | Done |
+| US-03 | As a user, I want to create a household so that I can manage responsibilities with my roommates. | Household | Agustin | Sprint 2 | Done |
+| US-04 | As a household owner, I want to invite another user so that they can join my household. | Household | Agustin | Sprint 2 | Done |
+| US-05 | As a household member, I want to record a shared expense so that the household can track who owes money. | Expense | Agustin | Sprint 2 | Done |
+| US-06 | As a household member, I want to split an expense so that each roommate's financial responsibility is calculated correctly. | Expense | Agustin | Sprint 2 | Done |
+| US-07 | As a user, I want to see what I owe and what others owe me so that I understand my household balance. | Expense | Agustin | Sprint 2 | Done |
+| US-08 | As a household member, I want to record that a debt has been paid so that balances reflect money that has already changed hands. | Expense | Agustin | Sprint 2 | Done |
+| US-09 | As a household member, I want to create and assign chores so that household responsibilities are distributed among roommates. | Chore | Agustin | Sprint 2 | Done |
+| US-10 | As a household member, I want to view a household dashboard so that I can quickly understand my responsibilities. | Dashboard | Agustin | Sprint 2 | Done |
 
 ## P1 — Planned for MVP, deferred until P0 is complete
 
@@ -40,13 +40,21 @@ September 22, 2026.
 US-01, US-02, and US-03 were planned for Sprint 1 and none of them started
 within it. Sprint 1 went to the foundation those stories depend on: client and
 server workspaces, the database schema and initial migration, the layered server
-structure, and the API contract. All three moved to Sprint 2, which now carries
-the entire P0 set. US-01 has since been implemented and is in review.
+structure, and the API contract. All three moved to Sprint 2, which then carried
+the entire P0 set.
 
-That is the main schedule risk going into Milestone 1 on September 30. The
-milestone requires a working end-to-end MVP and explicitly rules out a static
-mock-up, so if the sprint tightens, the P1 history story (US-11) and the softer
-design documentation move to Milestone 2 before any P0 feature does.
+## Sprint 2 outcome
+
+All ten P0 stories, US-01 through US-10, are Done and merged, so Milestone 1
+ships the full MVP the proposal described rather than a reduced one. The
+design documentation landed in the same sprint, and US-11 stays P1 in
+Sprint 3 as planned.
+
+Ownership moved during the sprint so neither member waited on the other: the
+balances and settlements stories (US-07, US-08) and the dashboard (US-10) were
+built by Agustin, and the Owner column above records who built each story.
+What is still open going into Milestone 2 is recorded in the product brief
+(`docs/product-brief.md`, Section 5).
 
 ## Supporting work not tracked as user stories
 

@@ -148,10 +148,13 @@ since our external feedback arrives at milestones.
 A process model that lives only in a document erodes under deadline pressure. Ours is
 enforced by mechanisms rather than intentions:
 
-- **Protected `main`.** No direct commits. All work arrives through pull requests.
-- **Mandatory peer review, no exceptions.** No pull request is merged by its author.
-  Both members review everything, which enforces collective code ownership structurally
-  rather than by agreement.
+- **Pull requests only.** Since Milestone 0, every change to `main` has arrived through
+  a pull request; no feature work is committed directly.
+- **Mandatory peer review.** Every pull request is reviewed and approved by the other
+  member before it merges, which enforces collective code ownership rather than leaving
+  it to agreement. In Milestone 1 this was a team rule rather than a repository setting,
+  and it was broken twice under deadline pressure (Section 7); from Milestone 2, branch
+  protection on `main` enforces it.
 - **Definition of Done in `BACKLOG.md`**, checked per story: acceptance criteria met,
   coding standards followed, tests written and passing, CI green, peer-approved,
   integrates without regression, no known critical defects, documentation updated.
@@ -190,9 +193,9 @@ API contract consumed the entire sprint, and the user stories layered on top of 
 never began. The infrastructure work was necessary and not wasted — but it was not
 planned, which means the plan was wrong rather than the work being slow.
 
-The consequence is that Sprint 2 now carries all ten P0 stories plus most of the design
-documentation, closing September 30 with Milestone 1. That is the project's largest
-current schedule risk. Two changes follow from it:
+The consequence was that Sprint 2 carried all ten P0 stories plus most of the design
+documentation, closing September 30 with Milestone 1 — at the time, the project's
+largest schedule risk. Two changes followed from it:
 
 1. Infrastructure and documentation work is entered on the backlog as issues before
    sprint planning, not discovered mid-sprint. Sprint 1 created five such issues after
@@ -201,7 +204,31 @@ current schedule risk. Two changes follow from it:
    history story (US-11) and the softer design documentation move to Milestone 2 or 3;
    no P0 story is dropped to preserve documentation.
 
-## 7. Limits of this model, honestly stated
+## 7. Evidence from Sprint 2
+
+Sprint 2 ran through September 30 and closed with Milestone 1.
+
+**What was completed:** all ten P0 stories, US-01 through US-10, merged and working end
+to end, together with the design documentation and seed data. The P1 history story
+(US-11) stayed in Sprint 3 as planned. Nothing was dropped to make the date.
+
+**What the process did well.** The Sprint 1 foundation paid for itself: once the first
+feature had gone through contract, repository, service, route and screen, the rest
+followed the same shape. Both changes from Sprint 1 held — documentation work was on
+the board as issues before it was needed, and the MVP was protected over the softer
+deliverables. Stories changed hands mid-sprint (balances, settlements and the dashboard
+moved to Agustin) so that neither member sat blocked waiting on the other, which is the
+kind of adjustment the sprint boundary exists for, made inside the sprint instead.
+
+**What the process did poorly.** The risk named in Section 8 materialized. Under time
+pressure, two pull requests (#41 and #52) were merged by their author without the other
+member's review. Both turned out to be missing acceptance criteria, which were found
+afterwards and completed in #58 before submission. Every other pull request was approved
+or merged by the other member. The change that follows: from Milestone 2, branch
+protection on `main` requires one approval, so the review step in the Definition of
+Done is enforced by the repository rather than by memory.
+
+## 8. Limits of this model, honestly stated
 
 Two-week sprints on a six-sprint project mean only five retrospectives, so process
 corrections land slowly — a mistake made in Sprint 1 is corrected in Sprint 2 at the
