@@ -250,6 +250,7 @@ docker compose down           # data persists in a named volume
 - [UX wireframes](./docs/design/wireframes/README.md)
 - [Design classes](./docs/design/design-classes.md)
 - [Module structure](./docs/design/module-structure.md)
+- [Component designs: Create Expense, Record Settlement](./docs/design/component-designs.md)
 - Architecture diagram — see proposal, Figure 2
 - Entity relationship diagram — see proposal, Figure 3
 
