@@ -228,6 +228,33 @@ or merged by the other member. The change that follows: from Milestone 2, branch
 protection on `main` requires one approval, so the review step in the Definition of
 Done is enforced by the repository rather than by memory.
 
+The second problem was dependencies between the two members' work. It was not always
+clear what one member could build before the other's work landed, so stories were
+handed over mid-sprint to get around waits that could have been planned for. An audit
+of the board at the start of Sprint 3 also found that no acceptance-criteria box on
+any closed issue had been ticked, so the issues did not show progress that had in fact
+been made.
+
+**Changes for Sprints 3 and 4.** Planning for Milestone 2 made the dependencies
+explicit rather than discovered:
+
+1. Every issue carries a target date and a *Dependencies and target* section saying
+   when it can start, what it waits on, and what it unblocks. GitHub's "blocked by"
+   links mark the issues that cannot close until another one does. The places where
+   one member waits on the other are listed in `BACKLOG.md`, each with what the other
+   member delivers first so the wait never happens.
+2. A member blocked for more than a day says so on the issue and picks up other work
+   rather than waiting.
+3. A feature freeze on October 28 leaves the final days for testing, documentation,
+   and assembly.
+4. P0 and P1 were redefined: P0 is what the current milestone is graded on, P1 can slip
+   to the next milestone. P1 work not done by October 31 moves to Milestone 3.
+5. Acceptance-criteria boxes are ticked as work lands, and pull requests say
+   `Closes #N`, so the board reflects real progress.
+
+Sprint 4 runs from October 15 to November 2, a few days longer than two weeks, so that
+it ends on the Milestone 2 due date.
+
 ## 8. Limits of this model, honestly stated
 
 Two-week sprints on a six-sprint project mean only five retrospectives, so process
