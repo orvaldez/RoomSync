@@ -43,5 +43,7 @@ every pull request needs the other member's approval before it can merge.
 
 ## Still to do
 
-- [ ] Add the CI jobs from #68 as required status checks, and add their names
-      and an updated export here
+- [ ] Add the CI jobs from #68 as required status checks: `server` and
+      `client`, the job names in `.github/workflows/ci.yml`. GitHub offers a
+      check name only after it has run once, so this follows the first CI run
+      on `main`. Then add an updated export here

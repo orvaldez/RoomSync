@@ -1,0 +1,64 @@
+# Lint, typecheck, build and test on every pull request and on every push to
+# main. The job names (`server`, `client`) are the status check names that the
+# "Protect main" ruleset requires (docs/process/branch-protection.md), so
+# renaming a job means updating the ruleset in the same change.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A new push to the same branch cancels the run it supersedes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: server
+    env:
+      # prisma.config.ts resolves DATABASE_URL whenever the Prisma CLI loads,
+      # including for `prisma generate`, which never connects. The unit tests
+      # use no database, so a placeholder is enough here.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      # Prisma 7 does not generate the client on install, and the tests
+      # import the app, which imports @prisma/client.
+      - run: npx prisma generate
+      - run: npm run typecheck
+      # Server lint is added here with #69.
+      - run: npm test
+
+  client:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      # `tsc -b && vite build`, so this is also the client's typecheck.
+      - run: npm run build
+      - run: npm test
