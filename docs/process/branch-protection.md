@@ -19,10 +19,18 @@ in #64.
 | Allowed merge methods | Squash only | The PR title becomes the Conventional Commit on `main` |
 | Restrict deletions | On | `main` can't be deleted |
 | Block force pushes | On | History on `main` can't be rewritten |
-| Require status checks to pass | On, no checks listed yet | The CI job names are added when CI merges (#68) |
+| Require status checks to pass | `server` and `client`, from GitHub Actions | A pull request can't merge until CI (`.github/workflows/ci.yml`, #68) is green |
 
 GitHub does not let a pull request's author approve it, so with two members,
 every pull request needs the other member's approval before it can merge.
+
+The required checks were added on October 7, 2026, after the first CI run on
+`main`, because GitHub offers a check name only once it has run. Each check is
+pinned to the GitHub Actions app, so a status with the same name posted by
+anything else doesn't satisfy it. The check names are the job names in
+`ci.yml`, so renaming a job means updating the ruleset in the same change. New
+jobs, such as the integration tests (#61), aren't required until they are added
+here as well.
 
 ## Evidence
 
@@ -34,16 +42,12 @@ every pull request needs the other member's approval before it can merge.
 
   ![The Protect main ruleset, active, with 4 branch rules targeting 1 branch](./branch-protection-rulesets.webp)
 
+  The screenshot was taken when the ruleset was created, before the status
+  checks were added; the export above is current.
+
 ## Team practice
 
 - The reviewer clicks **Approve** before merging. Merging is not a substitute
   for approving, because the merge leaves no record that the code was reviewed.
 - A pull request that received **Request changes** is reviewed again after the
   changes are made, rather than merged as it stands.
-
-## Still to do
-
-- [ ] Add the CI jobs from #68 as required status checks: `server` and
-      `client`, the job names in `.github/workflows/ci.yml`. GitHub offers a
-      check name only after it has run once, so this follows the first CI run
-      on `main`. Then add an updated export here
