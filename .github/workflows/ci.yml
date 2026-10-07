@@ -62,3 +62,42 @@ jobs:
       # `tsc -b && vite build`, so this is also the client's typecheck.
       - run: npm run build
       - run: npm test
+
+  # The integration tests (#61): the real app against PostgreSQL, nothing
+  # mocked. The service container's database ends in _test, which the suite
+  # requires before it will empty any table.
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: server
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: roomsync
+          POSTGRES_PASSWORD: roomsync
+          POSTGRES_DB: roomsync_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U roomsync"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://roomsync:roomsync@localhost:5432/roomsync_test?schema=public
+      # Only for `prisma generate`, as in the server job; the suite itself
+      # connects through TEST_DATABASE_URL.
+      DATABASE_URL: postgresql://roomsync:roomsync@localhost:5432/roomsync_test?schema=public
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run test:integration

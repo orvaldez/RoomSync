@@ -1,7 +1,10 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
+    // Integration tests need PostgreSQL and run separately, with
+    // `npm run test:integration` (vitest.integration.config.ts).
+    exclude: [...configDefaults.exclude, "src/integration/**"],
     /**
      * The app builds its session middleware at import time, which needs a
      * secret. Supplying it here keeps the test process from depending on a
