@@ -21,6 +21,11 @@ export default defineConfig({
       NODE_ENV: "integration",
       DATABASE_URL: databaseUrl,
       SESSION_SECRET: "test-only-secret-never-used-outside-vitest",
+      // The flows register many users from one address; the rate limits
+      // (#71) have their own tests, so they are set out of reach here.
+      LOGIN_MAX_FAILURES_PER_EMAIL: "10000",
+      LOGIN_MAX_FAILURES_PER_IP: "10000",
+      REGISTER_MAX_PER_IP: "10000",
     },
     // One database, emptied before every test, so test files must not run at
     // the same time.

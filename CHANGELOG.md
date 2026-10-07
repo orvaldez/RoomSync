@@ -46,6 +46,13 @@ Every version is a GitHub release whose notes match its section below.
   status checks (#82).
 - The backlog and process model plan Milestone 2 (#79).
 
+### Security
+
+- Login is rate-limited per account email and per IP, counting only wrong
+  passwords, and registration per IP. Over a limit the API answers
+  `429 RATE_LIMITED` with `Retry-After`, and the login screen says how long
+  to wait. The limits are set by environment variables (#71).
+
 ## [0.1.0] - 2026-09-30
 
 The Milestone 1 MVP: user stories US-01 to US-10, working end to end from

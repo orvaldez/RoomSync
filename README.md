@@ -119,6 +119,10 @@ the client needs no environment variables.
 | `PORT` | `4000` | Port the API listens on (default 4000). The Vite dev server proxies `/api` to 4000 (`client/vite.config.ts`), so change both together |
 | `SESSION_SECRET` | `change-me-in-your-local-env` | Signs the session cookie. Required: the server refuses to start without it, and in production refuses the example value |
 | `NODE_ENV` | unset | Leave unset in development. `production` turns on the secure cookie and trusted proxy and makes the seed refuse to run; `test` is set by the test runner and uses an in-memory session store; `integration` is set by the integration test runner and keeps the PostgreSQL store |
+| `RATE_LIMIT_WINDOW_MINUTES` | unset (15) | Optional. The window the three limits below count over |
+| `LOGIN_MAX_FAILURES_PER_EMAIL` | unset (5) | Optional. Wrong passwords allowed per account email per window, then `429 RATE_LIMITED` |
+| `LOGIN_MAX_FAILURES_PER_IP` | unset (20) | Optional. Wrong passwords allowed per IP address per window, across all accounts |
+| `REGISTER_MAX_PER_IP` | unset (10) | Optional. Registration attempts allowed per IP address per window |
 | `TEST_DATABASE_URL` | `postgresql://roomsync:roomsync@localhost:5432/roomsync_test?schema=public` | Optional. The database `npm run test:integration` uses; the example value is also the default. Its name must end in `_test`, because every integration test empties it |
 
 `server/.env` is ignored by Git. Never commit a real secret.
@@ -264,6 +268,23 @@ The 404 is deliberate: a household you are not a member of answers exactly
 like one that does not exist, so the API cannot be used to discover other
 households.
 
+#### The rate limit on login
+
+Login and registration are rate-limited, so passwords can't be guessed at
+speed. With the API running, send 20 wrong passwords for one account:
+
+```bash
+cd server && node scripts/login-burst.mjs 20
+```
+
+Attempts 1 to 5 answer `401 INVALID_CREDENTIALS`, and the rest
+`429 RATE_LIMITED` with a `Retry-After` header. In the browser,
+`agustin@roomsync.test` now shows "Too many failed login attempts. Try again
+in 15 minutes." even with the right password, while `marcus@roomsync.test`
+still signs in. Restarting the server resets the counters. The limits, the
+before-and-after evidence and the trade-offs are in
+[`docs/security/rate-limiting.md`](./docs/security/rate-limiting.md).
+
 ### Tests
 
 ```bash
@@ -341,6 +362,7 @@ docker compose down           # data persists in a named volume
 - [Project proposal](./docs/proposal.pdf)
 - [Prioritized backlog](./BACKLOG.md)
 - [Changelog and versioning](./CHANGELOG.md)
+- [Rate limiting on login and registration](./docs/security/rate-limiting.md)
 - [API contract](./docs/design/api-contract.md)
 - [Software process model](./docs/process-model.md), with
   [branch protection on `main`](./docs/process/branch-protection.md)
