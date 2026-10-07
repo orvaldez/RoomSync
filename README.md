@@ -295,7 +295,8 @@ docker compose down           # data persists in a named volume
 - [Project proposal](./docs/proposal.pdf)
 - [Prioritized backlog](./BACKLOG.md)
 - [API contract](./docs/design/api-contract.md)
-- [Software process model](./docs/process-model.md)
+- [Software process model](./docs/process-model.md), with
+  [branch protection on `main`](./docs/process/branch-protection.md)
 - [ADR-001: Architecture](./docs/architecture/adr-001-modular-monolith.md)
 - [Use case specifications](./docs/requirements/use-cases.md)
 - [Analysis model](./docs/requirements/analysis-model.md)

@@ -153,8 +153,13 @@ enforced by mechanisms rather than intentions:
 - **Mandatory peer review.** Every pull request is reviewed and approved by the other
   member before it merges, which enforces collective code ownership rather than leaving
   it to agreement. In Milestone 1 this was a team rule rather than a repository setting,
-  and it was broken twice under deadline pressure (Section 7); from Milestone 2, branch
-  protection on `main` enforces it.
+  and it was broken twice under deadline pressure (Section 7). Since October 7, 2026, the
+  repository enforces it: a ruleset on `main` requires a pull request with one approving
+  review, dismisses approvals when new commits are pushed, and applies to the repository
+  admin as well, so neither member can merge their own work unreviewed. The reviewer
+  clicks **Approve** rather than approving by merging, and a pull request with requested
+  changes is reviewed again before it merges. The settings and evidence are in
+  [`docs/process/branch-protection.md`](./process/branch-protection.md).
 - **Definition of Done in `BACKLOG.md`**, checked per story: acceptance criteria met,
   coding standards followed, tests written and passing, CI green, peer-approved,
   integrates without regression, no known critical defects, documentation updated.
