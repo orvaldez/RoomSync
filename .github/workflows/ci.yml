@@ -41,7 +41,8 @@ jobs:
       # import the app, which imports @prisma/client.
       - run: npx prisma generate
       - run: npm run typecheck
-      # Server lint is added here with #69.
+      # Includes the ADR-001 layering rules (docs/architecture/layering-lint.md).
+      - run: npm run lint
       - run: npm test
 
   client:
