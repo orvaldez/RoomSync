@@ -169,9 +169,11 @@ enforced by mechanisms rather than intentions:
   For example, `server/src/repositories/README.md` states that repositories are the only
   modules permitted to import the Prisma client, so a developer working in that directory
   encounters the rule.
-- **Continuous integration from Milestone 2**, running linting and tests on every
-  pull request. From Milestone 3 it blocks merges when those checks fail, which is
-  the point at which enforcement moves from human review to automation.
+- **Continuous integration**, running linting, type checking, the build and the tests
+  on every pull request through GitHub Actions (`.github/workflows/ci.yml`, since
+  October 2026). Once its jobs are required status checks on `main`, it blocks merges
+  when those checks fail, which is the point at which enforcement moves from human
+  review to automation.
 
 ## 6. Evidence from Sprint 1
 

@@ -1,5 +1,7 @@
 # RoomSync
 
+[![CI](https://github.com/orvaldez/RoomSync/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/orvaldez/RoomSync/actions/workflows/ci.yml)
+
 RoomSync is a web-based household management application that helps roommates
 coordinate shared expenses, chores, and household membership in one place.
 Unlike trip-based expense splitters, RoomSync is built around a **standing
@@ -274,8 +276,7 @@ cd server && npx prisma generate && npm test
 ```
 
 `npm install` does not generate it, and Prisma 7 no longer generates it as part
-of `migrate dev`. On a fresh clone, run `npx prisma generate` once. The
-continuous integration workflow needs the same step before it runs the tests.
+of `migrate dev`. On a fresh clone, run `npx prisma generate` once.
 
 The client has its own suite, which needs no database or server:
 
@@ -288,6 +289,22 @@ user types into the integer cents the server stores, and the wording of
 balances, chore due dates and dashboard activity, where the direction of a
 sentence ("you owe" or "owes you") is the easiest thing to get backwards. Component
 tests are planned with the Milestone 2 test plan.
+
+### Continuous integration
+
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs on every pull
+request and every push to `main`, on Node 20, as two jobs:
+
+| Job | Steps |
+|---|---|
+| `server` | `npm ci`, `npx prisma generate`, `npm run typecheck`, `npm test` |
+| `client` | `npm ci`, `npm run lint`, `npm run build` (which runs `tsc -b`), `npm test` |
+
+To reproduce a failing job locally, run the same steps in that directory. The
+server job sets a placeholder `DATABASE_URL`, because `prisma.config.ts` needs
+one for `prisma generate` even though the unit tests use no database. The job
+names are the status checks the branch protection ruleset requires, so a job
+is renamed only together with the ruleset.
 
 ### Stopping
 
