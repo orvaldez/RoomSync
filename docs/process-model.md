@@ -171,9 +171,9 @@ enforced by mechanisms rather than intentions:
   encounters the rule.
 - **Continuous integration**, running linting, type checking, the build and the tests
   on every pull request through GitHub Actions (`.github/workflows/ci.yml`, since
-  October 2026). Since October 7, 2026, its `server` and `client` jobs are required
-  status checks on `main`, so a pull request whose checks fail can't merge. That is the
-  point at which enforcement moves from human review to automation.
+  October 2026). Since October 7, 2026, its `server`, `client` and `integration` jobs
+  are required status checks on `main`, so a pull request whose checks fail can't merge.
+  That is the point at which enforcement moves from human review to automation.
 
 ## 6. Evidence from Sprint 1
 
