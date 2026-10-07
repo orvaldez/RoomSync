@@ -81,12 +81,12 @@ is exactly the kind of repetition that eventually gets skipped once.
 
 ### Enforcement
 
-By review today, documented in `server/src/repositories/README.md`. From
-Milestone 2 a lint rule fails the build when anything outside `repositories/`
-imports `@prisma/client`. One documented exception exists —
-`connect-pg-simple` manages its own `session` table from the session
-middleware — and the lint rule should allowlist that file by name rather than
-loosening the rule.
+By tooling, documented in `server/src/repositories/README.md`. Since #69, the
+server lint fails the build when anything outside `repositories/` imports
+`@prisma/client` or `pg` (`docs/architecture/layering-lint.md`). One
+documented exception exists — `connect-pg-simple` manages its own `session`
+table from the session middleware — and the lint rule allows that one file by
+name rather than loosening the rule.
 
 ---
 

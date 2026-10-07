@@ -317,13 +317,16 @@ request and every push to `main`, on Node 20, as three jobs:
 
 | Job | Steps |
 |---|---|
-| `server` | `npm ci`, `npx prisma generate`, `npm run typecheck`, `npm test` |
+| `server` | `npm ci`, `npx prisma generate`, `npm run typecheck`, `npm run lint`, `npm test` |
 | `client` | `npm ci`, `npm run lint`, `npm run build` (which runs `tsc -b`), `npm test` |
 | `integration` | A `postgres:16` service container, then `npm ci`, `npx prisma generate`, `npm run test:integration` |
 
 To reproduce a failing job locally, run the same steps in that directory. The
 server job sets a placeholder `DATABASE_URL`, because `prisma.config.ts` needs
-one for `prisma generate` even though the unit tests use no database. The job
+one for `prisma generate` even though the unit tests use no database. The
+server lint includes the layering rules from ADR-001: outside
+`server/src/repositories/`, importing Prisma fails the build
+([how it works](./docs/architecture/layering-lint.md)). The job
 names are the status checks the branch protection ruleset requires, so a job
 is renamed only together with the ruleset.
 
@@ -340,7 +343,8 @@ docker compose down           # data persists in a named volume
 - [API contract](./docs/design/api-contract.md)
 - [Software process model](./docs/process-model.md), with
   [branch protection on `main`](./docs/process/branch-protection.md)
-- [ADR-001: Architecture](./docs/architecture/adr-001-modular-monolith.md)
+- [ADR-001: Architecture](./docs/architecture/adr-001-modular-monolith.md), with
+  [its layering enforced by lint](./docs/architecture/layering-lint.md)
 - [Use case specifications](./docs/requirements/use-cases.md)
 - [Analysis model](./docs/requirements/analysis-model.md)
 - [Design patterns](./docs/design/design-patterns.md)

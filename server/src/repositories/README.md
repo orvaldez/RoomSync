@@ -4,7 +4,9 @@ Repositories are the ONLY modules permitted to import from `@prisma/client`
 or execute raw SQL. Routes and services must not import Prisma directly.
 
 This is ADR-001's layered architecture made into an explicit, checkable rule.
-Automated enforcement arrives with the CI work in Milestone 2 and 3.
+`npm run lint` enforces it: outside this directory, importing `@prisma/client`
+or `pg` fails the lint, and CI runs the lint on every pull request
+(`server/eslint.config.mjs`, `docs/architecture/layering-lint.md`).
 
     Routes -> Services -> Repositories -> PostgreSQL
 
@@ -36,7 +38,8 @@ Two things keep the exception contained:
   session data in a service or route means reading `req.session`, which
   express-session populates — not querying the table.
 
-Any *other* module that wants to run SQL still belongs in `repositories/`. When
-the Milestone 2 lint rule lands, it should permit `middleware/session.ts` by
-name rather than loosening the rule generally, and #18 should describe this
-boundary when it documents the module design.
+Any *other* module that wants to run SQL still belongs in `repositories/`. The
+lint rule permits `connect-pg-simple` in `middleware/session.ts` by name rather
+than loosening the rule generally, and nowhere else. The integration test setup
+(`src/integration/`) may also import `pg`, to create and empty the test
+database; it still may not import Prisma.

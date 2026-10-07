@@ -95,10 +95,10 @@ The layered monolith costs a little simplicity against a two-layer design, and w
 
 - More files per feature than a two-layer design. A simple read still passes through a route, a service, and a repository.
 - The server is a single deployment. If it crashes, every API feature is unavailable. That is acceptable for a course project and can be revisited if availability ever matters.
-- The layering rule is enforced by review, not tooling, until Milestone 2. A route that imports Prisma directly would still compile. The rule is written in `server/src/repositories/README.md` so it is visible where the code lives, and an ESLint import restriction is planned with the CI work.
+- A route that imports Prisma directly still compiles, so the layering rule needs tooling beyond the compiler. Until October 2026 it was enforced by review only; since #69 an ESLint import restriction enforces it ([`layering-lint.md`](./layering-lint.md)).
 
 ##### Compliance
 
 - `server/src/repositories/README.md` states the rule where developers will see it.
 - Pull request review checks every new import of `@prisma/client` (Definition of Done: "Follows the Routes -> Services -> Repositories layering").
-- From Milestone 2, CI runs a lint rule that fails the build if anything outside `repositories/` imports `@prisma/client`.
+- CI runs `npm run lint` in the `server` job, which fails if anything outside `repositories/` imports `@prisma/client` or `pg`, or if any layer imports one it may not. The rules and the evidence are in [`layering-lint.md`](./layering-lint.md).

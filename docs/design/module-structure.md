@@ -116,17 +116,20 @@ reasoning is in `server/src/repositories/README.md`.
 
 ## 3. The rules as checks
 
-Written as commands so they can be run rather than trusted. All pass on this
-branch; from Milestone 2 they become a CI step.
+Written as commands so they can be run rather than trusted. Since #69, the
+server rules are also enforced by `npm run lint` in `server/`, which CI runs on
+every pull request, so a violation fails the build rather than waiting for
+someone to run a command. The **Lint** column says which. The rules and the
+evidence are in `docs/architecture/layering-lint.md`.
 
-| Rule | Command | Expected |
-|---|---|---|
-| Only repositories import Prisma | `grep -rl "@prisma/client" server/src --include=*.ts \| grep -v "^server/src/repositories/"` | nothing |
-| Services never touch HTTP | `grep -rnE "\b(req\|res)\." server/src/services` | nothing |
-| Routes never reach a repository | `grep -rn "repositories/" server/src/routes --include=*.ts \| grep -v "\.test\.ts"` | nothing |
-| Repositories never call upward | `grep -rnE "from \"\.\./(services\|routes)/" server/src/repositories` | nothing |
-| Services never import routes or middleware | `grep -rnE "from \"\.\./(routes\|middleware)/" server/src/services` | nothing |
-| Pages never call `fetch` directly | `grep -rn "fetch(" client/src/pages` | nothing |
+| Rule | Command | Expected | Lint |
+|---|---|---|---|
+| Only repositories import Prisma | `grep -rl "@prisma/client" server/src --include=*.ts \| grep -v "^server/src/repositories/"` | nothing | Yes |
+| Services never touch HTTP | `grep -rnE "\b(req\|res)\." server/src/services` | nothing | Partly: services may not import Express |
+| Routes never reach a repository | `grep -rn "repositories/" server/src/routes --include=*.ts \| grep -v "\.test\.ts"` | nothing | Yes |
+| Repositories never call upward | `grep -rnE "from \"\.\./(services\|routes)/" server/src/repositories` | nothing | Yes |
+| Services never import routes or middleware | `grep -rnE "from \"\.\./(routes\|middleware)/" server/src/services` | nothing | Yes |
+| Pages never call `fetch` directly | `grep -rn "fetch(" client/src/pages` | nothing | No |
 
 Route test files are excluded from the third check because they mock
 repositories, which is how they run without a database — they do not call
@@ -226,8 +229,9 @@ The shape every feature so far has followed, US-10 included, and the one US-11 w
 
 ## 7. Known boundary weaknesses
 
-- **Enforcement is by review until Milestone 2.** The checks in section 3 are
-  commands, not yet a CI step; a route importing Prisma would compile today.
+- **Lint sees imports, not behavior.** Since #69 the server lint fails any
+  import that crosses a layer, but a service handed `req` as an argument, or a
+  page calling `fetch`, still needs the grep checks in section 3 and review.
 - **`services/errors.ts` and `lib/api.ts` are shared files every feature
   appends to**, so parallel branches conflict there. The conflicts are always
   "keep both" — the cost of keeping each catalog in one place.
