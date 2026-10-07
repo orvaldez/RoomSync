@@ -15,14 +15,19 @@ Development course project.
 
 Milestone 1 (Build) is complete: every P0 user story, US-01 through US-10, is
 built and merged, with its design documentation. The submitted version is the
-commit tagged `milestone-1`. Next is Milestone 2: testing, CI, and security
-review, plus the P1 history story (US-11).
+commit tagged `milestone-1`.
+
+Milestone 2 (Test) is in progress and due November 2, 2026. It adds history
+(US-11), expense editing and deletion (US-12), and invitation revoking (US-14),
+along with integration tests, a coverage report, a threat model, an OWASP
+review, and rate limiting on login. The plan, owners, and dates are in
+[BACKLOG.md](./BACKLOG.md#sprint-3-and-sprint-4-plan-milestone-2).
 
 | Milestone | Goal | Status |
 |---|---|---|
 | Milestone 0 | Propose | Complete |
 | Milestone 1 | Build the MVP | Complete |
-| Milestone 2 | Test, improve, and secure | Not started |
+| Milestone 2 | Test, improve, and secure | In progress |
 | Milestone 3 | Deploy | Not started |
 
 ## Team
