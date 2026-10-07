@@ -32,6 +32,10 @@ Every version is a GitHub release whose notes match its section below.
   with the session stored in the database. They use a separate database whose
   name must end in `_test`, emptied before every test, and run with
   `npm run test:integration` (#83).
+- Server linting with ESLint and typescript-eslint (`npm run lint`), run by the
+  `server` CI job. It enforces the ADR-001 layering: only repositories may
+  import the Prisma client, services may not import Express, and routes and
+  middleware may not import repositories (#84).
 
 ### Changed
 
