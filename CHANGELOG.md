@@ -29,9 +29,11 @@ Every version is a GitHub release whose notes match its section below.
   #83).
 - Integration tests that run the real app against PostgreSQL with no mocks,
   starting with the account flow: register, log in, `GET /auth/me`, log out,
-  with the session stored in the database. They use a separate database whose
-  name must end in `_test`, emptied before every test, and run with
-  `npm run test:integration` (#83).
+  with the session stored in the database (#83). The household flow follows:
+  create a household, invite, accept, and list the members, with single-use
+  and expired links, owner-only invites, one household per user, and 404 for
+  outsiders (#87). They use a separate database whose name must end in
+  `_test`, emptied before every test, and run with `npm run test:integration`.
 - Server linting with ESLint and typescript-eslint (`npm run lint`), run by the
   `server` CI job. It enforces the ADR-001 layering: only repositories may
   import the Prisma client, services may not import Express, and routes and
