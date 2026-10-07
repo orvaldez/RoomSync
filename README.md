@@ -76,7 +76,8 @@ roomsync/
 │ ├── routes/ # HTTP boundary, no business logic
 │ ├── services/ # Business rules
 │ ├── repositories/# The only modules that touch Prisma
-│ └── middleware/
+│ ├── middleware/
+│ └── integration/ # Integration tests against PostgreSQL
 ├── docs/ # Proposal, diagrams, design artifacts
 └── docker-compose.yml
 ```
@@ -117,7 +118,8 @@ the client needs no environment variables.
 | `DATABASE_URL` | `postgresql://roomsync:roomsync@localhost:5432/roomsync?schema=public` | PostgreSQL connection string, used by Prisma and by the session store. The user, password and database name match `docker-compose.yml` |
 | `PORT` | `4000` | Port the API listens on (default 4000). The Vite dev server proxies `/api` to 4000 (`client/vite.config.ts`), so change both together |
 | `SESSION_SECRET` | `change-me-in-your-local-env` | Signs the session cookie. Required: the server refuses to start without it, and in production refuses the example value |
-| `NODE_ENV` | unset | Leave unset in development. `production` turns on the secure cookie and trusted proxy and makes the seed refuse to run; `test` is set by the test runner and uses an in-memory session store |
+| `NODE_ENV` | unset | Leave unset in development. `production` turns on the secure cookie and trusted proxy and makes the seed refuse to run; `test` is set by the test runner and uses an in-memory session store; `integration` is set by the integration test runner and keeps the PostgreSQL store |
+| `TEST_DATABASE_URL` | `postgresql://roomsync:roomsync@localhost:5432/roomsync_test?schema=public` | Optional. The database `npm run test:integration` uses; the example value is also the default. Its name must end in `_test`, because every integration test empties it |
 
 `server/.env` is ignored by Git. Never commit a real secret.
 
@@ -290,15 +292,34 @@ balances, chore due dates and dashboard activity, where the direction of a
 sentence ("you owe" or "owes you") is the easiest thing to get backwards. Component
 tests are planned with the Milestone 2 test plan.
 
+#### Integration tests
+
+The unit tests above mock the repositories, so none of them run real SQL. The
+integration tests run the real app, with nothing mocked, against PostgreSQL and
+its session store, through Supertest with a real session cookie. With the
+Compose database running (`docker compose up -d`):
+
+```bash
+cd server && npx prisma generate && npm run test:integration
+```
+
+They use a separate database, `roomsync_test`, on the same Compose service, and
+never touch the dev database. The first run creates it; every run applies the
+migrations with `prisma migrate deploy`, and each test starts by emptying every
+table. To use a different database, set `TEST_DATABASE_URL`: the suite refuses
+any database whose name doesn't end in `_test`. The tests live in
+`server/src/integration/`, and `npm test` doesn't run them.
+
 ### Continuous integration
 
 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs on every pull
-request and every push to `main`, on Node 20, as two jobs:
+request and every push to `main`, on Node 20, as three jobs:
 
 | Job | Steps |
 |---|---|
 | `server` | `npm ci`, `npx prisma generate`, `npm run typecheck`, `npm test` |
 | `client` | `npm ci`, `npm run lint`, `npm run build` (which runs `tsc -b`), `npm test` |
+| `integration` | A `postgres:16` service container, then `npm ci`, `npx prisma generate`, `npm run test:integration` |
 
 To reproduce a failing job locally, run the same steps in that directory. The
 server job sets a placeholder `DATABASE_URL`, because `prisma.config.ts` needs
