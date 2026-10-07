@@ -19,18 +19,19 @@ in #64.
 | Allowed merge methods | Squash only | The PR title becomes the Conventional Commit on `main` |
 | Restrict deletions | On | `main` can't be deleted |
 | Block force pushes | On | History on `main` can't be rewritten |
-| Require status checks to pass | `server` and `client`, from GitHub Actions | A pull request can't merge until CI (`.github/workflows/ci.yml`, #68) is green |
+| Require status checks to pass | `server`, `client` and `integration`, from GitHub Actions | A pull request can't merge until CI (`.github/workflows/ci.yml`, #68) is green |
 
 GitHub does not let a pull request's author approve it, so with two members,
 every pull request needs the other member's approval before it can merge.
 
-The required checks were added on October 7, 2026, after the first CI run on
-`main`, because GitHub offers a check name only once it has run. Each check is
+The `server` and `client` checks were added on October 7, 2026, after the
+first CI run on `main`, because GitHub offers a check name only once it has
+run; `integration` followed the same day, once the integration tests (#83) had
+run on `main`. Each check is
 pinned to the GitHub Actions app, so a status with the same name posted by
 anything else doesn't satisfy it. The check names are the job names in
-`ci.yml`, so renaming a job means updating the ruleset in the same change. New
-jobs, such as the integration tests (#61), aren't required until they are added
-here as well.
+`ci.yml`, so renaming a job means updating the ruleset in the same change. A
+new job isn't required until it is added to the ruleset as well.
 
 ## Evidence
 

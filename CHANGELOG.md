@@ -42,8 +42,8 @@ Every version is a GitHub release whose notes match its section below.
 - `main` is protected by a repository ruleset. A change needs a pull request
   with one approval from the other member, approvals are dismissed by new
   commits, pull requests are squash-merged, and the rules apply to the
-  repository admin too (#80). The `server` and `client` CI jobs are required
-  status checks (#82).
+  repository admin too (#80). The `server`, `client` and `integration` CI jobs
+  are required status checks (#82, #86).
 - The backlog and process model plan Milestone 2 (#79).
 
 ## [0.1.0] - 2026-09-30

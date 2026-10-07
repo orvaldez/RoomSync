@@ -48,12 +48,16 @@
           {
             "context": "client",
             "integration_id": 15368
+          },
+          {
+            "context": "integration",
+            "integration_id": 15368
           }
         ]
       }
     }
   ],
   "created_at": "2026-10-07T15:51:59.041-05:00",
-  "updated_at": "2026-10-07T16:13:52.377-05:00",
+  "updated_at": "2026-10-07T17:13:51.268-05:00",
   "bypass_actors": []
 }
