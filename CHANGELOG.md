@@ -38,6 +38,9 @@ Every version is a GitHub release whose notes match its section below.
   `server` CI job. It enforces the ADR-001 layering: only repositories may
   import the Prisma client, services may not import Express, and routes and
   middleware may not import repositories (#84).
+- A threat model: a data-flow diagram with its trust boundaries, and STRIDE
+  applied to accounts and sessions, household membership, invitation links,
+  money writes and the session store, with a decision for each threat (#91).
 - `CONTRIBUTING.md`: branch names, Conventional Commits, pull request and
   review rules, labels and milestones, and the Definition of Done, with issue
   templates for a user story, a technical task and a docs task (#92).
