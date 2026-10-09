@@ -27,8 +27,8 @@ Concretely, the process consists of:
 - **A retrospective** at the end of each sprint
 - **A shared Definition of Done** that every story must satisfy before it closes
 - **A feature-branch workflow with a protected `main` and mandatory peer review**:
-  all work on typed, short-lived branches (`feature/`, `fix/`, `test/`, `docs/`), no
-  pull request merged by its own author
+  all work on typed, short-lived branches (`feature/`, `fix/`, `test/`, `docs/` and
+  others, listed in `CONTRIBUTING.md`), no pull request merged by its own author
 
 ## 2. Why this model fits RoomSync
 
@@ -163,8 +163,10 @@ enforced by mechanisms rather than intentions:
 - **Definition of Done in `BACKLOG.md`**, checked per story: acceptance criteria met,
   coding standards followed, tests written and passing, CI green, peer-approved,
   integrates without regression, no known critical defects, documentation updated.
-- **Conventional Commits** (`feat:`, `fix:`, `test:`, `docs:`, `refactor:`), which keeps
-  history readable and supports the Milestone 2 changelog.
+- **Conventional Commits** (`feat:`, `fix:`, `test:`, `docs:`, `refactor:`, and the
+  rest of the types in `CONTRIBUTING.md`), which keeps history readable and supports
+  the changelog (`CHANGELOG.md`). Pull requests are squash-merged, so each PR title is
+  one commit on `main`.
 - **Architecture rules documented where the code lives**, not only in design documents.
   For example, `server/src/repositories/README.md` states that repositories are the only
   modules permitted to import the Prisma client, so a developer working in that directory
