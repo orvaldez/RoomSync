@@ -2,9 +2,13 @@ import { Router, type Request, type Response } from "express";
 import * as authService from "../services/auth.service";
 import { asyncHandler } from "../middleware/async-handler";
 import { currentUserId, requireAuth } from "../middleware/require-auth";
+import { buildAuthRateLimits } from "../middleware/rate-limit";
 import { UnauthenticatedError } from "../services/errors";
 
 const router = Router();
+
+// Limits read from the environment when the routes load (#71).
+const rateLimits = buildAuthRateLimits();
 
 /** Promise wrappers around express-session's callback API. */
 function regenerateSession(req: Request): Promise<void> {
@@ -29,12 +33,14 @@ function destroySession(req: Request): Promise<void> {
  * POST /api/auth/register — UC-01, contract Section 4.
  *
  * 201 { user }
- * 400 VALIDATION_FAILED · 409 EMAIL_UNAVAILABLE · 500 INTERNAL_ERROR
+ * 400 VALIDATION_FAILED · 409 EMAIL_UNAVAILABLE · 429 RATE_LIMITED
+ * 500 INTERNAL_ERROR
  *
  * Does not create a session: UC-01 step 7 sends the new user to log in.
  */
 router.post(
   "/auth/register",
+  rateLimits.register,
   asyncHandler(async (req: Request, res: Response) => {
     const user = await authService.register({
       name: req.body?.name,
@@ -50,10 +56,11 @@ router.post(
  * POST /api/auth/login — UC-02 steps 1-6.
  *
  * 200 { user } and sets the session cookie
- * 400 VALIDATION_FAILED · 401 INVALID_CREDENTIALS
+ * 400 VALIDATION_FAILED · 401 INVALID_CREDENTIALS · 429 RATE_LIMITED
  */
 router.post(
   "/auth/login",
+  ...rateLimits.login,
   asyncHandler(async (req: Request, res: Response) => {
     const user = await authService.login({
       email: req.body?.email,

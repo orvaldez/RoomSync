@@ -342,3 +342,21 @@ export class ExceedsBalanceError extends AppError {
     this.name = "ExceedsBalanceError";
   }
 }
+
+/**
+ * 429 — too many login failures or registrations in the current window (#71,
+ * docs/security/rate-limiting.md). Raised by the rate-limit middleware, which
+ * also sets `Retry-After` to `retryAfterSeconds`. The message says when to try
+ * again, so the login and registration screens can show it as-is.
+ */
+export class RateLimitedError extends AppError {
+  readonly code = "RATE_LIMITED";
+  readonly status = 429;
+  readonly retryAfterSeconds: number;
+
+  constructor(message: string, retryAfterSeconds: number) {
+    super(message);
+    this.name = "RateLimitedError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}

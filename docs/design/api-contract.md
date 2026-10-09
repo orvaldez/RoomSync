@@ -161,11 +161,13 @@ Success: 201 { user: UserPublic }
 Errors:
   400 VALIDATION_FAILED        - "Validation failed" (fields: name, email, password)     UC-01 3a, 3b
   409 EMAIL_UNAVAILABLE        - "Registration could not be completed."                  UC-01 4a
+  429 RATE_LIMITED             - "Too many sign-ups from this network. Try again in 15 minutes."
 
 The 409 message never confirms whether the address is registered. The status
 code still narrows it down for a determined prober; closing that fully needs
 email verification, which is out of MVP scope. Recorded for the Milestone 2
-threat model.
+threat model. Since #71, registration is limited per IP, so that probing can't
+run at speed.
 
 ## POST /api/auth/login
 Auth: none
@@ -174,9 +176,16 @@ Success: 200 { user: UserPublic }, and sets the session cookie
 Errors:
   400 VALIDATION_FAILED        - "Validation failed" (fields: email, password)
   401 INVALID_CREDENTIALS      - "Invalid email or password."                            UC-02 3a-4a
+  429 RATE_LIMITED             - "Too many failed login attempts. Try again in 15 minutes."
 
 Unknown email and wrong password return the identical code, message, and
 comparable response time, so the response does not reveal which accounts exist.
+
+**Rate limits (#71).** Login counts wrong passwords (401) per account email
+and per IP; registration counts every attempt per IP. Over a limit, the
+endpoint answers `429 RATE_LIMITED` before checking anything, with a
+`Retry-After` header in seconds and a message that says how long to wait, which
+the client shows as-is. Limits and defaults: `docs/security/rate-limiting.md`.
 
 ## POST /api/auth/logout
 Auth: required
@@ -458,6 +467,7 @@ guidance (UC-10 3a-6a).
 | `EXCEEDS_BALANCE` | 409 | settlements |
 | `CHORE_ALREADY_COMPLETE` | 409 | chore patch |
 | `INVITATION_EXPIRED` | 410 | invitation lookup, accept |
+| `RATE_LIMITED` | 429 | login, register |
 | `INTERNAL_ERROR` | 500 | any |
 
 In code, each maps to one error class in `server/src/services/errors.ts`, and

@@ -16,6 +16,12 @@ export default defineConfig({
     env: {
       NODE_ENV: "test",
       SESSION_SECRET: "test-only-secret-never-used-outside-vitest",
+      // Every test file logs in and registers from one address, so the rate
+      // limits (#71) are set out of reach. auth.rate-limit.test.ts sets its
+      // own small ones.
+      LOGIN_MAX_FAILURES_PER_EMAIL: "10000",
+      LOGIN_MAX_FAILURES_PER_IP: "10000",
+      REGISTER_MAX_PER_IP: "10000",
     },
   },
 });
