@@ -365,6 +365,7 @@ docker compose down           # data persists in a named volume
 - [Threat model](./docs/security/threat-model.md) and
   [rate limiting on login and registration](./docs/security/rate-limiting.md)
 - [API contract](./docs/design/api-contract.md)
+- [Contributing: branches, commits, reviews and issues](./CONTRIBUTING.md)
 - [Software process model](./docs/process-model.md), with
   [branch protection on `main`](./docs/process/branch-protection.md)
 - [ADR-001: Architecture](./docs/architecture/adr-001-modular-monolith.md), with
@@ -384,10 +385,11 @@ docker compose down           # data persists in a named volume
 
 ## Contributing
 
-All work happens on feature branches off `main` and is merged through
-pull requests requiring review from the other team member. See the
-proposal's Agile Development Process section for branching conventions,
-commit message format, and the Definition of Done.
+All work happens on short-lived branches off `main` and is merged through
+pull requests that need CI to pass and an approval from the other team
+member. [`CONTRIBUTING.md`](./CONTRIBUTING.md) covers branch names, commit
+and pull request conventions, reviewing, issue templates and labels, and the
+Definition of Done.
 
 ## License
 

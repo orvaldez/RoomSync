@@ -41,6 +41,9 @@ Every version is a GitHub release whose notes match its section below.
 - A threat model: a data-flow diagram with its trust boundaries, and STRIDE
   applied to accounts and sessions, household membership, invitation links,
   money writes and the session store, with a decision for each threat (#91).
+- `CONTRIBUTING.md`: branch names, Conventional Commits, pull request and
+  review rules, labels and milestones, and the Definition of Done, with issue
+  templates for a user story, a technical task and a docs task (#92).
 
 ### Changed
 
