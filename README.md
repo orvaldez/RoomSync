@@ -362,7 +362,8 @@ docker compose down           # data persists in a named volume
 - [Project proposal](./docs/proposal.pdf)
 - [Prioritized backlog](./BACKLOG.md)
 - [Changelog and versioning](./CHANGELOG.md)
-- [Rate limiting on login and registration](./docs/security/rate-limiting.md)
+- [Threat model](./docs/security/threat-model.md) and
+  [rate limiting on login and registration](./docs/security/rate-limiting.md)
 - [API contract](./docs/design/api-contract.md)
 - [Software process model](./docs/process-model.md), with
   [branch protection on `main`](./docs/process/branch-protection.md)
