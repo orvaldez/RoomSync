@@ -75,7 +75,10 @@ jobs:
         working-directory: server
     services:
       postgres:
-        image: postgres:16
+        # The official Docker Hub image, pulled from Amazon's public mirror.
+        # Docker Hub rate-limits anonymous pulls from GitHub's shared runners,
+        # which failed this job on main on October 9, 2026.
+        image: public.ecr.aws/docker/library/postgres:16
         env:
           POSTGRES_USER: roomsync
           POSTGRES_PASSWORD: roomsync
