@@ -49,7 +49,7 @@ Every version is a GitHub release whose notes match its section below.
   expense opens a new **expense detail** screen with the payer, the split
   method and every member's share. The dashboard's expenses panel now shows
   the five newest. A test with 500 expenses and five members shows every list
-  answering in under 80 ms, inside NFR-02's two seconds (#PR).
+  answering in under 80 ms, inside NFR-02's two seconds (#96).
 
 ### Changed
 
