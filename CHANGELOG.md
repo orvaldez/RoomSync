@@ -36,7 +36,7 @@ Every version is a GitHub release whose notes match its section below.
   method and the balances they produce, checked against amounts worked out by
   hand; settlements, including refusing more than is owed; chores only their
   assignee can complete; the dashboard reflecting all of it; and 404 from
-  every household endpoint for a user from another household (#PR). They use a separate database whose name must end in
+  every household endpoint for a user from another household (#95). They use a separate database whose name must end in
   `_test`, emptied before every test, and run with `npm run test:integration`.
 - Server linting with ESLint and typescript-eslint (`npm run lint`), run by the
   `server` CI job. It enforces the ADR-001 layering: only repositories may
