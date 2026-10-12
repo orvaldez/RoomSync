@@ -48,7 +48,7 @@ Every version is a GitHub release whose notes match its section below.
   (`npm run test:coverage`), with a target per area: highest for the server's
   services and the client's money and balance logic. Falling below a target
   fails CI, and CI uploads each report as an artifact. The baseline and the
-  reasoning are in `docs/testing/coverage.md` (#PR).
+  reasoning are in `docs/testing/coverage.md` (#94).
 
 ### Changed
 
