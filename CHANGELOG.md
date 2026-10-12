@@ -41,7 +41,7 @@ Every version is a GitHub release whose notes match its section below.
 - A quality-assurance plan (`docs/testing/qa-plan.md`): what each level of
   testing checks, who runs it and when, entry and exit criteria for a
   milestone, a pre-release checklist on a clean clone, and how a defect is
-  handled. A pull request template carries its per-PR checklist (#PR).
+  handled. A pull request template carries its per-PR checklist (#97).
 - A threat model: a data-flow diagram with its trust boundaries, and STRIDE
   applied to accounts and sessions, household membership, invitation links,
   money writes and the session store, with a decision for each threat (#91).
