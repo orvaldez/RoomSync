@@ -662,3 +662,33 @@ a {
   margin-top: 12px;
   font-size: 15px;
 }
+
+/* History (UC-11): links that jump to each list, wrapping onto a second line
+   at 375px rather than scrolling sideways. */
+.history-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 12px;
+  font-size: 15px;
+}
+
+/* Expense detail (wireframe 9): description left, total right, and the total
+   drops under a long description instead of squeezing it. */
+.expense-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin-top: 16px;
+}
+.expense-detail-head h1 {
+  margin-bottom: 0;
+}
+.expense-detail-total {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
