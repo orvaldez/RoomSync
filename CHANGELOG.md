@@ -23,6 +23,12 @@ Every version is a GitHub release whose notes match its section below.
 
 ### Added
 
+- **History** (US-11): the household's expenses, payments and completed chores,
+  each newest first with its own empty state, one tap from the dashboard. Each
+  expense opens a new **expense detail** screen with the payer, the split
+  method and every member's share. The dashboard's expenses panel now shows
+  the five newest. A test with 500 expenses and five members shows every list
+  answering in under 80 ms, inside NFR-02's two seconds (#96).
 - Continuous integration with GitHub Actions on every pull request and every
   push to `main`: a `server` job (Prisma client generation, typecheck, unit
   tests), a `client` job (lint, build, tests) and an `integration` job (#81,
@@ -49,12 +55,6 @@ Every version is a GitHub release whose notes match its section below.
   services and the client's money and balance logic. Falling below a target
   fails CI, and CI uploads each report as an artifact. The baseline and the
   reasoning are in `docs/testing/coverage.md` (#94).
-- **History** (US-11): the household's expenses, payments and completed chores,
-  each newest first with its own empty state, one tap from the dashboard. Each
-  expense opens a new **expense detail** screen with the payer, the split
-  method and every member's share. The dashboard's expenses panel now shows
-  the five newest. A test with 500 expenses and five members shows every list
-  answering in under 80 ms, inside NFR-02's two seconds (#96).
 
 ### Changed
 
