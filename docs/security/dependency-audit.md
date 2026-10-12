@@ -3,6 +3,24 @@
 Findings from `npm audit --omit=dev` in `server/`, with triage and decisions.
 Re-run and update this file at each milestone.
 
+## 2026-10-12 (@vitest/coverage-v8, issue #62)
+
+Checked before adding `@vitest/coverage-v8` 2.1.9 to both workspaces as a
+devDependency, pinned to the same 2.1.9 as Vitest (see the environment note
+below). Full `npm audit`, dev dependencies included:
+
+| Workspace | Before | After | Added |
+|---|---|---|---|
+| `server/` | 15 (3 critical) | 16 (4 critical) | `@vitest/coverage-v8` |
+| `client/` | 8 (2 critical) | 9 (3 critical) | `@vitest/coverage-v8` |
+
+The one new entry in each is `@vitest/coverage-v8` itself, and its only
+advisory is `via: vitest`: it is listed because it depends on Vitest 2.1.9,
+whose existing advisories (`vitest`, `tinypool`, `vite`) were already counted.
+It adds no vulnerable code of its own. It runs only while measuring coverage,
+on the developer's machine and in CI, and never ships with the app. Accepted.
+Moving off the Vitest 2 line is part of the Milestone 2 review (#65).
+
 ## 2026-10-07 (express-rate-limit, issue #71)
 
 Checked before adding `express-rate-limit` 8.7.0 for the login and

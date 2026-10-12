@@ -43,7 +43,16 @@ jobs:
       - run: npm run typecheck
       # Includes the ADR-001 layering rules (docs/architecture/layering-lint.md).
       - run: npm run lint
-      - run: npm test
+      # The unit tests, with coverage. Falling below a target in
+      # server/vitest.config.ts fails this step (docs/testing/coverage.md).
+      - run: npm run test:coverage
+      - name: Upload the coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-server
+          path: server/coverage/
+          retention-days: 30
 
   client:
     runs-on: ubuntu-latest
@@ -62,7 +71,16 @@ jobs:
       - run: npm run lint
       # `tsc -b && vite build`, so this is also the client's typecheck.
       - run: npm run build
-      - run: npm test
+      # The unit tests, with coverage. Falling below a target in
+      # client/vitest.config.ts fails this step (docs/testing/coverage.md).
+      - run: npm run test:coverage
+      - name: Upload the coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-client
+          path: client/coverage/
+          retention-days: 30
 
   # The integration tests (#61): the real app against PostgreSQL, nothing
   # mocked. The service container's database ends in _test, which the suite
