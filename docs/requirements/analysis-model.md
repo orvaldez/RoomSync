@@ -463,8 +463,9 @@ rather than a code change.
 Stated plainly, because a model that quietly omits things is worse than one
 that names its gaps:
 
-- **Expense editing and deletion** are out of scope for the MVP. Expenses are
-  immutable once recorded, which is why no `updatedAt` exists on them.
+- **Expense editing and deletion** were out of scope for the MVP, which is why
+  no `updatedAt` exists yet. They are Milestone 2's US-12 (#60); the proposed
+  design is §8.1, and the endpoints are in the API contract.
 - **Member removal** is post-MVP. The `Restrict` delete rules in §2 mean it
   will need a deliberate decision about what happens to that member's history.
 - **Revoking an invitation** is post-MVP; the `REVOKED` status exists so it
@@ -473,6 +474,46 @@ that names its gaps:
   anticipates them.
 - **Multi-household users** are modelled but blocked by a service check, as
   §7 notes.
+
+---
+
+### 8.1 Proposed: editing and deleting an expense (US-12, #60)
+
+Proposed for review before any code. The three decisions #60 asked to settle:
+
+1. **Who may edit or delete: the member who paid, or the household owner.**
+   The payer is the person the expense is about; the owner can fix a mistake
+   for a roommate who has left. Anyone else gets 403 `NOT_EXPENSE_EDITOR`.
+   When #90 adds `createdByUserId`, whoever entered the expense is a natural
+   third: they may have entered a bill someone else paid.
+2. **Soft delete.** `deletedAt` and `deletedByUserId` on Expense. Balances,
+   the dashboard and the expense list skip deleted expenses; History can still
+   show them, struck through, with who deleted them and when. A hard delete
+   would make a balance change with no record of why, which is exactly what
+   US-11's history exists to explain.
+3. **A settlement already recorded against the expense: allow the change, and
+   show the result plainly.** Balances are derived on every read (NFR-03, §3.1),
+   so editing or deleting an expense simply changes what the next read
+   computes. Settlements are never touched, because the payment really
+   happened. If Sam paid Alex back $20 for an expense that is then deleted,
+   Alex now owes Sam $20, which is true. Blocking the edit instead would leave
+   a wrong expense in place forever once anyone had paid toward it.
+
+**Editing replaces the expense.** `PATCH` takes the full expense body, re-runs
+the split validation that create runs (§4, SC-04), and replaces the shares in
+one transaction under the household ledger lock, so it can't interleave with a
+settlement's balance check (UC-08 4e). Editing a deleted expense is refused
+(409 `EXPENSE_DELETED`); deleting twice is harmless.
+
+**State.** An expense is *active* until deleted, then *deleted* for good; there
+is no undelete in Milestone 2. Edits don't change the state.
+
+**Migration**, the one Milestone 2 plans for #60, on `expenses`:
+`updated_at` (set to `created_at` for existing rows), `deleted_at` (nullable),
+and `deleted_by_user_id` (nullable, references `users`, `Restrict` like the
+payer). #90 also adds `created_by_user_id` to the same table, so the two are
+best generated together, or one after the other with the other member told
+first (`BACKLOG.md`, working rules).
 
 ---
 
