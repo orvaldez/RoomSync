@@ -4,9 +4,9 @@ RoomSync — Software Design and Development
 Orlando Rodriguez Valdez, Agustin Lemuz-Juarez
 Issue #4 · Milestone 1 deliverable
  
-Ten use cases, one per P0 user story (US-01 through US-10), expanding the acceptance
-criteria in proposal Section 5 into concrete actor-system interactions. US-11 is P1 and
-deferred to Sprint 3; its use case will be added when that story is scheduled.
+Eleven use cases, one per user story from US-01 through US-11, expanding the acceptance
+criteria in proposal Section 5 into concrete actor-system interactions. UC-01 to UC-10
+were written for Milestone 1; UC-11 was added with US-11 in Sprint 3 (#23).
  
 ---
  
@@ -469,6 +469,59 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
   I owe and what am I supposed to do" without any setup on his part
 ---
  
+## UC-11 — View History
+
+| | |
+|---|---|
+| **User story** | US-11 (P0 for Milestone 2) |
+| **Primary actor** | Member |
+| **Goal** | Check what a charge was for, confirm a debt was paid, or confirm a chore was done |
+| **Preconditions** | The member belongs to a household |
+| **Postconditions** | None: the history is read-only |
+
+**Main success scenario — the history**
+
+1. Member selects History on the dashboard.
+2. System confirms household membership.
+3. System retrieves the household's expenses, newest expense date first.
+4. System retrieves the household's settlements, newest first, including those whose
+   pair is now settled up.
+5. System retrieves the household's completed chores, most recently completed first.
+6. System presents the three as separate lists, each showing how many it holds, with a
+   link that jumps to each.
+
+**Main success scenario — one expense in full**
+
+7. Member selects an expense, in the history or on the dashboard.
+8. System retrieves that expense, if it belongs to the member's household.
+9. System presents its description, total, payer, date, split method, and every
+   participant's share, with each percentage for a percentage split and the payer
+   marked.
+
+**Extensions**
+
+- **1a. The member is not authenticated.** System redirects to login (UC-02), then back.
+- **2a. The member belongs to no household.** System shows the create-or-join screen
+  (UC-03, UC-04).
+- **2b. The household is not the member's.** System answers 404 `HOUSEHOLD_NOT_FOUND`
+  for every list, the same as for a household that does not exist (NFR-07).
+- **3a, 4a, 5a. A list is empty.** System shows empty-state guidance naming where that
+  kind of record is created, rather than hiding the list.
+- **8a. The expense is not in the member's household,** or does not exist. System
+  answers 404 `EXPENSE_NOT_FOUND` either way, and the screen says the expense could
+  not be found, with a link back to the history.
+
+**Special requirements**
+
+- With 500 expenses and five members, each list answers in under two seconds (NFR-02).
+  The lists are not paginated; `history-load.integration.test.ts` measures them, and
+  the result is in the product brief
+- Fully usable at a viewport width of 375 pixels (NFR-05)
+- Settlements remain listed after the balance between the pair reaches zero (FR-12)
+- Read-only: correcting an expense is US-12
+
+---
+
 ## Traceability
  
 | Use case | User story | Functional requirements | Success criteria |
@@ -483,9 +536,10 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
 | UC-08 Record Settlement | US-08 | FR-11, FR-12 | SC-06 |
 | UC-09 Manage Chores | US-09 | FR-13, FR-14, FR-15 | SC-07 |
 | UC-10 View Dashboard | US-10 | FR-16 | SC-08 |
+| UC-11 View History | US-11 | FR-12, FR-16 | SC-08 |
  
 FR-17 (persistent database storage), NFR-06 and NFR-07 (server-side authorization on every
-request) underpin all ten and are not listed per-row.
+request) underpin all eleven and are not listed per-row.
  
 ---
  

@@ -136,8 +136,8 @@ that member, zero means settled.
 | POST | `/api/households/:householdId/chores/:choreId/complete` | none | 200 `{ chore }` | US-09 |
 | GET | `/api/households/:householdId/dashboard` | none | 200 `{ household, members, balances, upcomingChores, recentActivity }` | US-10 |
 
-23 endpoints. US-11 (P1, history) is served by the list endpoints above, so it
-needs no new routes.
+23 endpoints. US-11 (history) is served by the list endpoints above, so it
+needed no new routes.
 
 ---
 

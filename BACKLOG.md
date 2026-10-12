@@ -43,7 +43,7 @@ was P1 in Milestone 1 and is P0 here.
 
 | # | Story | Area | Priority | Owner | Sprint | Issue | Status |
 |---|---|---|---|---|---|---|---|
-| US-11 | As a household member, I want to view past expenses, settlements, and chores so that I can check what a charge was for, confirm a debt was paid, or confirm a task was completed. | History | P0 | Orlando | Sprint 3 | #23 | Not started |
+| US-11 | As a household member, I want to view past expenses, settlements, and chores so that I can check what a charge was for, confirm a debt was paid, or confirm a task was completed. | History | P0 | Orlando | Sprint 3 | #23 | In review |
 | US-12 | As a household member, I want to correct or delete an expense that was entered wrong, so that balances reflect what was actually spent. | Expense | P0 | Orlando | Sprint 4 | #60 | Not started |
 | US-14 | As a household owner, I want to revoke an invitation link I no longer want used, so that a link shared by mistake can't add someone to my household. | Household | P0 | Agustin | Sprint 4 | #75 | Not started |
 | US-13 | As a household owner, I want to remove a roommate who has moved out, and as a member, I want to leave a household, so that the member list reflects who actually lives there. | Household | P1 | Agustin | Sprint 4 | #74 | Not started |
