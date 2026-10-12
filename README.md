@@ -373,6 +373,7 @@ docker compose down           # data persists in a named volume
 - [Use case specifications](./docs/requirements/use-cases.md)
 - [Analysis model](./docs/requirements/analysis-model.md)
 - [Design patterns](./docs/design/design-patterns.md)
+- [Quality-assurance plan](./docs/testing/qa-plan.md): test levels, who runs what and when, milestone entry and exit criteria, the pre-release checklist, and defect handling
 - [Responsive design considerations](./docs/design/responsive-design.md), with
   [screenshots of every screen at 375px and 1280px](./docs/design/screenshots/)
 - [Product brief and MVP scope](./docs/product-brief.md)

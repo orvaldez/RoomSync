@@ -62,6 +62,11 @@ above. Commits on the branch should follow it too, but they don't reach `main`.
 
 ## Pull requests
 
+Opening a PR fills in [the template](./.github/pull_request_template.md):
+`Closes #`, what changed, how it was checked, and a checklist to tick. The
+[QA plan](./docs/testing/qa-plan.md) explains each checklist item, and says
+what else is tested, by whom and when.
+
 **The body:**
 
 - Starts with `Closes #N`, so the issue closes when the PR merges and links
