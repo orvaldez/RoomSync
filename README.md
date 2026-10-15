@@ -374,6 +374,7 @@ docker compose down           # data persists in a named volume
 
 - [Project proposal](./docs/proposal.pdf)
 - [Prioritized backlog](./BACKLOG.md)
+- [Quality-assurance plan](./docs/testing/qa-plan.md): test levels, who runs what and when, milestone entry and exit criteria, the pre-release checklist, and defect handling
 - [Changelog and versioning](./CHANGELOG.md)
 - [Threat model](./docs/security/threat-model.md) and
   [rate limiting on login and registration](./docs/security/rate-limiting.md)
