@@ -49,7 +49,7 @@ const REPOSITORIES = {
 const restrict = (...patterns) => ["error", { patterns }];
 
 export default defineConfig([
-  globalIgnores(["dist"]),
+  globalIgnores(["dist", "coverage"]),
   {
     files: ["**/*.{ts,mts,cts,js,mjs}"],
     extends: [js.configs.recommended, tseslint.configs.recommended],

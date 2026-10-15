@@ -23,5 +23,45 @@ export default defineConfig({
       LOGIN_MAX_FAILURES_PER_IP: "10000",
       REGISTER_MAX_PER_IP: "10000",
     },
+    /**
+     * Unit-test coverage, with `npm run test:coverage`. The targets and why
+     * each area's is set where it is are in docs/testing/coverage.md; change
+     * both together.
+     */
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.ts"],
+      exclude: ["src/**/*.test.ts", "src/integration/**"],
+      reporter: ["text", "html", "json-summary"],
+      thresholds: {
+        // A floor just under the baseline, so coverage can't quietly fall.
+        // Repositories are mocked here by design and pull this down; the
+        // integration tests cover them.
+        statements: 70,
+        branches: 90,
+        functions: 75,
+        lines: 70,
+        // The business rules, including the split and balance arithmetic
+        // (SC-04): the highest bar.
+        "src/services/**": {
+          statements: 95,
+          branches: 90,
+          functions: 95,
+          lines: 95,
+        },
+        "src/routes/**": {
+          statements: 95,
+          branches: 80,
+          functions: 95,
+          lines: 95,
+        },
+        "src/middleware/**": {
+          statements: 80,
+          branches: 75,
+          functions: 90,
+          lines: 80,
+        },
+      },
+    },
   },
 });

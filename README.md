@@ -313,6 +313,19 @@ balances, chore due dates and dashboard activity, where the direction of a
 sentence ("you owe" or "owes you") is the easiest thing to get backwards. Component
 tests are planned with the Milestone 2 test plan.
 
+#### Coverage
+
+```bash
+cd server && npx prisma generate && npm run test:coverage
+cd client && npm run test:coverage
+```
+
+Runs the unit tests and prints a coverage table, with an HTML report at
+`coverage/index.html` in that workspace (git-ignored). Each workspace's
+`vitest.config.ts` sets a coverage target per area, and falling below one
+fails the run, and CI. The baseline, the targets and why each is set where it
+is are in [docs/testing/coverage.md](./docs/testing/coverage.md).
+
 #### Integration tests
 
 The unit tests above mock the repositories, so none of them run real SQL. The
@@ -338,8 +351,8 @@ request and every push to `main`, on Node 20, as three jobs:
 
 | Job | Steps |
 |---|---|
-| `server` | `npm ci`, `npx prisma generate`, `npm run typecheck`, `npm run lint`, `npm test` |
-| `client` | `npm ci`, `npm run lint`, `npm run build` (which runs `tsc -b`), `npm test` |
+| `server` | `npm ci`, `npx prisma generate`, `npm run typecheck`, `npm run lint`, `npm run test:coverage`, then uploads the coverage report as the `coverage-server` artifact |
+| `client` | `npm ci`, `npm run lint`, `npm run build` (which runs `tsc -b`), `npm run test:coverage`, then uploads the `coverage-client` artifact |
 | `integration` | A `postgres:16` service container, then `npm ci`, `npx prisma generate`, `npm run test:integration` |
 
 To reproduce a failing job locally, run the same steps in that directory. The
@@ -373,6 +386,7 @@ docker compose down           # data persists in a named volume
 - [Use case specifications](./docs/requirements/use-cases.md)
 - [Analysis model](./docs/requirements/analysis-model.md)
 - [Design patterns](./docs/design/design-patterns.md)
+- [Test coverage: baseline and targets](./docs/testing/coverage.md)
 - [Responsive design considerations](./docs/design/responsive-design.md), with
   [screenshots of every screen at 375px and 1280px](./docs/design/screenshots/)
 - [Product brief and MVP scope](./docs/product-brief.md)
