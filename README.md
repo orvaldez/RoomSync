@@ -344,6 +344,12 @@ table. To use a different database, set `TEST_DATABASE_URL`: the suite refuses
 any database whose name doesn't end in `_test`. The tests live in
 `server/src/integration/`, and `npm test` doesn't run them.
 
+They cover the main flows, one file each: the account (`auth`), households and
+invitations (`household`), expenses, balances and settlements (`money`), chores
+(`chore`), the dashboard (`dashboard`), and 404 for anyone outside a household
+(`isolation`). The expected balances in `money.integration.test.ts` are worked
+out by hand in its comments.
+
 ### Continuous integration
 
 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs on every pull

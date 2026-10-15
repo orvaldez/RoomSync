@@ -32,7 +32,11 @@ Every version is a GitHub release whose notes match its section below.
   with the session stored in the database (#83). The household flow follows:
   create a household, invite, accept, and list the members, with single-use
   and expired links, owner-only invites, one household per user, and 404 for
-  outsiders (#87). They use a separate database whose name must end in
+  outsiders (#87). Then the money and chore flows: expenses with each split
+  method and the balances they produce, checked against amounts worked out by
+  hand; settlements, including refusing more than is owed; chores only their
+  assignee can complete; the dashboard reflecting all of it; and 404 from
+  every household endpoint for a user from another household (#95). They use a separate database whose name must end in
   `_test`, emptied before every test, and run with `npm run test:integration`.
 - Server linting with ESLint and typescript-eslint (`npm run lint`), run by the
   `server` CI job. It enforces the ADR-001 layering: only repositories may
