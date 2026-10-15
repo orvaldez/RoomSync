@@ -5,8 +5,8 @@ Issue #5 · Milestone 1 deliverable
 
 Wireframes for every MVP screen. Screens that are built are drawn as they
 actually render, so this document describes the product rather than an
-intention; the one screen not yet built, expense detail, is drawn as the
-design it will be built to.
+intention. Expense detail was drawn as a design first and built to it in
+Sprint 3 (#23), together with History (screen 12).
 
 Drawn at desktop width. Every screen is a single column at 375px (NFR-05); the
 **At 375px** note under each one says what changes, if anything.
@@ -15,7 +15,7 @@ Drawn at desktop width. Every screen is a single column at 375px (NFR-05); the
 
 ## 1. Screen index
 
-Status as of September 30, 2026.
+Status as of October 12, 2026.
 
 | # | Screen | Route | Story | Status |
 |---|---|---|---|---|
@@ -25,10 +25,11 @@ Status as of September 30, 2026.
 | 5 | Join a household | `/join/:token` | US-04 | Built |
 | 6 | Dashboard | `/` | US-10 | Built |
 | 7 | Add an expense | `/expenses/new` | US-05, US-06 | Built |
-| 8 | Expenses list | dashboard panel | US-05, US-11 | Built |
-| 9 | Expense detail | `/expenses/:id` | US-05, US-11 | Designed, not built |
+| 8 | Expenses list | dashboard panel, History | US-05, US-11 | Built |
+| 9 | Expense detail | `/expenses/:id` | US-05, US-11 | Built |
 | 10 | Chores | `/chores` | US-09 | Built |
 | 11 | Balances and record payment | `/balances` | US-07, US-08 | Built |
+| 12 | History | `/history` | US-11 | Built |
 
 Together these cover the screen list in #5: register, login, create or join a
 household, dashboard, expenses, expense detail, and chores — plus balances,
@@ -49,7 +50,10 @@ flowchart TD
     dash --> add["/expenses/new"]
     dash --> chores["/chores"]
     dash --> balances["/balances"]
-    dash -. "expense in the list" .-> detail["/expenses/:id<br/>(designed)"]
+    dash --> history["/history"]
+    dash -- "expense in the list" --> detail["/expenses/:id"]
+    history -- "expense in the list" --> detail
+    detail -- "← History" --> history
     add -- "Save" --> dash
 ```
 
@@ -360,8 +364,9 @@ is one row per person with the amount right-aligned — never a table.
 
 ## 8. Expenses list — Built
 
-The household's expenses, newest first: on the dashboard as a panel, and later
-as the full history view of US-11.
+The household's expenses, newest first: the five newest on the dashboard as
+the **Recent expenses** panel, with a link to the rest, and all of them on
+History (screen 12).
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -386,10 +391,12 @@ right-aligned with tabular digits so they line up down the list.
 
 ---
 
-## 9. Expense detail — Designed, not built
+## 9. Expense detail — Built
 
-`GET /api/households/:householdId/expenses/:expenseId` exists (#47); this is
-the screen it is for.
+Built in #23 from this design, on `GET /api/households/:householdId/expenses/:expenseId`
+(#47). The built screen labels the reader's own row "You", and marks the payer
+"(paid)" ("You (paid)" if both). Screenshot:
+[375px](../screenshots/mobile/11-expense-detail.png).
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -412,9 +419,9 @@ For a percentage split each row also shows the percentage
 (`Orlando · 60%   $42.00`); for a custom split the heading reads
 "Split by amount".
 
-There is no Edit or Delete: expenses are immutable in the MVP, and editing one
-after a settlement has been recorded against it would silently change what
-that settlement paid off.
+There is no Edit or Delete yet: expenses were immutable in the MVP. Editing
+and deleting arrive with US-12 (#60), which has to decide what happens to a
+settlement already recorded against the expense.
 
 If the id does not exist **in this household**, the server answers
 404 `EXPENSE_NOT_FOUND`, and the page says "This expense could not be found"
@@ -538,7 +545,50 @@ two lines rather than squeezing the sentence; the form is full width.
 
 ---
 
-## 12. Patterns across screens
+## 12. History — Built
+
+UC-11: everything the household has recorded, in three lists rather than one
+merged timeline, because each answers a different question ("what was this
+charge?", "was I paid back?", "did they do it?").
+
+```
+┌────────────────────────────────────────────────────────┐
+│  History                                               │
+│  Apartment 41 · Back to the dashboard                  │
+│  Expenses (5)   Payments (2)   Completed chores (2)    │
+│                                                        │
+│  ┌─ Expenses ───────────────────────────────────────┐  │
+│  │ Paper towels and dish soap               $18.99  │  │
+│  │ Sep 28 · paid by Orlando       your share $4.75  │  │
+│  │ …                                                │  │
+│  └──────────────────────────────────────────────────┘  │
+│  ┌─ Payments ───────────────────────────────────────┐  │
+│  │ Marcus Lee paid you $13.88                       │  │
+│  │ Sep 29 · Venmo                                   │  │
+│  └──────────────────────────────────────────────────┘  │
+│  ┌─ Completed chores ───────────────────────────────┐  │
+│  │ Wipe down the kitchen                            │  │
+│  │ Assigned to Priya Shah · completed Sep 29        │  │
+│  └──────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────┘
+```
+
+- **Expenses** are the same cards as screen 8; each opens screen 9.
+- **Payments** stay listed after a pair is settled up (FR-12): this is the
+  record that a debt was paid, not a list of what is owed.
+- **Completed chores** name who the chore was assigned to, since only the
+  assignee can complete an assigned chore, and when it was completed.
+- **The jump links** at the top carry each list's count, so a reader with
+  hundreds of expenses reaches Payments without scrolling past them.
+- Each list has its own empty state, naming where that kind of record is
+  created.
+
+**At 375px:** one column; the jump links wrap onto a second line rather than
+scrolling sideways. Screenshot: [375px](../screenshots/mobile/10-history.png).
+
+---
+
+## 13. Patterns across screens
 
 | Pattern | Rule |
 |---|---|
@@ -555,11 +605,10 @@ two lines rather than squeezing the sentence; the form is full width.
 
 ---
 
-## 13. Not covered here
+## 14. Not covered here
 
 - **Visual design** — colour, type and spacing come from the tokens in
   `client/src/index.css`, in light and dark mode.
 - **Editing a chore** — the API supports reassigning and re-dating
   (`PATCH /chores/:id`), but there is no screen for it yet.
-- **US-11 history views** beyond the expense list, since that story is P1 and
-  scheduled for Sprint 3.
+- **Editing or deleting an expense** — US-12 (#60), Sprint 4.

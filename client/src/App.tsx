@@ -9,6 +9,8 @@ import { JoinPage } from "./pages/JoinPage";
 import { AddExpensePage } from "./pages/AddExpensePage";
 import { ChoresPage } from "./pages/ChoresPage";
 import { BalancesPage } from "./pages/BalancesPage";
+import { HistoryPage } from "./pages/HistoryPage";
+import { ExpenseDetailPage } from "./pages/ExpenseDetailPage";
 
 export default function App() {
   return (
@@ -70,6 +72,29 @@ export default function App() {
               <RequireAuth>
                 <AppShell>
                   <BalancesPage />
+                </AppShell>
+              </RequireAuth>
+            }
+          />
+
+          {/* The router ranks the static /expenses/new above this. */}
+          <Route
+            path="/expenses/:expenseId"
+            element={
+              <RequireAuth>
+                <AppShell>
+                  <ExpenseDetailPage />
+                </AppShell>
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/history"
+            element={
+              <RequireAuth>
+                <AppShell>
+                  <HistoryPage />
                 </AppShell>
               </RequireAuth>
             }
