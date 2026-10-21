@@ -29,6 +29,15 @@ Every version is a GitHub release whose notes match its section below.
   method and every member's share. The dashboard's expenses panel now shows
   the five newest. A test with 500 expenses and five members shows every list
   answering in under 80 ms, inside NFR-02's two seconds (#96).
+- **Edit and delete an expense** (US-12): the member who paid, or the household
+  owner, can correct an expense on the same form it was recorded with, filled
+  in with what was saved, or delete it after a confirmation. Edits re-run every
+  check that recording runs. A delete is a soft delete: the expense stops
+  counting toward balances, History still lists it struck through with who
+  deleted it, and payments already recorded are kept. New `PATCH` and `DELETE`
+  endpoints, error codes `NOT_EXPENSE_EDITOR` and `EXPENSE_DELETED`, and a
+  migration adding `updated_at`, `deleted_at` and `deleted_by_user_id` to
+  `expenses` (#PR).
 - Continuous integration with GitHub Actions on every pull request and every
   push to `main`: a `server` job (Prisma client generation, typecheck, unit
   tests), a `client` job (lint, build, tests) and an `integration` job (#81,

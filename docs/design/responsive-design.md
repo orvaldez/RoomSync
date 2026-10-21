@@ -204,6 +204,11 @@ then saved a full-page screenshot.
 | History | UC-11 | [mobile](screenshots/mobile/10-history.png) | [desktop](screenshots/desktop/10-history.png) | None |
 | Expense detail, percentage split | UC-11 | [mobile](screenshots/mobile/11-expense-detail.png) | [desktop](screenshots/desktop/11-expense-detail.png) | None |
 | Expense not found | UC-11 | [mobile](screenshots/mobile/12-expense-not-found.png) | [desktop](screenshots/desktop/12-expense-not-found.png) | None |
+| Expense detail with Edit and Delete | UC-12 | [mobile](screenshots/mobile/13-expense-detail-actions.png) | — | None |
+| Edit expense, percentage split | UC-12 | [mobile](screenshots/mobile/14-edit-expense.png) | — | None |
+| Delete confirmation | UC-12 | [mobile](screenshots/mobile/15-delete-confirm.png) | — | None |
+| Deleted expense | UC-12 | [mobile](screenshots/mobile/16-expense-deleted.png) | [desktop](screenshots/desktop/16-expense-deleted.png) | None |
+| History with a deleted expense | UC-11, UC-12 | [mobile](screenshots/mobile/17-history-with-deleted.png) | — | None |
 
 Every screen is in the table; the expense list is a panel on the dashboard
 (rows 5 and 6) and a list on History. Rows 10 to 12 and the dashboard
@@ -214,8 +219,8 @@ three split methods, at both widths.
 
 | Check | Result |
 |---|---|
-| No horizontal scroll at 375px, all twelve screens | **Pass** — `scrollWidth` is 375 on every one |
-| No horizontal scroll at 1280px, all twelve screens | **Pass** |
+| No horizontal scroll at 375px, all seventeen screens | **Pass** — `scrollWidth` is 375 on every one |
+| No horizontal scroll at 1280px | **Pass** on the twelve screens before US-12 and the deleted expense; the other US-12 screens were checked at 375px only |
 | Interactive elements at least 24×24px | **Pass** — the only smaller ones are the 18px checkboxes and radios on Add expense, whose 36px label rows are the target (§3.6) |
 | Inputs at least 16px, so iOS does not zoom | **Pass** — set on `.field input`, `.field select` and the invitation link (§3.1) |
 | Real iOS or Android device | **Not tested** |
