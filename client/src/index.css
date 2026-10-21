@@ -692,3 +692,30 @@ a {
   color: var(--text-h);
   font-variant-numeric: tabular-nums;
 }
+
+/* US-12: a deleted expense. Struck through in lists and on its own page, with
+   the words saying so, since a line-through alone doesn't reach a screen
+   reader. The red matches .form-error. */
+.expense-deleted {
+  text-decoration: line-through;
+}
+.expense-deleted-banner {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border: 1px solid #d92d20;
+  border-radius: 6px;
+  background: rgba(217, 45, 32, 0.08);
+  color: var(--text-h);
+  font-size: 15px;
+}
+.button-danger {
+  border-color: #d92d20;
+  background: rgba(217, 45, 32, 0.12);
+}
+.expense-delete-confirm {
+  border-color: #d92d20;
+}
+.form-error-text {
+  color: #d92d20;
+  font-size: 14px;
+}
