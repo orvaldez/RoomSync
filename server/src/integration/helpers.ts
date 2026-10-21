@@ -1,6 +1,9 @@
 import request from "supertest";
-import { expect } from "vitest";
+import { Pool } from "pg";
+import { afterAll, beforeEach, expect } from "vitest";
 import app from "../app";
+import { getPrisma } from "../repositories/prisma";
+import { resetDatabase } from "./test-database";
 
 /** A logged-in user: a Supertest agent holding their session cookie. */
 export interface SignedInUser {
@@ -56,4 +59,53 @@ export async function joinHousehold(
     `/api/invitations/${invited.body.invitation.token}/accept`
   );
   expect(accepted.status).toBe(200);
+}
+
+/**
+ * Empties the database before each test in the calling file and closes its
+ * connections afterwards. Returns a `pg` pool for checking rows directly.
+ */
+export function useCleanDatabase(): Pool {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+  beforeEach(async () => {
+    await resetDatabase(pool);
+  });
+
+  afterAll(async () => {
+    await getPrisma().$disconnect();
+    await pool.end();
+  });
+
+  return pool;
+}
+
+/** A household of Alex (owner), Sam and Maya, the cast of the money flows. */
+export async function threeRoommates(): Promise<{
+  householdId: string;
+  alex: SignedInUser;
+  sam: SignedInUser;
+  maya: SignedInUser;
+}> {
+  const alex = await signUp("Alex");
+  const sam = await signUp("Sam");
+  const maya = await signUp("Maya");
+  const householdId = await createHousehold(alex);
+  await joinHousehold(householdId, alex, sam);
+  await joinHousehold(householdId, alex, maya);
+  return { householdId, alex, sam, maya };
+}
+
+/** `viewer`'s balances as `{ name: netCents }`, from GET .../balances. */
+export async function balancesOf(
+  viewer: SignedInUser,
+  householdId: string
+): Promise<{ net: Record<string, number>; totals: Record<string, number> }> {
+  const res = await viewer.agent.get(`/api/households/${householdId}/balances`);
+  expect(res.status).toBe(200);
+  const net: Record<string, number> = {};
+  for (const balance of res.body.balances) {
+    net[balance.name] = balance.netCents;
+  }
+  return { net, totals: res.body.totals };
 }
