@@ -89,7 +89,9 @@ InvitationPublic { id, token, status, expiresAt, createdAt }
 SharePublic      { userId, name, amountOwedCents, percentBasisPoints: number | null }
 ExpensePublic    { id, description, totalAmountCents, expenseDate,
                    paidBy: { userId, name }, splitMethod: "EQUAL" | "CUSTOM" | "PERCENTAGE",
-                   shares: SharePublic[], createdAt }
+                   shares: SharePublic[], createdAt,
+                   updatedAt,                                   // US-12: equals createdAt until edited
+                   deleted: { at, by: { userId, name } } | null } // US-12: null unless deleted
 SettlementPublic { id, from: { userId, name }, to: { userId, name },
                    amountCents, note: string | null, settledAt }
 ChorePublic      { id, title, description: string | null,
@@ -127,6 +129,8 @@ that member, zero means settled.
 | POST | `/api/households/:householdId/expenses` | expense body | 201 `{ expense }` | US-05, US-06 |
 | GET | `/api/households/:householdId/expenses` | none | 200 `{ expenses }` | US-05, US-11 |
 | GET | `/api/households/:householdId/expenses/:expenseId` | none | 200 `{ expense }` | US-05 |
+| PATCH | `/api/households/:householdId/expenses/:expenseId` | expense body | 200 `{ expense }` | US-12 |
+| DELETE | `/api/households/:householdId/expenses/:expenseId` | none | 204 | US-12 |
 | GET | `/api/households/:householdId/balances` | none | 200 `{ balances, totals }` | US-07 |
 | POST | `/api/households/:householdId/settlements` | `{ fromUserId, toUserId, amountCents, note? }` | 201 `{ settlement }` | US-08 |
 | GET | `/api/households/:householdId/settlements` | none | 200 `{ settlements }` | US-08, US-11 |
@@ -136,7 +140,7 @@ that member, zero means settled.
 | POST | `/api/households/:householdId/chores/:choreId/complete` | none | 200 `{ chore }` | US-09 |
 | GET | `/api/households/:householdId/dashboard` | none | 200 `{ household, members, balances, upcomingChores, recentActivity }` | US-10 |
 
-23 endpoints. US-11 (history) is served by the list endpoints above, so it
+25 endpoints: the 23 of Milestone 1, and US-12's edit and delete. US-11 (history) is served by the list endpoints above, so it
 needed no new routes.
 
 ---
@@ -330,7 +334,47 @@ Errors:
   404 EXPENSE_NOT_FOUND        - "Expense not found."
 
 An expense belonging to another household returns `EXPENSE_NOT_FOUND`, never
-the expense.
+the expense. A **deleted** expense is still returned, with `deleted` set, so a
+link to it from the history explains what happened rather than 404ing (US-12).
+
+### Editing and deleting an expense (US-12) - owner: Orlando
+
+Built in #60. Who may change an expense: **the member who paid it, or the
+household owner** (analysis-model.md §8.1).
+
+## PATCH /api/households/:householdId/expenses/:expenseId
+Auth: required, member; the payer or the owner
+Request: expense body (the same shape as create, every field required: this
+  replaces the expense rather than patching single fields, so the split is
+  always recalculated from a complete input)
+Rules: the same validation and split rules as create. The shares are replaced
+  in one transaction under the household ledger lock, like create, so a
+  settlement checked at the same moment sees either the old expense or the new
+  one, never half of each. `updatedAt` is set; `createdAt` is not changed.
+Success: 200 { expense: ExpensePublic }
+Errors:
+  the same 400 codes as create
+  403 NOT_EXPENSE_EDITOR       - "Only the member who paid or the household owner can change this expense."
+  404 EXPENSE_NOT_FOUND
+  409 EXPENSE_DELETED          - "This expense was deleted."
+
+## DELETE /api/households/:householdId/expenses/:expenseId
+Auth: required, member; the payer or the owner
+Request: none
+Rules: a soft delete. The expense and its shares stay in the database with
+  `deletedAt` and `deletedByUserId` set, under the ledger lock. From then on
+  it no longer counts toward balances, the dashboard, or the expense list.
+  Settlements are never changed: a payment that really happened stays
+  recorded, so deleting an expense it paid toward can leave the pair owing the
+  other way, and the balances show that plainly.
+Success: 204, also when it was already deleted (repeating a delete is harmless)
+Errors:
+  403 NOT_EXPENSE_EDITOR
+  404 EXPENSE_NOT_FOUND
+
+`GET .../expenses` leaves deleted expenses out, so the dashboard panel is
+unchanged. `GET .../expenses?include=deleted` adds them, for the History
+screen, which shows them struck through with who deleted them and when.
 
 ### Balances and settlements (US-07, US-08) - owner: Orlando
 
@@ -458,6 +502,7 @@ guidance (UC-10 3a-6a).
 | `INVALID_CREDENTIALS` | 401 | login |
 | `NOT_HOUSEHOLD_OWNER` | 403 | invitations create |
 | `CHORE_NOT_ASSIGNED_TO_YOU` | 403 | chore complete |
+| `NOT_EXPENSE_EDITOR` | 403 | expense edit, delete |
 | `HOUSEHOLD_NOT_FOUND` | 404 | every household-scoped endpoint |
 | `INVITATION_INVALID` | 404 | invitation lookup, accept |
 | `EXPENSE_NOT_FOUND` | 404 | expense by id |
@@ -466,6 +511,7 @@ guidance (UC-10 3a-6a).
 | `ALREADY_IN_HOUSEHOLD` | 409 | household create, invitation accept |
 | `EXCEEDS_BALANCE` | 409 | settlements |
 | `CHORE_ALREADY_COMPLETE` | 409 | chore patch |
+| `EXPENSE_DELETED` | 409 | expense edit |
 | `INVITATION_EXPIRED` | 410 | invitation lookup, accept |
 | `RATE_LIMITED` | 429 | login, register |
 | `INTERNAL_ERROR` | 500 | any |

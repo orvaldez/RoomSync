@@ -68,6 +68,8 @@ function expense(id: string, createdAt: string): PublicExpense {
     splitMethod: "EQUAL",
     shares: [],
     createdAt: at(createdAt),
+    updatedAt: at(createdAt),
+    deleted: null,
   };
 }
 

@@ -131,6 +131,8 @@ beforeEach(() => {
         { userId: ORLANDO, name: "Orlando", amountOwedCents: 1250, percentBasisPoints: null },
       ],
       createdAt: new Date("2026-09-28T15:00:00Z"),
+      updatedAt: new Date("2026-09-28T15:00:00Z"),
+      deleted: null,
     },
   ]);
   listSettlements.mockResolvedValue([

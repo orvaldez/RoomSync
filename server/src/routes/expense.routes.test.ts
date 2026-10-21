@@ -22,6 +22,8 @@ vi.mock("../repositories/expense.repository", () => ({
   createWithShares: vi.fn(),
   listForHousehold: vi.fn(),
   findInHousehold: vi.fn(),
+  replaceWithShares: vi.fn(),
+  softDelete: vi.fn(),
 }));
 
 import * as userRepository from "../repositories/user.repository";
@@ -76,6 +78,8 @@ const STORED: expenseRepository.ExpenseRecord = {
     { userId: ORLANDO, name: "Orlando", amountOwedCents: 4200, percentBasisPoints: null },
   ],
   createdAt: new Date("2026-09-29T17:30:00.000Z"),
+  updatedAt: new Date("2026-09-29T17:30:00.000Z"),
+  deleted: null,
 };
 
 /**
@@ -121,6 +125,8 @@ describe("POST /api/households/:householdId/expenses", () => {
         { userId: ORLANDO, name: "Orlando", amountOwedCents: 4200, percentBasisPoints: null },
       ],
       createdAt: "2026-09-29T17:30:00.000Z",
+      updatedAt: "2026-09-29T17:30:00.000Z",
+      deleted: null,
     });
   });
 
@@ -208,7 +214,7 @@ describe("GET /api/households/:householdId/expenses", () => {
     const res = await agent.get(EXPENSES_URL);
 
     expect(res.status).toBe(200);
-    expect(listForHousehold).toHaveBeenCalledWith(HOUSEHOLD_ID);
+    expect(listForHousehold).toHaveBeenCalledWith(HOUSEHOLD_ID, { includeDeleted: false });
     expect(res.body.expenses).toHaveLength(1);
     expect(res.body.expenses[0].id).toBe(STORED.id);
   });
@@ -281,4 +287,136 @@ describe("expense routes — authorization (FR-03, NFR-07)", () => {
     expect(listForHousehold).not.toHaveBeenCalled();
     expect(findInHousehold).not.toHaveBeenCalled();
   });
+});
+
+describe("PATCH and DELETE /api/households/:householdId/expenses/:expenseId — US-12", () => {
+  const replaceWithShares = vi.mocked(expenseRepository.replaceWithShares);
+  const softDelete = vi.mocked(expenseRepository.softDelete);
+  const EXPENSE_URL = `${EXPENSES_URL}/${STORED.id}`;
+  /** The same expense, paid by Orlando rather than the signed-in Agustin. */
+  const ORLANDOS = { ...STORED, paidBy: { userId: ORLANDO, name: "Orlando" } };
+
+  it("PATCH returns 200 with the corrected expense", async () => {
+    findInHousehold.mockResolvedValue(STORED);
+    replaceWithShares.mockResolvedValue({
+      status: "updated",
+      expense: { ...STORED, description: "Electricity (corrected)" },
+    });
+    const agent = await signedInAgent();
+
+    const res = await agent
+      .patch(EXPENSE_URL)
+      .send({ ...BODY, description: "Electricity (corrected)" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.expense.description).toBe("Electricity (corrected)");
+    expect(replaceWithShares).toHaveBeenCalledWith(
+      STORED.id,
+      expect.objectContaining({ householdId: HOUSEHOLD_ID, description: "Electricity (corrected)" })
+    );
+  });
+
+  it("PATCH and DELETE return 403 NOT_EXPENSE_EDITOR to a member who didn't pay", async () => {
+    findRole.mockResolvedValue("MEMBER");
+    findInHousehold.mockResolvedValue(ORLANDOS);
+    const agent = await signedInAgent();
+
+    const patched = await agent.patch(EXPENSE_URL).send(BODY);
+    const deleted = await agent.delete(EXPENSE_URL);
+
+    for (const res of [patched, deleted]) {
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe("NOT_EXPENSE_EDITOR");
+    }
+    expect(replaceWithShares).not.toHaveBeenCalled();
+    expect(softDelete).not.toHaveBeenCalled();
+  });
+
+  it("lets the owner change an expense someone else paid", async () => {
+    findRole.mockResolvedValue("OWNER");
+    findInHousehold.mockResolvedValue(ORLANDOS);
+    const agent = await signedInAgent();
+
+    const res = await agent.delete(EXPENSE_URL);
+
+    expect(res.status).toBe(204);
+    expect(softDelete).toHaveBeenCalledWith(HOUSEHOLD_ID, STORED.id, USER.id);
+  });
+
+  it("PATCH and DELETE return 404 EXPENSE_NOT_FOUND for an expense not in this household", async () => {
+    findInHousehold.mockResolvedValue(null);
+    const agent = await signedInAgent();
+
+    for (const res of [await agent.patch(EXPENSE_URL).send(BODY), await agent.delete(EXPENSE_URL)]) {
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe("EXPENSE_NOT_FOUND");
+    }
+  });
+
+  it("PATCH returns 409 EXPENSE_DELETED for a deleted expense", async () => {
+    findInHousehold.mockResolvedValue({
+      ...STORED,
+      deleted: { at: new Date("2026-10-20T00:00:00Z"), by: { userId: USER.id, name: "Agustin" } },
+    });
+    const agent = await signedInAgent();
+
+    const res = await agent.patch(EXPENSE_URL).send(BODY);
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("EXPENSE_DELETED");
+  });
+
+  it("PATCH returns 400 for an invalid split and stores nothing", async () => {
+    findInHousehold.mockResolvedValue(STORED);
+    const agent = await signedInAgent();
+
+    const res = await agent.patch(EXPENSE_URL).send({
+      ...BODY,
+      splitMethod: "CUSTOM",
+      participants: [
+        { userId: USER.id, amountCents: 4000 },
+        { userId: ORLANDO, amountCents: 4000 },
+      ],
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("SPLIT_SUM_MISMATCH");
+    expect(replaceWithShares).not.toHaveBeenCalled();
+  });
+
+  it("DELETE returns 204 with no body", async () => {
+    findInHousehold.mockResolvedValue(STORED);
+    const agent = await signedInAgent();
+
+    const res = await agent.delete(EXPENSE_URL);
+
+    expect(res.status).toBe(204);
+    expect(res.text).toBe("");
+    expect(softDelete).toHaveBeenCalledWith(HOUSEHOLD_ID, STORED.id, USER.id);
+  });
+
+  it("GET ?include=deleted asks for deleted expenses too", async () => {
+    listForHousehold.mockResolvedValue([]);
+    const agent = await signedInAgent();
+
+    await agent.get(`${EXPENSES_URL}?include=deleted`);
+
+    expect(listForHousehold).toHaveBeenCalledWith(HOUSEHOLD_ID, { includeDeleted: true });
+  });
+
+  it.each(["patch", "delete"] as const)(
+    "%s returns 404 HOUSEHOLD_NOT_FOUND to a non-member and changes nothing",
+    async (method) => {
+      findRole.mockResolvedValue(null);
+      const agent = await signedInAgent();
+
+      const res = await agent[method](EXPENSE_URL).send(BODY);
+
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe("HOUSEHOLD_NOT_FOUND");
+      expect(findInHousehold).not.toHaveBeenCalled();
+      expect(replaceWithShares).not.toHaveBeenCalled();
+      expect(softDelete).not.toHaveBeenCalled();
+    }
+  );
 });

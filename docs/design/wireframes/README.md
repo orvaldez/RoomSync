@@ -419,9 +419,28 @@ For a percentage split each row also shows the percentage
 (`Orlando · 60%   $42.00`); for a custom split the heading reads
 "Split by amount".
 
-There is no Edit or Delete yet: expenses were immutable in the MVP. Editing
-and deleting arrive with US-12 (#60), which has to decide what happens to a
-settlement already recorded against the expense.
+**Edit and Delete** (US-12, #60) sit under the split line, shown only to the
+member who paid and the household owner. Edit opens the Add an expense form
+(screen 7) at `/expenses/:id/edit`, titled **Edit expense** and filled in with
+what was saved; **Save changes** returns here. Delete asks first, inline:
+
+```
+┌─ Delete “Internet”? ─────────────────────────────┐
+│ It stops counting toward everyone's balances     │
+│ right away. Payments already recorded stay as    │
+│ they are, so a balance someone paid off may now  │
+│ run the other way.                               │
+│ [Delete expense]  [Keep it]                      │
+└──────────────────────────────────────────────────┘
+```
+
+A deleted expense still opens here, with a banner "Deleted by Casey on Oct
+21. It no longer counts toward anyone's balance." and no buttons. History
+lists it struck through. Screenshots:
+[actions](../screenshots/mobile/13-expense-detail-actions.png),
+[edit](../screenshots/mobile/14-edit-expense.png),
+[confirm](../screenshots/mobile/15-delete-confirm.png),
+[deleted](../screenshots/mobile/16-expense-deleted.png).
 
 If the id does not exist **in this household**, the server answers
 404 `EXPENSE_NOT_FOUND`, and the page says "This expense could not be found"
@@ -601,7 +620,7 @@ scrolling sideways. Screenshot: [375px](../screenshots/mobile/10-history.png).
 | Submit buttons | Never disabled to signal invalid input; pressing explains what is wrong. Disabled only while a request is in flight |
 | Loading | An explicit state with `aria-busy`, never a blank screen |
 | Signed out mid-session | Any 401 sends the user to log in, then back to where they were |
-| Destructive actions | None in the MVP — expenses and settlements are immutable |
+| Destructive actions | Only deleting an expense (US-12): it asks first, says what changes, and is a soft delete that History still shows. Settlements stay immutable |
 
 ---
 

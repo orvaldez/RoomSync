@@ -4,9 +4,10 @@ RoomSync — Software Design and Development
 Orlando Rodriguez Valdez, Agustin Lemuz-Juarez
 Issue #4 · Milestone 1 deliverable
  
-Eleven use cases, one per user story from US-01 through US-11, expanding the acceptance
+Twelve use cases, one per user story from US-01 through US-12, expanding the acceptance
 criteria in proposal Section 5 into concrete actor-system interactions. UC-01 to UC-10
-were written for Milestone 1; UC-11 was added with US-11 in Sprint 3 (#23).
+were written for Milestone 1; UC-11 was added with US-11 in Sprint 3 (#23), and UC-12
+with US-12 in Sprint 4 (#60).
  
 ---
  
@@ -522,6 +523,61 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
 
 ---
 
+## UC-12 — Edit or Delete an Expense
+
+| | |
+|---|---|
+| **User story** | US-12 (P0 for Milestone 2) |
+| **Primary actor** | The member who paid the expense, or the household owner |
+| **Goal** | Correct an expense entered wrong, or remove one that shouldn't exist, so balances reflect what was actually spent |
+| **Preconditions** | The expense belongs to the actor's household and isn't deleted |
+| **Postconditions** | Edit: the expense and its shares are replaced. Delete: the expense is marked deleted and no longer counts toward any balance. Settlements are unchanged either way |
+
+**Main success scenario — editing**
+
+1. Actor opens the expense (UC-11) and selects Edit.
+2. System shows the expense form filled in with what was saved: description, amount,
+   date, payer, participants, split method, and each amount or percentage.
+3. Actor corrects what was wrong and saves.
+4. System confirms the actor may change it, and validates the whole expense exactly as
+   when it was recorded (UC-05, UC-06).
+5. System replaces the expense and its shares in one step, under the household ledger
+   lock (UC-08 4e).
+6. System shows the corrected expense, saying the balances are updated.
+
+**Main success scenario — deleting**
+
+7. Actor selects Delete.
+8. System explains that the expense will stop counting toward balances and that
+   payments already recorded stay as they are, and asks for confirmation.
+9. Actor confirms.
+10. System marks the expense deleted, recording who deleted it and when.
+11. System shows the expense as deleted, with no Edit or Delete.
+
+**Extensions**
+
+- **1a. The actor neither paid nor owns the household.** System offers no Edit or
+  Delete; a direct request answers 403 `NOT_EXPENSE_EDITOR` and changes nothing.
+- **1b. The expense is not in the actor's household.** 404 `EXPENSE_NOT_FOUND`, as in UC-11.
+- **4a. The corrected expense is invalid** (for example, custom amounts that don't add
+  up). System shows the same errors as UC-05 and UC-06 and changes nothing.
+- **4b. The expense was deleted in the meantime.** System refuses the edit with
+  409 `EXPENSE_DELETED`.
+- **9a. The actor chooses Keep it.** Nothing changes.
+- **10a. The expense is already deleted.** Nothing changes; the first delete's author
+  and time are kept.
+- **10b. A settlement was recorded against the expense.** The delete goes ahead and the
+  settlement stays, because the payment happened. The pair's balance can now run the
+  other way, and the balances show it plainly (analysis model §8.1, decision 3).
+
+**Special requirements**
+
+- Balances, the dashboard and the history reflect the change on the next read (NFR-03)
+- History keeps a deleted expense, struck through, with who deleted it and when
+- Fully usable at a viewport width of 375 pixels (NFR-05)
+
+---
+
 ## Traceability
  
 | Use case | User story | Functional requirements | Success criteria |
@@ -537,9 +593,10 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
 | UC-09 Manage Chores | US-09 | FR-13, FR-14, FR-15 | SC-07 |
 | UC-10 View Dashboard | US-10 | FR-16 | SC-08 |
 | UC-11 View History | US-11 | FR-12, FR-16 | SC-08 |
+| UC-12 Edit or Delete an Expense | US-12 | FR-07, FR-09, FR-10, FR-18 | SC-03, SC-04 |
  
 FR-17 (persistent database storage), NFR-06 and NFR-07 (server-side authorization on every
-request) underpin all eleven and are not listed per-row.
+request) underpin all twelve and are not listed per-row.
  
 ---
  

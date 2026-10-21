@@ -101,6 +101,10 @@ export type Expense = {
   splitMethod: SplitMethod;
   shares: Share[];
   createdAt: string;
+  /** Equals createdAt until the expense is edited (US-12). */
+  updatedAt: string;
+  /** Null unless the expense was deleted (US-12). */
+  deleted: { at: string; by: { userId: string; name: string } } | null;
 };
 
 /**
@@ -338,10 +342,33 @@ export const api = {
     });
   },
 
-  /** Every expense in the household, newest date first (contract Section 4). */
-  expenses(householdId: string) {
+  /**
+   * Every expense in the household, newest date first (contract Section 4).
+   * Deleted ones are left out unless `includeDeleted` (the History screen).
+   */
+  expenses(householdId: string, { includeDeleted = false } = {}) {
+    const query = includeDeleted ? "?include=deleted" : "";
     return request<{ expenses: Expense[] }>(
-      `/households/${householdId}/expenses`
+      `/households/${householdId}/expenses${query}`
+    );
+  },
+
+  /**
+   * Replace an expense with a corrected one (US-12). The payer or the owner
+   * only: anyone else gets 403 NOT_EXPENSE_EDITOR; a deleted one, 409.
+   */
+  updateExpense(householdId: string, expenseId: string, input: ExpenseInput) {
+    return request<{ expense: Expense }>(
+      `/households/${householdId}/expenses/${encodeURIComponent(expenseId)}`,
+      { method: "PATCH", body: input }
+    );
+  },
+
+  /** Soft-delete an expense (US-12). The payer or the owner only. */
+  deleteExpense(householdId: string, expenseId: string) {
+    return request<void>(
+      `/households/${householdId}/expenses/${encodeURIComponent(expenseId)}`,
+      { method: "DELETE" }
     );
   },
 

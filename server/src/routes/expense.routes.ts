@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import * as expenseService from "../services/expense.service";
 import { asyncHandler } from "../middleware/async-handler";
-import { requireAuth } from "../middleware/require-auth";
+import { currentUserId, requireAuth } from "../middleware/require-auth";
 import {
   currentMembership,
   requireHouseholdMember,
@@ -80,14 +80,18 @@ router.post(
  * GET /api/households/:householdId/expenses
  *
  * 200 { expenses: ExpensePublic[] }   newest expenseDate first, then newest createdAt
+ *
+ * Deleted expenses are left out; `?include=deleted` adds them, for History (US-12).
  */
 router.get(
   "/households/:householdId/expenses",
   requireAuth,
   requireHouseholdMember,
-  asyncHandler(async (_req: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const { householdId } = currentMembership(res);
-    const expenses = await expenseService.listExpenses(householdId);
+    const expenses = await expenseService.listExpenses(householdId, {
+      includeDeleted: req.query.include === "deleted",
+    });
 
     res.status(200).json({ expenses });
   })
@@ -108,6 +112,56 @@ router.get(
     const expense = await expenseService.getExpense(householdId, req.params.expenseId);
 
     res.status(200).json({ expense });
+  })
+);
+
+/**
+ * PATCH /api/households/:householdId/expenses/:expenseId — US-12.
+ *
+ * Takes a complete expense body and replaces the expense with it.
+ *
+ * 200 { expense: ExpensePublic }
+ * 400 the same codes as create
+ * 403 NOT_EXPENSE_EDITOR   neither the payer nor the household owner
+ * 404 EXPENSE_NOT_FOUND    no such expense in this household
+ * 409 EXPENSE_DELETED
+ */
+router.patch(
+  "/households/:householdId/expenses/:expenseId",
+  requireAuth,
+  requireHouseholdMember,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { householdId, role } = currentMembership(res);
+    const expense = await expenseService.updateExpense(
+      householdId,
+      req.params.expenseId,
+      { userId: currentUserId(req), role },
+      expenseBody(req)
+    );
+
+    res.status(200).json({ expense });
+  })
+);
+
+/**
+ * DELETE /api/households/:householdId/expenses/:expenseId — US-12.
+ *
+ * A soft delete. 204, also when it was already deleted.
+ * 403 NOT_EXPENSE_EDITOR   neither the payer nor the household owner
+ * 404 EXPENSE_NOT_FOUND    no such expense in this household
+ */
+router.delete(
+  "/households/:householdId/expenses/:expenseId",
+  requireAuth,
+  requireHouseholdMember,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { householdId, role } = currentMembership(res);
+    await expenseService.deleteExpense(householdId, req.params.expenseId, {
+      userId: currentUserId(req),
+      role,
+    });
+
+    res.status(204).end();
   })
 );
 

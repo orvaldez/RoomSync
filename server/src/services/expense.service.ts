@@ -1,7 +1,9 @@
 import * as expenseRepository from "../repositories/expense.repository";
 import * as householdRepository from "../repositories/household.repository";
 import {
+  ExpenseDeletedError,
   ExpenseNotFoundError,
+  NotExpenseEditorError,
   ParticipantNotMemberError,
   PayerNotMemberError,
   ValidationError,
@@ -52,6 +54,16 @@ export type PublicExpense = {
   splitMethod: SplitMethod;
   shares: PublicShare[];
   createdAt: Date;
+  /** Equals createdAt until the expense is edited (US-12). */
+  updatedAt: Date;
+  /** Null unless the expense was deleted (US-12). */
+  deleted: { at: Date; by: { userId: string; name: string } } | null;
+};
+
+/** The member asking to change an expense, as `requireHouseholdMember` verified them. */
+export type Requester = {
+  userId: string;
+  role: "OWNER" | "MEMBER";
 };
 
 /** An expense that passed every check, with its shares calculated. */
@@ -89,27 +101,82 @@ export async function createExpense(
   input: ExpenseInput
 ): Promise<PublicExpense> {
   const expense = await checkExpense(householdId, input);
-
-  const record = await expenseRepository.createWithShares({
-    householdId,
-    description: expense.description,
-    totalAmountCents: expense.totalAmountCents,
-    expenseDate: new Date(`${expense.expenseDate}T00:00:00.000Z`),
-    paidByUserId: expense.paidByUserId,
-    splitMethod: expense.splitMethod,
-    shares: expense.shares.map((share) => ({
-      userId: share.userId,
-      amountOwedCents: share.amountOwedCents,
-      percentBasisPoints: share.percentBasisPoints,
-    })),
-  });
-
+  const record = await expenseRepository.createWithShares(toNewExpense(householdId, expense));
   return toPublicExpense(record);
 }
 
-/** Every expense in the household, newest expenseDate first, then newest created. */
-export async function listExpenses(householdId: string): Promise<PublicExpense[]> {
-  const records = await expenseRepository.listForHousehold(householdId);
+/**
+ * Who may edit or delete an expense (US-12, analysis-model.md §8.1): the
+ * member who paid it, or the household owner. Checked against the payer
+ * before the edit, so a member can't make themselves the payer to gain it.
+ */
+export function canChangeExpense(
+  expense: Pick<PublicExpense, "paidBy">,
+  requester: Requester
+): boolean {
+  return requester.role === "OWNER" || expense.paidBy.userId === requester.userId;
+}
+
+/**
+ * Replaces an expense with a corrected one (US-12).
+ *
+ * The input is a complete expense body and passes exactly the checks create
+ * runs, so an edit can't store a split that create would refuse. Checks run
+ * in order: the expense exists here (404), the requester may change it (403),
+ * it isn't deleted (409), and only then the input (400), so a member who
+ * can't edit learns nothing from the validation.
+ */
+export async function updateExpense(
+  householdId: string,
+  expenseId: string,
+  requester: Requester,
+  input: ExpenseInput
+): Promise<PublicExpense> {
+  const existing = await expenseRepository.findInHousehold(householdId, expenseId);
+  if (!existing) throw new ExpenseNotFoundError();
+  if (!canChangeExpense(existing, requester)) throw new NotExpenseEditorError();
+  if (existing.deleted) throw new ExpenseDeletedError();
+
+  const expense = await checkExpense(householdId, input);
+  const result = await expenseRepository.replaceWithShares(
+    expenseId,
+    toNewExpense(householdId, expense)
+  );
+
+  // Deleted or gone between the read above and the write, under the lock.
+  if (result.status === "not-found") throw new ExpenseNotFoundError();
+  if (result.status === "deleted") throw new ExpenseDeletedError();
+  return toPublicExpense(result.expense);
+}
+
+/**
+ * Soft-deletes an expense (US-12). Settlements are never touched: a payment
+ * that really happened stays recorded, so the pair's balance after the delete
+ * can run the other way, and that is the true balance (§8.1, decision 3).
+ * Deleting an expense that is already deleted succeeds and changes nothing.
+ */
+export async function deleteExpense(
+  householdId: string,
+  expenseId: string,
+  requester: Requester
+): Promise<void> {
+  const existing = await expenseRepository.findInHousehold(householdId, expenseId);
+  if (!existing) throw new ExpenseNotFoundError();
+  if (!canChangeExpense(existing, requester)) throw new NotExpenseEditorError();
+  if (existing.deleted) return;
+
+  await expenseRepository.softDelete(householdId, expenseId, requester.userId);
+}
+
+/**
+ * The household's expenses, newest expenseDate first, then newest created.
+ * Deleted ones are left out unless `includeDeleted` (the History screen).
+ */
+export async function listExpenses(
+  householdId: string,
+  { includeDeleted = false }: { includeDeleted?: boolean } = {}
+): Promise<PublicExpense[]> {
+  const records = await expenseRepository.listForHousehold(householdId, { includeDeleted });
   return records.map(toPublicExpense);
 }
 
@@ -202,6 +269,26 @@ async function checkExpense(
   };
 }
 
+/** A checked expense in the shape the repository stores, shared by create and edit. */
+function toNewExpense(
+  householdId: string,
+  expense: CheckedExpense
+): expenseRepository.NewExpense {
+  return {
+    householdId,
+    description: expense.description,
+    totalAmountCents: expense.totalAmountCents,
+    expenseDate: new Date(`${expense.expenseDate}T00:00:00.000Z`),
+    paidByUserId: expense.paidByUserId,
+    splitMethod: expense.splitMethod,
+    shares: expense.shares.map((share) => ({
+      userId: share.userId,
+      amountOwedCents: share.amountOwedCents,
+      percentBasisPoints: share.percentBasisPoints,
+    })),
+  };
+}
+
 function toPublicExpense(record: expenseRepository.ExpenseRecord): PublicExpense {
   return {
     id: record.id,
@@ -218,5 +305,7 @@ function toPublicExpense(record: expenseRepository.ExpenseRecord): PublicExpense
       percentBasisPoints: share.percentBasisPoints,
     })),
     createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+    deleted: record.deleted,
   };
 }
