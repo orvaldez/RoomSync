@@ -37,7 +37,7 @@ Every version is a GitHub release whose notes match its section below.
   deleted it, and payments already recorded are kept. New `PATCH` and `DELETE`
   endpoints, error codes `NOT_EXPENSE_EDITOR` and `EXPENSE_DELETED`, and a
   migration adding `updated_at`, `deleted_at` and `deleted_by_user_id` to
-  `expenses` (#PR).
+  `expenses` (#98).
 - Continuous integration with GitHub Actions on every pull request and every
   push to `main`: a `server` job (Prisma client generation, typecheck, unit
   tests), a `client` job (lint, build, tests) and an `integration` job (#81,
