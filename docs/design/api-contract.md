@@ -129,8 +129,8 @@ that member, zero means settled.
 | POST | `/api/households/:householdId/expenses` | expense body | 201 `{ expense }` | US-05, US-06 |
 | GET | `/api/households/:householdId/expenses` | none | 200 `{ expenses }` | US-05, US-11 |
 | GET | `/api/households/:householdId/expenses/:expenseId` | none | 200 `{ expense }` | US-05 |
-| PATCH | `/api/households/:householdId/expenses/:expenseId` | expense body | 200 `{ expense }` | US-12 (proposed) |
-| DELETE | `/api/households/:householdId/expenses/:expenseId` | none | 204 | US-12 (proposed) |
+| PATCH | `/api/households/:householdId/expenses/:expenseId` | expense body | 200 `{ expense }` | US-12 |
+| DELETE | `/api/households/:householdId/expenses/:expenseId` | none | 204 | US-12 |
 | GET | `/api/households/:householdId/balances` | none | 200 `{ balances, totals }` | US-07 |
 | POST | `/api/households/:householdId/settlements` | `{ fromUserId, toUserId, amountCents, note? }` | 201 `{ settlement }` | US-08 |
 | GET | `/api/households/:householdId/settlements` | none | 200 `{ settlements }` | US-08, US-11 |
@@ -140,7 +140,7 @@ that member, zero means settled.
 | POST | `/api/households/:householdId/chores/:choreId/complete` | none | 200 `{ chore }` | US-09 |
 | GET | `/api/households/:householdId/dashboard` | none | 200 `{ household, members, balances, upcomingChores, recentActivity }` | US-10 |
 
-23 endpoints. US-11 (history) is served by the list endpoints above, so it
+25 endpoints: the 23 of Milestone 1, and US-12's edit and delete. US-11 (history) is served by the list endpoints above, so it
 needed no new routes.
 
 ---
@@ -339,8 +339,8 @@ link to it from the history explains what happened rather than 404ing (US-12).
 
 ### Editing and deleting an expense (US-12) - owner: Orlando
 
-**Proposed, not yet built (#60).** Who may change an expense: **the member who
-paid it, or the household owner.**
+Built in #60. Who may change an expense: **the member who paid it, or the
+household owner** (analysis-model.md §8.1).
 
 ## PATCH /api/households/:householdId/expenses/:expenseId
 Auth: required, member; the payer or the owner
@@ -502,7 +502,7 @@ guidance (UC-10 3a-6a).
 | `INVALID_CREDENTIALS` | 401 | login |
 | `NOT_HOUSEHOLD_OWNER` | 403 | invitations create |
 | `CHORE_NOT_ASSIGNED_TO_YOU` | 403 | chore complete |
-| `NOT_EXPENSE_EDITOR` | 403 | expense edit, delete (proposed, US-12) |
+| `NOT_EXPENSE_EDITOR` | 403 | expense edit, delete |
 | `HOUSEHOLD_NOT_FOUND` | 404 | every household-scoped endpoint |
 | `INVITATION_INVALID` | 404 | invitation lookup, accept |
 | `EXPENSE_NOT_FOUND` | 404 | expense by id |
@@ -511,7 +511,7 @@ guidance (UC-10 3a-6a).
 | `ALREADY_IN_HOUSEHOLD` | 409 | household create, invitation accept |
 | `EXCEEDS_BALANCE` | 409 | settlements |
 | `CHORE_ALREADY_COMPLETE` | 409 | chore patch |
-| `EXPENSE_DELETED` | 409 | expense edit (proposed, US-12) |
+| `EXPENSE_DELETED` | 409 | expense edit |
 | `INVITATION_EXPIRED` | 410 | invitation lookup, accept |
 | `RATE_LIMITED` | 429 | login, register |
 | `INTERNAL_ERROR` | 500 | any |

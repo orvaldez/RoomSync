@@ -183,7 +183,7 @@ problem domain only.
 | **Household** | A shared living arrangement | Permanent |
 | **Membership** | A user's participation in a household, with a role | From join until removal (post-MVP) |
 | **Invitation** | A time-limited offer to join a household | Expires after 7 days |
-| **Expense** | Money one member spent on the household's behalf | Permanent, immutable in the MVP |
+| **Expense** | Money one member spent on the household's behalf | Permanent. Since US-12, editable by its payer or the owner, and soft-deleted rather than removed (§8.1) |
 | **ExpenseShare** | One participant's portion of one expense | Tied to its expense |
 | **Settlement** | A record that money changed hands outside the app | Permanent |
 | **Chore** | A household task, optionally assigned and dated | Permanent |
@@ -463,9 +463,8 @@ rather than a code change.
 Stated plainly, because a model that quietly omits things is worse than one
 that names its gaps:
 
-- **Expense editing and deletion** were out of scope for the MVP, which is why
-  no `updatedAt` exists yet. They are Milestone 2's US-12 (#60); the proposed
-  design is §8.1, and the endpoints are in the API contract.
+- **Expense editing and deletion** were out of scope for the MVP. They arrived
+  with Milestone 2's US-12 (#60); §8.1 records the decisions.
 - **Member removal** is post-MVP. The `Restrict` delete rules in §2 mean it
   will need a deliberate decision about what happens to that member's history.
 - **Revoking an invitation** is post-MVP; the `REVOKED` status exists so it
@@ -477,13 +476,18 @@ that names its gaps:
 
 ---
 
-### 8.1 Proposed: editing and deleting an expense (US-12, #60)
+### 8.1 Editing and deleting an expense (US-12, #60)
 
-Proposed for review before any code. The three decisions #60 asked to settle:
+Agreed before any code was written, and built in #60. The three decisions #60
+asked to settle:
 
 1. **Who may edit or delete: the member who paid, or the household owner.**
    The payer is the person the expense is about; the owner can fix a mistake
    for a roommate who has left. Anyone else gets 403 `NOT_EXPENSE_EDITOR`.
+   The check uses the payer *before* the edit, so a member can't make
+   themselves the payer to gain the right (`canChangeExpense` in
+   `server/src/services/expense.service.ts`). The client only shows the
+   buttons to those two; the server decides.
    When #90 adds `createdByUserId`, whoever entered the expense is a natural
    third: they may have entered a bill someone else paid.
 2. **Soft delete.** `deletedAt` and `deletedByUserId` on Expense. Balances,
@@ -508,7 +512,14 @@ settlement's balance check (UC-08 4e). Editing a deleted expense is refused
 **State.** An expense is *active* until deleted, then *deleted* for good; there
 is no undelete in Milestone 2. Edits don't change the state.
 
-**Migration**, the one Milestone 2 plans for #60, on `expenses`:
+**Where deleted expenses are skipped:** the ledger query every balance is
+derived from (`findEntries` in `ledger.repository.ts`), the expense list, and
+the dashboard's recent expenses. The detail endpoint and
+`GET .../expenses?include=deleted` still return them, with `deleted` set.
+`expense-edit.integration.test.ts` checks each against PostgreSQL.
+
+**Migration**, the one Milestone 2 plans for #60
+(`20261021000000_expense_edit_and_soft_delete`), on `expenses`:
 `updated_at` (set to `created_at` for existing rows), `deleted_at` (nullable),
 and `deleted_by_user_id` (nullable, references `users`, `Restrict` like the
 payer). #90 also adds `created_by_user_id` to the same table, so the two are
