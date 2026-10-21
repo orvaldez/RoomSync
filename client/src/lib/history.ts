@@ -25,7 +25,7 @@ export function describeSplit(expense: Pick<Expense, "splitMethod" | "shares">):
 }
 
 /**
- * "2026-09-30" -> "Tuesday, September 30", read as a calendar date with no
+ * "2026-09-30" -> "Wednesday, September 30", read as a calendar date with no
  * time zone shift, so an expense dated the 30th never shows as the 29th.
  */
 export function formatLongDate(calendarDate: string): string {
@@ -69,7 +69,7 @@ export function shareRows(expense: Expense, currentUserId: string): ShareRow[] {
   });
 }
 
-/** "Paid by Agustin on Tuesday, September 30", or "Paid by you on …". */
+/** "Paid by Agustin on Wednesday, September 30", or "Paid by you on …". */
 export function describePayment(expense: Expense, currentUserId: string): string {
   const payer = expense.paidBy.userId === currentUserId ? "you" : expense.paidBy.name;
   return `Paid by ${payer} on ${formatLongDate(expense.expenseDate)}`;

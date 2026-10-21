@@ -403,7 +403,7 @@ Built in #23 from this design, on `GET /api/households/:householdId/expenses/:ex
 │  ← Expenses                                            │
 │                                                        │
 │  Groceries                                   $100.00   │
-│  Paid by Agustin on Tuesday, September 30              │
+│  Paid by Agustin on Wednesday, September 30            │
 │  Split equally between 3 people                        │
 │                                                        │
 │  ┌─ Shares ─────────────────────────────────────────┐  │
