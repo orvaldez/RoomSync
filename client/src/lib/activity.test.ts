@@ -14,6 +14,8 @@ function expenseItem(paidBy: { userId: string; name: string }): ActivityItem {
     splitMethod: "EQUAL",
     shares: [],
     createdAt: "2026-09-24T18:00:00.000Z",
+    updatedAt: "2026-09-24T18:00:00.000Z",
+    deleted: null,
   };
   return { type: "EXPENSE", at: expense.createdAt, expense };
 }

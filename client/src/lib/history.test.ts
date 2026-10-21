@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import type { Chore, Expense } from "./api";
 import {
+  canChangeExpense,
   describeCompletedChore,
+  describeDeleted,
   describePayment,
   describeSplit,
   formatLongDate,
@@ -26,6 +28,8 @@ function expense(overrides: Partial<Expense> = {}): Expense {
       { userId: MAYA, name: "Maya", amountOwedCents: 3333, percentBasisPoints: null },
     ],
     createdAt: "2026-09-30T18:00:00Z",
+    updatedAt: "2026-09-30T18:00:00Z",
+    deleted: null,
     ...overrides,
   };
 }
@@ -132,5 +136,41 @@ describe("describeCompletedChore", () => {
     expect(describeCompletedChore(chore({ completedAt: null }), ORLANDO)).toBe(
       "Assigned to Maya"
     );
+  });
+});
+
+const DELETED = { at: "2026-10-21T15:00:00Z", by: { userId: MAYA, name: "Maya" } };
+
+describe("canChangeExpense", () => {
+  it("lets the member who paid change it", () => {
+    expect(canChangeExpense(expense(), AGUSTIN, "MEMBER")).toBe(true);
+  });
+
+  it("lets the owner change anyone's", () => {
+    expect(canChangeExpense(expense(), ORLANDO, "OWNER")).toBe(true);
+  });
+
+  it("doesn't offer it to another member", () => {
+    expect(canChangeExpense(expense(), ORLANDO, "MEMBER")).toBe(false);
+  });
+
+  it("doesn't offer it once the expense is deleted, even to the payer", () => {
+    expect(canChangeExpense(expense({ deleted: DELETED }), AGUSTIN, "OWNER")).toBe(false);
+  });
+});
+
+describe("describeDeleted", () => {
+  it("says who deleted it and when", () => {
+    expect(describeDeleted(expense({ deleted: DELETED }), ORLANDO)).toMatch(
+      /^Deleted by Maya on Oct 2[01]$/
+    );
+  });
+
+  it("says you when the reader deleted it", () => {
+    expect(describeDeleted(expense({ deleted: DELETED }), MAYA)).toMatch(/^Deleted by you on /);
+  });
+
+  it("is null for an expense that wasn't deleted", () => {
+    expect(describeDeleted(expense(), ORLANDO)).toBeNull();
   });
 });

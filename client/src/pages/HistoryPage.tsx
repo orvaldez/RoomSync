@@ -48,7 +48,8 @@ export function HistoryPage() {
       if (!household) return { status: "no-household" };
 
       const [{ expenses }, { settlements }, { chores }] = await Promise.all([
-        api.expenses(household.id),
+        // Deleted expenses too: History is the record of why a balance changed.
+        api.expenses(household.id, { includeDeleted: true }),
         api.settlements(household.id),
         api.chores(household.id, "completed"),
       ]);

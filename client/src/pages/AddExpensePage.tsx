@@ -1,9 +1,10 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import {
   ApiError,
   api,
   isUnauthenticated,
+  type Expense,
   type ExpenseInput,
   type Household,
   type Member,
@@ -17,6 +18,8 @@ import {
   parsePercentToBasisPoints,
   todayAsCalendarDate,
 } from "../lib/money";
+import { formValuesFromExpense } from "../lib/expenseForm";
+import { canChangeExpense } from "../lib/history";
 import { useAuth } from "../auth/useAuth";
 import { Field } from "../components/Field";
 
@@ -109,6 +112,109 @@ export function AddExpensePage() {
   );
 }
 
+type EditLoadState =
+  | { status: "loading" }
+  | { status: "ready"; household: Household; members: Member[]; expense: Expense }
+  | { status: "no-household" }
+  | { status: "not-found" }
+  | { status: "forbidden" }
+  | { status: "error" };
+
+/**
+ * US-12 — correct an expense, on the same form it was recorded with, filled
+ * in with what was saved. Saving replaces the expense; the server re-runs
+ * every check create runs, so an edit can't store a split create would refuse.
+ */
+export function EditExpensePage() {
+  const { expenseId = "" } = useParams();
+  const { user, refresh } = useAuth();
+  const [state, setState] = useState<EditLoadState>({ status: "loading" });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load(): Promise<EditLoadState> {
+      const { household } = await api.currentHousehold();
+      if (!household) return { status: "no-household" };
+
+      const [{ members }, { expense }] = await Promise.all([
+        api.members(household.id),
+        api.expense(household.id, expenseId),
+      ]);
+      // The server refuses anyone else anyway; this saves them filling in a
+      // form only to be told no.
+      if (!user || !canChangeExpense(expense, user.id, household.role)) {
+        return { status: "forbidden" };
+      }
+      return { status: "ready", household, members, expense };
+    }
+
+    load().then(
+      (next) => {
+        if (!cancelled) setState(next);
+      },
+      (error) => {
+        if (cancelled) return;
+        if (isUnauthenticated(error)) {
+          void refresh();
+          return;
+        }
+        if (error instanceof ApiError && error.code === "EXPENSE_NOT_FOUND") {
+          setState({ status: "not-found" });
+          return;
+        }
+        setState({ status: "error" });
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [expenseId, user, refresh]);
+
+  if (state.status === "loading") {
+    return (
+      <main className="page" aria-busy="true">
+        <p className="muted">Loading…</p>
+      </main>
+    );
+  }
+
+  if (state.status === "no-household") {
+    return <Navigate to="/" replace />;
+  }
+
+  if (state.status !== "ready") {
+    const message = {
+      "not-found": ["This expense could not be found", "It may have been entered in a different household."],
+      forbidden: [
+        "You can't edit this expense",
+        "Only the member who paid it or the household owner can change it, and a deleted expense can't be edited.",
+      ],
+      error: ["Something went wrong", "We could not load this expense."],
+    }[state.status];
+
+    return (
+      <main className="page">
+        <h1>{message[0]}</h1>
+        <p className="muted">{message[1]}</p>
+        <p className="page-actions">
+          <Link to={`/expenses/${expenseId}`}>Back to the expense</Link>
+        </p>
+      </main>
+    );
+  }
+
+  return (
+    <ExpenseForm
+      household={state.household}
+      members={state.members}
+      currentUserId={user?.id ?? null}
+      existing={state.expense}
+    />
+  );
+}
+
 const SPLIT_METHODS: { value: SplitMethod; label: string }[] = [
   { value: "EQUAL", label: "Equally" },
   { value: "CUSTOM", label: "By amount" },
@@ -121,31 +227,55 @@ function ExpenseForm({
   household,
   members,
   currentUserId,
+  existing,
 }: {
   household: Household;
   members: Member[];
   currentUserId: string | null;
+  /** The expense being edited (US-12); absent when recording a new one. */
+  existing?: Expense;
 }) {
   const { refresh } = useAuth();
   const navigate = useNavigate();
   const payerId = useId();
   const participantsErrorId = useId();
 
-  const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
-  const [expenseDate, setExpenseDate] = useState(todayAsCalendarDate);
+  // Editing starts from what was saved; recording a new one from the
+  // defaults NFR-01 relies on.
+  const [initial] = useState(() =>
+    existing
+      ? formValuesFromExpense(
+          existing,
+          members.map((m) => m.userId)
+        )
+      : null
+  );
+
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [amount, setAmount] = useState(initial?.amount ?? "");
+  const [expenseDate, setExpenseDate] = useState(
+    () => initial?.expenseDate ?? todayAsCalendarDate()
+  );
   // UC-05 step 3: the payer defaults to the member recording the expense.
   const [paidByUserId, setPaidByUserId] = useState(() =>
-    members.some((m) => m.userId === currentUserId)
-      ? (currentUserId as string)
-      : members[0]?.userId ?? ""
+    initial
+      ? initial.paidByUserId
+      : members.some((m) => m.userId === currentUserId)
+        ? (currentUserId as string)
+        : members[0]?.userId ?? ""
   );
   const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(members.map((m) => m.userId))
+    () => new Set(initial ? initial.selected : members.map((m) => m.userId))
   );
-  const [splitMethod, setSplitMethod] = useState<SplitMethod>("EQUAL");
-  const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
-  const [percents, setPercents] = useState<Record<string, string>>({});
+  const [splitMethod, setSplitMethod] = useState<SplitMethod>(
+    initial?.splitMethod ?? "EQUAL"
+  );
+  const [customAmounts, setCustomAmounts] = useState<Record<string, string>>(
+    initial?.customAmounts ?? {}
+  );
+  const [percents, setPercents] = useState<Record<string, string>>(
+    initial?.percents ?? {}
+  );
 
   // Client-side errors are only shown once the member has tried to save, so
   // an empty form is not covered in red before anything has been typed.
@@ -306,6 +436,16 @@ function ExpenseForm({
 
     setSubmitting(true);
     try {
+      if (existing) {
+        const { expense } = await api.updateExpense(household.id, existing.id, draft.input);
+        navigate(`/expenses/${expense.id}`, {
+          state: {
+            notice: `Saved your changes to “${expense.description}”. Balances are updated.`,
+          },
+        });
+        return;
+      }
+
       const { expense } = await api.createExpense(household.id, draft.input);
       navigate("/", {
         state: {
@@ -338,7 +478,7 @@ function ExpenseForm({
 
   return (
     <main className="page">
-      <h1>Add an expense</h1>
+      <h1>{existing ? "Edit expense" : "Add an expense"}</h1>
       <p className="muted">{household.name}</p>
 
       <form className="auth-form expense-form" onSubmit={handleSubmit} noValidate>
@@ -492,9 +632,9 @@ function ExpenseForm({
 
         <div className="form-actions">
           <button type="submit" disabled={submitting}>
-            {submitting ? "Saving…" : "Save expense"}
+            {submitting ? "Saving…" : existing ? "Save changes" : "Save expense"}
           </button>
-          <Link to="/">Cancel</Link>
+          <Link to={existing ? `/expenses/${existing.id}` : "/"}>Cancel</Link>
         </div>
       </form>
     </main>
