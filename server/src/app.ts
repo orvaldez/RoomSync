@@ -9,8 +9,12 @@ import balanceRoutes from "./routes/balance.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import { buildSessionMiddleware, isBehindTlsProxy } from "./middleware/session";
 import { errorHandler } from "./middleware/error-handler";
+import { securityHeaders } from "./middleware/security-headers";
 
 const app = express();
+
+// Don't advertise the framework and its version (threat model S4).
+app.disable("x-powered-by");
 
 // Trust the first proxy hop, so `req.secure` reflects the browser's
 // connection rather than the plain HTTP the proxy forwards. Required for the
@@ -21,6 +25,9 @@ const app = express();
 if (isBehindTlsProxy()) {
   app.set("trust proxy", 1);
 }
+
+// First, so every response carries them, errors and 404s included.
+app.use(securityHeaders());
 
 app.use(express.json());
 

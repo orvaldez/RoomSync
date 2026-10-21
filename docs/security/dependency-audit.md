@@ -3,6 +3,58 @@
 Findings from `npm audit --omit=dev` in `server/`, with triage and decisions.
 Re-run and update this file at each milestone.
 
+## 2026-10-21 (Milestone 2 review, issue #65)
+
+The re-run this file asks for at each milestone, done with the OWASP review
+([`owasp-review.md`](./owasp-review.md), A03). `npm audit` in both
+workspaces, before and after `npm audit fix`, which was run **without**
+`--force`, so no major version changed:
+
+| Workspace | Scope | Before | After |
+|---|---|---|---|
+| `server/` | production (`--omit=dev`) | 9 (1 critical, 5 high, 3 moderate) | **0** |
+| `server/` | all, dev included | 16 (4 critical, 6 high, 6 moderate) | 7 (3 critical, 1 high, 3 moderate) |
+| `client/` | production | 0 | 0 |
+| `client/` | all, dev included | 9 (3 critical, 3 high, 3 moderate) | 7 (3 critical, 1 high, 3 moderate) |
+
+**What changed:** `express` 4.22.2 → 4.22.3, which brings `qs` 6.16.1 and
+`proxy-addr` 2.0.8, and Prisma 7.10.0 → 7.10.1 (`prisma`, with
+`@prisma/client` and `@prisma/adapter-pg` raised to match). Through Prisma's
+CLI, the `mysql2`, `deepmerge-ts` and `fast-uri` advisories below are fixed
+too. On the client, `brace-expansion`, `source-map-js`, and `vite` 6.4.3 → 6.4.5, still on
+the Vite 6 line (all build and test tooling). All 423
+server unit tests, the integration tests, both builds and the 91 client tests
+pass on the new versions.
+
+This closes the two open items from the entries below: **`qs`** (September 9,
+"accept for now") and **`proxy-addr`** (October 7, critical) are both fixed
+within Express 4.
+
+**What remains: 7 per workspace, all development-only, all through Vitest
+2.1.9.** `vitest`, `@vitest/mocker` (path traversal through a redirect mock,
+fixed in 4.1.11), `tinypool` (prototype pollution in worker options),
+`vite`, `vite-node`, `esbuild` and `@vitest/coverage-v8`. They run only
+against our own test files, on our machines and in CI, and never ship with
+the app. **Accepted** for Milestone 2. Vitest 3.2 was checked as a middle
+step: it still carries four of them, so the fix is Vitest 4.1.11 or later,
+which depends on Rolldown (environment note below). Filed as #101.
+
+### Decision on Express 5
+
+**Stay on Express 4 (4.22.3) for Milestone 2; revisit at Milestone 3.** The
+September entry put this off until it could be tried against a passing test
+suite. Tried on October 21, with `express@5.3.0` and `@types/express@5`:
+
+- All 423 server unit tests and all integration tests **pass** unchanged.
+- `tsc` reports **5 errors**, all the same: Express 5's types give route
+  parameters as `string | string[]` (`require-household-member.ts`,
+  `chore.routes.ts`, `expense.routes.ts`).
+
+The security reason to move, `qs`, is gone now that 4.22.3 fixes it. The
+upgrade itself looks small, but it isn't worth doing in the week of the
+feature freeze (October 28), with three open pull requests changing routes.
+The trial was reverted; nothing in this change uses Express 5.
+
 ## 2026-10-12 (@vitest/coverage-v8, issue #62)
 
 Checked before adding `@vitest/coverage-v8` 2.1.9 to both workspaces as a

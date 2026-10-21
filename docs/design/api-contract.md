@@ -73,9 +73,19 @@ Calendar dates the user picks (`expenseDate`, `dueDate`) are sent as
 | Status | Code | When |
 |---|---|---|
 | 400 | `INVALID_JSON` | The request body is not valid JSON |
+| 400 | `BAD_REQUEST` | The request body could not be read for another reason |
+| 413 | `PAYLOAD_TOO_LARGE` | The request body is over the 100 KB limit |
+| 415 | `UNSUPPORTED_MEDIA_TYPE` | The body uses a content encoding or character set the server doesn't accept |
 | 401 | `UNAUTHENTICATED` | Auth-required endpoint, no valid session |
 | 404 | `HOUSEHOLD_NOT_FOUND` | Household-scoped endpoint, household missing or requester not a member |
 | 500 | `INTERNAL_ERROR` | Unexpected failure. The message is generic; details are logged, never returned |
+
+**Headers on every response** (since #65, `server/src/middleware/security-headers.ts`):
+`Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`,
+`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+`Referrer-Policy: no-referrer`, `Cross-Origin-Resource-Policy: same-origin`
+and `Cache-Control: no-store`; in production, also
+`Strict-Transport-Security`. No `X-Powered-By`.
 
 ---
 
@@ -444,6 +454,9 @@ guidance (UC-10 3a-6a).
 | Code | Status | Endpoints |
 |---|---|---|
 | `INVALID_JSON` | 400 | any |
+| `BAD_REQUEST` | 400 | any endpoint with a body |
+| `PAYLOAD_TOO_LARGE` | 413 | any endpoint with a body |
+| `UNSUPPORTED_MEDIA_TYPE` | 415 | any endpoint with a body |
 | `VALIDATION_FAILED` | 400 | any endpoint with a body or query |
 | `NO_PARTICIPANTS` | 400 | expenses, preview |
 | `PAYER_NOT_MEMBER` | 400 | expenses, preview |
