@@ -377,6 +377,8 @@ docker compose down           # data persists in a named volume
 - [Changelog and versioning](./CHANGELOG.md)
 - [Threat model](./docs/security/threat-model.md) and
   [rate limiting on login and registration](./docs/security/rate-limiting.md)
+- [OWASP Top 10 review](./docs/security/owasp-review.md) and the
+  [dependency audit](./docs/security/dependency-audit.md)
 - [API contract](./docs/design/api-contract.md)
 - [Contributing: branches, commits, reviews and issues](./CONTRIBUTING.md)
 - [Software process model](./docs/process-model.md), with
