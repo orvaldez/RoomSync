@@ -72,7 +72,7 @@ Every version is a GitHub release whose notes match its section below.
   logged `500`; and the dependency audit re-run, which raised Express to
   4.22.3 and Prisma to 7.10.1 and cleared every production advisory,
   including the critical `proxy-addr` one. Express 5 was tried and put off to
-  Milestone 3. Four gaps were filed: #99, #100, #101, #102 (#PR).
+  Milestone 3. Four gaps were filed: #99, #100, #101, #102 (#103).
 
 ## [0.1.0] - 2026-09-30
 
