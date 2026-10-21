@@ -213,7 +213,7 @@ flowchart LR
 
 ## 6. Adding a feature
 
-The shape every feature so far has followed, US-10 included, and the one US-11 will:
+The shape every feature so far has followed, US-10 and US-11 included:
 
 1. Endpoint and error codes in the API contract first.
 2. A repository function for each query, returning a record type declared in
