@@ -250,8 +250,10 @@ exercises every layer — React, Express, service, repository, PostgreSQL:
 4. **Add an expense.** Use *Add expense*, type a description and an amount, and
    look at the preview: every member is included and split equally by default.
    Try *By amount* with amounts that do not add up to the total; it is
-   rejected rather than silently adjusted. Save an equal split and the
-   dashboard confirms it, with your balance updated.
+   rejected rather than silently adjusted. Set *Paid by* to Priya Shah, save
+   an equal split, and the dashboard confirms it, with your balance updated.
+   (An expense Priya paid only changes what each person owes her, so the
+   $4.88 between you and Orlando stays as it is for step 5.)
 5. **Record a payment.** Open *Balances*, choose *Record payment* next to
    Orlando, and save the suggested $4.88. That pair now reads "settled up".
    Try paying more than you owe and it is refused.
@@ -294,8 +296,9 @@ exercises every layer — React, Express, service, repository, PostgreSQL:
     use, each with when it was created and when it expires, including the one
     you made in step 7. Choose *Revoke* on it: it asks first, and *Keep it*
     changes nothing. Choose *Revoke link*: the link leaves the list, and
-    opening it in a private window now says "This invitation is not valid",
-    the same as a link that was already used. Members see no invitation
+    opening it in a private window, after signing in there as in step 7, now
+    says "This invitation is not valid", the same as a link that was already
+    used. Members see no invitation
     links, and the API refuses them with `403 NOT_HOUSEHOLD_OWNER`.
 
 To start the walkthrough over, reset and seed again:
@@ -338,7 +341,7 @@ cd server && node scripts/login-burst.mjs 20
 Attempts 1 to 5 answer `401 INVALID_CREDENTIALS`, and the rest
 `429 RATE_LIMITED` with a `Retry-After` header. In the browser,
 `agustin@roomsync.test` now shows "Too many failed login attempts. Try again
-in 15 minutes." even with the right password, while `marcus@roomsync.test`
+in …" with the time left, up to 15 minutes, even with the right password, while `marcus@roomsync.test`
 still signs in. Restarting the server resets the counters. The limits, the
 before-and-after evidence and the trade-offs are in
 [`docs/security/rate-limiting.md`](./docs/security/rate-limiting.md).
