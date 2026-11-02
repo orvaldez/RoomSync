@@ -27,7 +27,7 @@ Every version is a GitHub release whose notes match its section below.
   links that can still be used, with when each was created and expires, and
   can revoke one after confirming. A revoked link answers like one that never
   existed. Only the owner can list or revoke; a link already used or expired
-  is refused with `409 INVITATION_NOT_PENDING`. No migration (#PR).
+  is refused with `409 INVITATION_NOT_PENDING`. No migration (#105).
 - **History** (US-11): the household's expenses, payments and completed chores,
   each newest first with its own empty state, one tap from the dashboard. Each
   expense opens a new **expense detail** screen with the payer, the split
