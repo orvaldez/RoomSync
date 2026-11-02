@@ -228,13 +228,93 @@ links still in use, and row 18 shows the revoke confirmation open. Rows 13 to
 | No horizontal scroll at 1280px, all eighteen screens | **Pass** |
 | Interactive elements at least 24×24px | **Pass** — the only smaller ones are the 18px checkboxes and radios on Add expense, whose 36px label rows are the target (§3.6) |
 | Inputs at least 16px, so iOS does not zoom | **Pass** — set on `.field input`, `.field select` and the invitation link (§3.1) |
-| Real iOS or Android device | **Not tested** |
-| Landscape orientation on a phone | **Not tested** |
-| Text scaled to 200% (WCAG 1.4.4) | **Not tested** |
+| Desktop browsers | **Pass** — Chrome, Edge and Firefox, all eighteen screens (§5.1) |
+| Landscape orientation on a phone | **Pass** in emulation — all eighteen screens at 812×375 (§5.1); a real phone is the next row |
+| Text scaled to 200% (WCAG 1.4.4) | **Pass** — all eighteen screens at 200% browser zoom (§5.1) |
+| Real iOS or Android device | **Pass**, all eighteen screens on an iPhone 15 Pro in Safari, after one fix (#106); one cosmetic issue filed (#109) (§5.1) |
 
-The untested rows are stated rather than glossed. Real-device and zoom testing
-are Milestone 2 work (testing and improvement), and this list is the starting
-checklist for it.
+### 5.1 Cross-browser, landscape and 200% zoom (#66)
+
+On November 2, 2026, a Playwright script opened all eighteen screens in each
+setup below, signed in with the seed accounts and the US-12 demo household,
+against a separate database seeded with `npm run db:seed`. On every screen it
+checked that nothing scrolls sideways (`scrollWidth` equals the viewport) and
+that no element's right edge passes the viewport, recorded any JavaScript
+error, and saved a full-page screenshot.
+
+| Setup | Engine and version | Screens | Result | Screenshots |
+|---|---|---|---|---|
+| Google Chrome at 1280×800 | Blink, Chrome 155.0.8059.84 | 18 | **Pass**, no page errors | Not committed; same engine as Edge |
+| Microsoft Edge at 1280×800 | Blink, Edge 156.0.4314.58 | 18 | **Pass**, no page errors | The `desktop/` set above is Edge |
+| Firefox at 1280×800 | Gecko, Firefox 157.0 | 18 | **Pass**, no page errors | [`firefox/`](screenshots/firefox/) |
+| Phone landscape, 812×375, touch | Chrome 155 mobile emulation | 18 | **Pass**, no page errors | [`landscape/`](screenshots/landscape/) |
+| 200% zoom of a 1280×800 window | Chrome 155, 640×400 CSS pixels at 2× | 18 | **Pass**, no page errors | [`zoom-200/`](screenshots/zoom-200/) |
+
+Notes:
+
+- **200% zoom** is tested as browser zoom, which is how WCAG 1.4.4 is usually
+  met: a 1280px window at 200% lays the page out in 640 CSS pixels. Font sizes
+  in `index.css` are in pixels, so a phone's own "large text" setting may
+  behave differently; the real-phone check covers that.
+- **Landscape** is Chrome's mobile emulation (touch, mobile viewport), not a
+  real phone. At 812px the dashboard switches to its two-column grid, and every
+  panel still fits.
+- **Safari's engine (WebKit)** was not run: its Windows build exits at launch
+  on the test machine. Safari is covered by the real-phone check if that phone
+  is an iPhone.
+- Firefox draws the headings in a lighter weight of the same system font. That
+  is the font's rendering, not a layout difference.
+- The automated setups found no problem. The real phone found two, filed as #106 and #109 (below).
+
+#### Real phone
+
+Agustin checked the screens by hand on November 2, 2026, on an **iPhone 15 Pro**
+(393 points wide) running **iOS 27.0.1**, in **Safari**, with the phone in dark
+mode, against the same seeded database over the local network. The screenshots
+in [`phone/`](screenshots/phone/) are scaled from the phone's 3× to 1×.
+
+| Screen | Result | Screenshot |
+|---|---|---|
+| Log in, Create account | Pass | [01-login](screenshots/phone/01-login.png), [02-register](screenshots/phone/02-register.png) |
+| Set up your household | Pass | [03-create-household](screenshots/phone/03-create-household.png) |
+| Join a household | Pass | [04-join-household](screenshots/phone/04-join-household.png) |
+| Dashboard, owner, with the invitation links | Pass; the header wraps the long name under RoomSync, by design | [05-dashboard-owner](screenshots/phone/05-dashboard-owner.png) |
+| Revoke confirmation | Pass | [18-revoke-invitation](screenshots/phone/18-revoke-invitation.png) |
+| Dashboard, member | Pass | [06-dashboard](screenshots/phone/06-dashboard.png) |
+| Add an expense, with the split preview | **Date field overflowed, fixed in #106** | [07-add-expense](screenshots/phone/07-add-expense.png), [07-add-expense-preview](screenshots/phone/07-add-expense-preview.png), after the fix: [07-add-expense-after-fix](screenshots/phone/07-add-expense-after-fix.png) |
+| Chores | **Due date field overflowed, fixed in #106** | before: [08-chores-before-fix](screenshots/phone/08-chores-before-fix.png), [08-chores-list](screenshots/phone/08-chores-list.png), after: [08-chores-after-fix](screenshots/phone/08-chores-after-fix.png) |
+| Balances, recording a payment | Pass | [09-balances-record-payment](screenshots/phone/09-balances-record-payment.png) |
+| History | Pass | [10-history](screenshots/phone/10-history.png) |
+| Expense not found | Pass; the wrapped heading's lines nearly touch, filed as #109 | [12-expense-not-found](screenshots/phone/12-expense-not-found.png) |
+| Expense detail, percentage split, with Edit and Delete | Pass | [13-expense-detail-actions](screenshots/phone/13-expense-detail-actions.png) |
+| Edit expense | **Date field overflowed, fixed in #106**; the rest passes | before: [14-edit-expense-before-fix](screenshots/phone/14-edit-expense-before-fix.png), [14-edit-expense-shares](screenshots/phone/14-edit-expense-shares.png) |
+| Delete confirmation, deleted expense, History with it | Pass | [15-delete-confirm](screenshots/phone/15-delete-confirm.png), [16-expense-deleted](screenshots/phone/16-expense-deleted.png), [17-history-with-deleted](screenshots/phone/17-history-with-deleted.png) |
+| Landscape | Pass | [landscape-dashboard](screenshots/phone/landscape-dashboard.png) |
+| Safari page zoom at 200% | Pass | [zoom-200-dashboard](screenshots/phone/zoom-200-dashboard.png) |
+| iOS Text Size at its largest | No effect, as expected | [text-size-largest](screenshots/phone/text-size-largest.png) |
+
+**The one problem: date fields on iPhone Safari (#106).** On Add and Edit
+expense the Date field reached the right edge of the screen, past the margin
+every other field keeps, with its date centred; on Chores the due date ran past
+the panel's border. iOS draws a date input with its native control, which has a
+minimum width of its own and ignores `width: 100%`. None of the automated setups
+showed it, which is the case for testing on a real device. #106 drops the native
+appearance for date inputs and left-aligns the date; Chrome and Firefox measure
+the same before and after. Re-checked on the same iPhone: both fields now line
+up with their neighbours ([Add expense](screenshots/phone/07-add-expense-after-fix.png), [Chores](screenshots/phone/08-chores-after-fix.png)).
+
+Notes:
+
+- **iOS Text Size** (Settings → Display & Brightness) does not change Safari's
+  web pages unless a site opts in with Apple's system font styles, so the
+  largest setting leaves RoomSync as it was. Safari's own page zoom is the
+  setting that applies, and it passes at 200%.
+- **Crowded wrapped headings (#109).** The phone's Expense not found screenshot
+  shows the heading's two lines nearly touching. `h1` and `h2` have no
+  `line-height` of their own, so they inherit the body's fixed 23px line
+  height (26px on desktop) at 36px. It isn't specific to the iPhone: the 375px
+  screenshot in row 12 above shows it too. It's filed for a one-line fix; it
+  doesn't hide anything, and no page scrolls sideways because of it.
 
 To re-check after a layout change, run the seed, open each screen in a
 browser's device toolbar at 375px signed in as a seed account, and compare
