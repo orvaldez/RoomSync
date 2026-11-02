@@ -228,13 +228,46 @@ links still in use, and row 18 shows the revoke confirmation open. Rows 13 to
 | No horizontal scroll at 1280px, all eighteen screens | **Pass** |
 | Interactive elements at least 24×24px | **Pass** — the only smaller ones are the 18px checkboxes and radios on Add expense, whose 36px label rows are the target (§3.6) |
 | Inputs at least 16px, so iOS does not zoom | **Pass** — set on `.field input`, `.field select` and the invitation link (§3.1) |
-| Real iOS or Android device | **Not tested** |
-| Landscape orientation on a phone | **Not tested** |
-| Text scaled to 200% (WCAG 1.4.4) | **Not tested** |
+| Desktop browsers | **Pass** — Chrome, Edge and Firefox, all eighteen screens (§5.1) |
+| Landscape orientation on a phone | **Pass** in emulation — all eighteen screens at 812×375 (§5.1); a real phone is the next row |
+| Text scaled to 200% (WCAG 1.4.4) | **Pass** — all eighteen screens at 200% browser zoom (§5.1) |
+| Real iOS or Android device | **Pending** — Agustin's phone, recorded in §5.1 when done |
 
-The untested rows are stated rather than glossed. Real-device and zoom testing
-are Milestone 2 work (testing and improvement), and this list is the starting
-checklist for it.
+### 5.1 Cross-browser, landscape and 200% zoom (#66)
+
+On November 2, 2026, a Playwright script opened all eighteen screens in each
+setup below, signed in with the seed accounts and the US-12 demo household,
+against a separate database seeded with `npm run db:seed`. On every screen it
+checked that nothing scrolls sideways (`scrollWidth` equals the viewport) and
+that no element's right edge passes the viewport, recorded any JavaScript
+error, and saved a full-page screenshot.
+
+| Setup | Engine and version | Screens | Result | Screenshots |
+|---|---|---|---|---|
+| Google Chrome at 1280×800 | Blink, Chrome 155.0.8059.84 | 18 | **Pass**, no page errors | Not committed; same engine as Edge |
+| Microsoft Edge at 1280×800 | Blink, Edge 156.0.4314.58 | 18 | **Pass**, no page errors | The `desktop/` set above is Edge |
+| Firefox at 1280×800 | Gecko, Firefox 157.0 | 18 | **Pass**, no page errors | [`firefox/`](screenshots/firefox/) |
+| Phone landscape, 812×375, touch | Chrome 155 mobile emulation | 18 | **Pass**, no page errors | [`landscape/`](screenshots/landscape/) |
+| 200% zoom of a 1280×800 window | Chrome 155, 640×400 CSS pixels at 2× | 18 | **Pass**, no page errors | [`zoom-200/`](screenshots/zoom-200/) |
+
+Notes:
+
+- **200% zoom** is tested as browser zoom, which is how WCAG 1.4.4 is usually
+  met: a 1280px window at 200% lays the page out in 640 CSS pixels. Font sizes
+  in `index.css` are in pixels, so a phone's own "large text" setting may
+  behave differently; the real-phone check covers that.
+- **Landscape** is Chrome's mobile emulation (touch, mobile viewport), not a
+  real phone. At 812px the dashboard switches to its two-column grid, and every
+  panel still fits.
+- **Safari's engine (WebKit)** was not run: its Windows build exits at launch
+  on the test machine. Safari is covered by the real-phone check if that phone
+  is an iPhone.
+- Firefox draws the headings in a lighter weight of the same system font. That
+  is the font's rendering, not a layout difference.
+- No problem was found, so no `bug` issues were filed.
+
+**Real phone.** Pending: device, OS, browser and date go here, with the
+screenshots under `screenshots/phone/`.
 
 To re-check after a layout change, run the seed, open each screen in a
 browser's device toolbar at 375px signed in as a seed account, and compare
