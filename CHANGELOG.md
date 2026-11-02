@@ -102,7 +102,7 @@ Every version is a GitHub release whose notes match its section below.
   each leave a user in two households. Every write that adds a membership now
   takes a per-user advisory lock and re-checks inside it, so exactly one
   request wins and the other gets `409 ALREADY_IN_HOUSEHOLD`. A concurrent
-  integration test fails without the fix and passes with it (#PR).
+  integration test fails without the fix and passes with it (#111).
 
 ## [0.1.0] - 2026-09-30
 
