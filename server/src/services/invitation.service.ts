@@ -6,6 +6,8 @@ import {
   AlreadyInHouseholdError,
   InvitationExpiredError,
   InvitationInvalidError,
+  InvitationNotFoundError,
+  InvitationNotPendingError,
   NotHouseholdOwnerError,
 } from "./errors";
 import type { PublicHousehold } from "./household.service";
@@ -64,13 +66,67 @@ export async function createInvitation(
     expiresAt: new Date(Date.now() + INVITATION_LIFETIME_MS),
   });
 
-  return {
-    id: invitation.id,
-    token: invitation.token,
-    status: invitation.status,
-    expiresAt: invitation.expiresAt,
-    createdAt: invitation.createdAt,
-  };
+  return toPublicInvitation(invitation);
+}
+
+/**
+ * The household's live invitations, newest first (UC-14 steps 1-2). OWNER
+ * only: the list carries each link's token, and anyone holding a token can
+ * join.
+ */
+export async function listPendingInvitations(
+  householdId: string,
+  role: householdRepository.MembershipRole
+): Promise<PublicInvitation[]> {
+  if (role !== "OWNER") {
+    throw new NotHouseholdOwnerError("Only the household owner can see invitations.");
+  }
+
+  const invitations = await invitationRepository.listPending(householdId);
+  return invitations.map(toPublicInvitation);
+}
+
+/**
+ * Revoke a pending invitation, so its link answers like one that never existed
+ * (UC-14 steps 3-6). OWNER only (1a).
+ *
+ * The checks run in this order so a member who is not the owner learns
+ * nothing about which invitation ids exist: 403, then 404 (4a), then 409 (4b).
+ * An invitation past `expiresAt` counts as no longer pending even if its
+ * stored status still says PENDING, the same rule `assertUsable` applies.
+ */
+export async function revokeInvitation(
+  householdId: string,
+  role: householdRepository.MembershipRole,
+  invitationId: unknown
+): Promise<PublicInvitation> {
+  if (role !== "OWNER") {
+    throw new NotHouseholdOwnerError("Only the household owner can revoke invitations.");
+  }
+
+  if (typeof invitationId !== "string" || invitationId.length === 0) {
+    throw new InvitationNotFoundError();
+  }
+
+  const invitation = await invitationRepository.findInHousehold(
+    householdId,
+    invitationId
+  );
+
+  if (!invitation) {
+    throw new InvitationNotFoundError();
+  }
+
+  if (invitation.status !== "PENDING" || invitation.expiresAt.getTime() <= Date.now()) {
+    throw new InvitationNotPendingError();
+  }
+
+  // Accepted or expired between the read above and this write (4b).
+  if (!(await invitationRepository.revokePending(invitation.id))) {
+    throw new InvitationNotPendingError();
+  }
+
+  return toPublicInvitation({ ...invitation, status: "REVOKED" });
 }
 
 /** The household name for the confirmation screen, if the invitation is usable. */
@@ -178,6 +234,18 @@ async function assertUsable(
     await invitationRepository.markExpired(invitation.id);
     throw new InvitationExpiredError();
   }
+}
+
+function toPublicInvitation(
+  invitation: invitationRepository.InvitationRecord
+): PublicInvitation {
+  return {
+    id: invitation.id,
+    token: invitation.token,
+    status: invitation.status,
+    expiresAt: invitation.expiresAt,
+    createdAt: invitation.createdAt,
+  };
 }
 
 function toPublicHousehold(

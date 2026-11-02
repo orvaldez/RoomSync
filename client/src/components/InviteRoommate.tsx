@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { ApiError, api, isUnauthenticated } from "../lib/api";
 import { useAuth } from "../auth/useAuth";
+import { invitationLink } from "../lib/invitations";
 
 /**
  * UC-04 steps 1-4 — the owner creates an invitation link and sends it
@@ -16,7 +17,14 @@ type State =
   | { status: "ready"; link: string; expiresAt: string }
   | { status: "error"; message: string };
 
-export function InviteRoommate({ householdId }: { householdId: string }) {
+export function InviteRoommate({
+  householdId,
+  onCreated,
+}: {
+  householdId: string;
+  /** Called once the link exists, so the pending list can show it (UC-14). */
+  onCreated?: () => void;
+}) {
   const { refresh } = useAuth();
   const [state, setState] = useState<State>({ status: "idle" });
   const [copied, setCopied] = useState(false);
@@ -30,9 +38,10 @@ export function InviteRoommate({ householdId }: { householdId: string }) {
       const { invitation } = await api.createInvitation(householdId);
       setState({
         status: "ready",
-        link: `${window.location.origin}/join/${invitation.token}`,
+        link: invitationLink(window.location.origin, invitation.token),
         expiresAt: invitation.expiresAt,
       });
+      onCreated?.();
     } catch (error) {
       if (isUnauthenticated(error)) {
         void refresh();

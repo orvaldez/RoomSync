@@ -23,6 +23,11 @@ Every version is a GitHub release whose notes match its section below.
 
 ### Added
 
+- **Revoke an invitation** (US-14): the owner sees the household's invitation
+  links that can still be used, with when each was created and expires, and
+  can revoke one after confirming. A revoked link answers like one that never
+  existed. Only the owner can list or revoke; a link already used or expired
+  is refused with `409 INVITATION_NOT_PENDING`. No migration (#105).
 - **History** (US-11): the household's expenses, payments and completed chores,
   each newest first with its own empty state, one tap from the dashboard. Each
   expense opens a new **expense detail** screen with the payer, the split
@@ -88,6 +93,13 @@ Every version is a GitHub release whose notes match its section below.
   repository admin too (#80). The `server`, `client` and `integration` CI jobs
   are required status checks (#82, #86).
 - The backlog and process model plan Milestone 2 (#79).
+
+### Fixed
+
+- On iPhone Safari, the date fields on Add expense, Edit expense and Chores ran
+  past their column, because iOS gives a native date input its own minimum
+  width. They now line up with the other fields, with the date on the left.
+  Found on a real iPhone during the cross-viewport check for #66 (#107).
 
 ### Security
 

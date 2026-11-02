@@ -30,6 +30,56 @@ router.post(
 );
 
 /**
+ * GET /api/households/:householdId/invitations — UC-14 steps 1-2.
+ *
+ * 200 { invitations: InvitationPublic[] }   PENDING and unexpired, newest first
+ * 403 NOT_HOUSEHOLD_OWNER   a member, but not the owner              UC-14 1a
+ * 404 HOUSEHOLD_NOT_FOUND   no such household, or not a member of it
+ * 401 UNAUTHENTICATED       no session
+ */
+router.get(
+  "/households/:householdId/invitations",
+  requireAuth,
+  requireHouseholdMember,
+  asyncHandler(async (_req: Request, res: Response) => {
+    const { householdId, role } = currentMembership(res);
+    const invitations = await invitationService.listPendingInvitations(
+      householdId,
+      role
+    );
+
+    res.status(200).json({ invitations });
+  })
+);
+
+/**
+ * POST /api/households/:householdId/invitations/:invitationId/revoke — UC-14
+ * steps 3-6.
+ *
+ * 200 { invitation: InvitationPublic }   status is "REVOKED"
+ * 403 NOT_HOUSEHOLD_OWNER     a member, but not the owner             UC-14 1a
+ * 404 HOUSEHOLD_NOT_FOUND     no such household, or not a member of it
+ * 404 INVITATION_NOT_FOUND    no such invitation in this household    UC-14 4a
+ * 409 INVITATION_NOT_PENDING  already accepted, revoked or expired    UC-14 4b
+ * 401 UNAUTHENTICATED         no session
+ */
+router.post(
+  "/households/:householdId/invitations/:invitationId/revoke",
+  requireAuth,
+  requireHouseholdMember,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { householdId, role } = currentMembership(res);
+    const invitation = await invitationService.revokeInvitation(
+      householdId,
+      role,
+      req.params.invitationId
+    );
+
+    res.status(200).json({ invitation });
+  })
+);
+
+/**
  * GET /api/invitations/:token — the confirmation screen, UC-04 step 8.
  *
  * 200 { invitation: { householdName, expiresAt } }

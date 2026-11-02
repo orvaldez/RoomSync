@@ -1,5 +1,7 @@
+import { useState } from "react";
 import type { Member } from "../lib/api";
 import { InviteRoommate } from "./InviteRoommate";
+import { PendingInvitations } from "./PendingInvitations";
 
 /**
  * The household's members (UC-10 step 3), from the dashboard response.
@@ -17,6 +19,8 @@ export function MembersPanel({
   /** Whether to offer "Invite a roommate" — the owner only (UC-04 1a). */
   canInvite: boolean;
 }) {
+  const [invitationsVersion, setInvitationsVersion] = useState(0);
+
   return (
     <section className="panel">
       <h2>Members</h2>
@@ -38,7 +42,15 @@ export function MembersPanel({
         </p>
       )}
 
-      {canInvite && <InviteRoommate householdId={householdId} />}
+      {canInvite && (
+        <>
+          <InviteRoommate
+            householdId={householdId}
+            onCreated={() => setInvitationsVersion((v) => v + 1)}
+          />
+          <PendingInvitations householdId={householdId} reloadKey={invitationsVersion} />
+        </>
+      )}
     </section>
   );
 }
