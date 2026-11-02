@@ -204,6 +204,11 @@ then saved a full-page screenshot.
 | History | UC-11 | [mobile](screenshots/mobile/10-history.png) | [desktop](screenshots/desktop/10-history.png) | None |
 | Expense detail, percentage split | UC-11 | [mobile](screenshots/mobile/11-expense-detail.png) | [desktop](screenshots/desktop/11-expense-detail.png) | None |
 | Expense not found | UC-11 | [mobile](screenshots/mobile/12-expense-not-found.png) | [desktop](screenshots/desktop/12-expense-not-found.png) | None |
+| Expense detail with Edit and Delete | UC-12 | [mobile](screenshots/mobile/13-expense-detail-actions.png) | [desktop](screenshots/desktop/13-expense-detail-actions.png) | None |
+| Edit expense, percentage split | UC-12 | [mobile](screenshots/mobile/14-edit-expense.png) | [desktop](screenshots/desktop/14-edit-expense.png) | None |
+| Delete confirmation | UC-12 | [mobile](screenshots/mobile/15-delete-confirm.png) | [desktop](screenshots/desktop/15-delete-confirm.png) | None |
+| Deleted expense | UC-12 | [mobile](screenshots/mobile/16-expense-deleted.png) | [desktop](screenshots/desktop/16-expense-deleted.png) | None |
+| History with a deleted expense | UC-11, UC-12 | [mobile](screenshots/mobile/17-history-with-deleted.png) | [desktop](screenshots/desktop/17-history-with-deleted.png) | None |
 | Dashboard, owner confirming a revoke | UC-14 | [mobile](screenshots/mobile/18-revoke-invitation.png) | [desktop](screenshots/desktop/18-revoke-invitation.png) | None |
 
 Every screen is in the table; the expense list is a panel on the dashboard
@@ -214,12 +219,13 @@ The same check ran on the detail screen of every seed expense, covering all
 three split methods, at both widths. Row 18 and a retake of row 5 were taken on
 November 2, 2026 (#75): the owner's Members panel now lists the invitation
 links still in use, and row 18 shows the revoke confirmation open. Rows 13 to
-17 are reserved for US-12 (#60).
+17 are US-12 (#60); rows 13, 14, 15 and 17 were taken at 375px with it, and at
+1280px on November 2 from the same demo household (#105).
 
 | Check | Result |
 |---|---|
-| No horizontal scroll at 375px, all twelve screens | **Pass** — `scrollWidth` is 375 on every one |
-| No horizontal scroll at 1280px, all twelve screens | **Pass** |
+| No horizontal scroll at 375px, all eighteen screens | **Pass** — `scrollWidth` is 375 on every one |
+| No horizontal scroll at 1280px, all eighteen screens | **Pass** |
 | Interactive elements at least 24×24px | **Pass** — the only smaller ones are the 18px checkboxes and radios on Add expense, whose 36px label rows are the target (§3.6) |
 | Inputs at least 16px, so iOS does not zoom | **Pass** — set on `.field input`, `.field select` and the invitation link (§3.1) |
 | Real iOS or Android device | **Not tested** |

@@ -55,7 +55,7 @@ type Db = Prisma.TransactionClient;
  * member's activity rather than the whole household's (NFR-02).
  *
  * A participant's share of an expense they paid for themselves is not a debt
- * to anyone, so it is left out.
+ * to anyone, so it is left out, and so is every share of a deleted expense.
  */
 async function findEntries(
   db: Db,
@@ -65,7 +65,9 @@ async function findEntries(
   const [shares, settlements] = await Promise.all([
     db.expenseShare.findMany({
       where: {
-        expense: { householdId },
+        // A deleted expense no longer counts (US-12). Its rows stay for the
+        // history, so every balance query has to skip them here.
+        expense: { householdId, deletedAt: null },
         OR: [
           { userId, expense: { paidByUserId: { not: userId } } },
           { userId: { not: userId }, expense: { paidByUserId: userId } },

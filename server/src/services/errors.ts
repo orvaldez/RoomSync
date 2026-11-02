@@ -211,6 +211,31 @@ export class ExpenseNotFoundError extends AppError {
 }
 
 /**
+ * 403 — a member who neither paid the expense nor owns the household tried
+ * to edit or delete it (US-12, analysis-model.md §8.1).
+ */
+export class NotExpenseEditorError extends AppError {
+  readonly code = "NOT_EXPENSE_EDITOR";
+  readonly status = 403;
+
+  constructor() {
+    super("Only the member who paid or the household owner can change this expense.");
+    this.name = "NotExpenseEditorError";
+  }
+}
+
+/** 409 — the expense was deleted, so it can no longer be edited (US-12). */
+export class ExpenseDeletedError extends AppError {
+  readonly code = "EXPENSE_DELETED";
+  readonly status = 409;
+
+  constructor() {
+    super("This expense was deleted.");
+    this.name = "ExpenseDeletedError";
+  }
+}
+
+/**
  * 403 — the requester is a member, but the action is for the household's
  * OWNER only (UC-04 1a). Checked on the server rather than by hiding the
  * control, which any client can un-hide (FR-06, SC-09).

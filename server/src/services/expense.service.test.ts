@@ -6,6 +6,8 @@ vi.mock("../repositories/expense.repository", () => ({
   createWithShares: vi.fn(),
   listForHousehold: vi.fn(),
   findInHousehold: vi.fn(),
+  replaceWithShares: vi.fn(),
+  softDelete: vi.fn(),
 }));
 
 vi.mock("../repositories/household.repository", () => ({
@@ -84,6 +86,8 @@ function stored(
       { userId: MAYA, name: "Maya", amountOwedCents: 3333, percentBasisPoints: null },
     ],
     createdAt: new Date("2026-09-29T17:30:00.000Z"),
+    updatedAt: new Date("2026-09-29T17:30:00.000Z"),
+    deleted: null,
     ...overrides,
   };
 }
@@ -139,6 +143,8 @@ describe("createExpense — main success scenario (UC-05)", () => {
         { userId: MAYA, name: "Maya", amountOwedCents: 3333, percentBasisPoints: null },
       ],
       createdAt: new Date("2026-09-29T17:30:00.000Z"),
+      updatedAt: new Date("2026-09-29T17:30:00.000Z"),
+      deleted: null,
     });
   });
 
@@ -391,7 +397,7 @@ describe("listExpenses and getExpense", () => {
 
     const expenses = await listExpenses(HOUSEHOLD_ID);
 
-    expect(listForHousehold).toHaveBeenCalledWith(HOUSEHOLD_ID);
+    expect(listForHousehold).toHaveBeenCalledWith(HOUSEHOLD_ID, { includeDeleted: false });
     expect(expenses).toHaveLength(1);
     expect(expenses[0].expenseDate).toBe("2026-09-29");
   });

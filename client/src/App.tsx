@@ -6,7 +6,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { JoinPage } from "./pages/JoinPage";
-import { AddExpensePage } from "./pages/AddExpensePage";
+import { AddExpensePage, EditExpensePage } from "./pages/AddExpensePage";
 import { ChoresPage } from "./pages/ChoresPage";
 import { BalancesPage } from "./pages/BalancesPage";
 import { HistoryPage } from "./pages/HistoryPage";
@@ -72,6 +72,17 @@ export default function App() {
               <RequireAuth>
                 <AppShell>
                   <BalancesPage />
+                </AppShell>
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/expenses/:expenseId/edit"
+            element={
+              <RequireAuth>
+                <AppShell>
+                  <EditExpensePage />
                 </AppShell>
               </RequireAuth>
             }
