@@ -134,9 +134,10 @@ Recorded here so they are deliberate rather than discovered:
 blocks merges from Milestone 3. Until then the tests, the layering checks in
 `docs/design/module-structure.md`, and the Definition of Done are run by hand.
 
-**Client tests cover logic, not components.** The client suite tests
-`client/src/lib/`; there are no component tests and no coverage report yet.
-Both belong to the Milestone 2 test plan.
+**Some screens have no component test.** Component tests (#76) cover login,
+the auth guard, Add expense, Balances, Chores and the dashboard. History,
+Join, Register and the expense detail are checked by hand and in the
+cross-viewport testing, not by a component test yet.
 
 **NFR-02 is measured, not load-tested.** `history-load.integration.test.ts`
 builds the household NFR-02 names, five members and 500 expenses, in the test

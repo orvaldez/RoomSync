@@ -55,6 +55,24 @@ upgrade itself looks small, but it isn't worth doing in the week of the
 feature freeze (October 28), with three open pull requests changing routes.
 The trial was reverted; nothing in this change uses Express 5.
 
+## 2026-11-02 (component tests, issue #76)
+
+Checked before adding four devDependencies to `client/` for the component
+tests: `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2 (its
+peer), `@testing-library/user-event` 14.6.8, and `jsdom` 29.1.1. Each version
+is the newest that is at least two weeks old. jsdom is held at 29 because 30
+requires Node 22, and CI runs Node 20. Full `npm audit` in `client/`, dev
+dependencies included:
+
+| Workspace | Before | After | Added |
+|---|---|---|---|
+| `client/` | 22 (3 critical) | 22 (3 critical) | the four above |
+| `client/`, production only | 0 | 0 | |
+
+None of the four brings an advisory; the 22 are the existing dev-tooling ones
+through Vitest 2 (#101). They run only in tests, on the developer's machine
+and in CI, and never ship with the app. Accepted.
+
 ## 2026-10-12 (@vitest/coverage-v8, issue #62)
 
 Checked before adding `@vitest/coverage-v8` 2.1.9 to both workspaces as a

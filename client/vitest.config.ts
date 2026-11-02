@@ -10,18 +10,21 @@ export default mergeConfig(
   viteConfig,
   defineConfig({
     test: {
+      // Component tests (#76) render into a simulated DOM; the lib tests
+      // stay in plain Node, where they run faster.
+      environmentMatchGlobs: [["src/**/*.test.tsx", "jsdom"]],
       coverage: {
         provider: "v8",
         include: ["src/**/*.{ts,tsx}"],
-        exclude: ["src/**/*.test.{ts,tsx}"],
+        exclude: ["src/**/*.test.{ts,tsx}", "src/test/**"],
         reporter: ["text", "html", "json-summary"],
         thresholds: {
-          // A floor at the baseline, not a target: almost no screen has a
-          // test yet. Raised when the component tests (#76) land.
-          statements: 6,
+          // A floor just under the level the component tests (#76) brought
+          // it to, so it can only go up. Several screens still have no test.
+          statements: 50,
           branches: 75,
-          functions: 45,
-          lines: 6,
+          functions: 55,
+          lines: 50,
           // The logic a wrong answer costs money in: turning what a user
           // types into cents, and the direction of "you owe" / "owes you".
           // api.ts is the fetch wrapper, exercised by component tests.

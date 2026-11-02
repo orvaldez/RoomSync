@@ -58,6 +58,12 @@ Every version is a GitHub release whose notes match its section below.
   `server` CI job. It enforces the ADR-001 layering: only repositories may
   import the Prisma client, services may not import Express, and routes and
   middleware may not import repositories (#84).
+- Component tests for the client with React Testing Library, user-event and
+  jsdom, with `lib/api.ts` mocked: login and the auth guard's return path, Add
+  expense (preview, a split that doesn't add up, saving), recording a payment
+  and an overpayment refused, completing your own chore but not someone
+  else's, and the dashboard full, empty and failing to load. Client coverage
+  rises from 7% to 58% of statements, and its floor with it (#PR).
 - A quality-assurance plan (`docs/testing/qa-plan.md`): what each level of
   testing checks, who runs it and when, entry and exit criteria for a
   milestone, a pre-release checklist on a clean clone, and how a defect is
