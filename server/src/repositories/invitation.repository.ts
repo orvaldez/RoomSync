@@ -75,6 +75,51 @@ export async function findByToken(
 }
 
 /**
+ * The household's invitations that can still be accepted: PENDING and not yet
+ * past `expiresAt`, newest first (UC-14 step 2). A pending invitation whose
+ * time has run out is left out even though its stored status has not caught
+ * up yet, since it is no longer a live link.
+ */
+export async function listPending(householdId: string): Promise<InvitationRecord[]> {
+  const rows = await getPrisma().invitation.findMany({
+    where: { householdId, status: "PENDING", expiresAt: { gt: new Date() } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return rows.map(toInvitationRecord);
+}
+
+/**
+ * The invitation with this id in this household, whatever its status, or
+ * null. One belonging to another household is null too, so a caller cannot
+ * tell it apart from an id that does not exist.
+ */
+export async function findInHousehold(
+  householdId: string,
+  invitationId: string
+): Promise<InvitationRecord | null> {
+  const row = await getPrisma().invitation.findFirst({
+    where: { id: invitationId, householdId },
+  });
+
+  return row ? toInvitationRecord(row) : null;
+}
+
+/**
+ * Revoke a pending, unexpired invitation (UC-14 step 5). A conditional update,
+ * like `acceptIntoHousehold`'s claim, so a link accepted or expiring at the
+ * same moment is never also revoked: returns false when nothing changed.
+ */
+export async function revokePending(invitationId: string): Promise<boolean> {
+  const revoked = await getPrisma().invitation.updateMany({
+    where: { id: invitationId, status: "PENDING", expiresAt: { gt: new Date() } },
+    data: { status: "REVOKED" },
+  });
+
+  return revoked.count === 1;
+}
+
+/**
  * Record that a pending invitation has expired (UC-04 6b). Only moves it from
  * PENDING, so an invitation that was accepted in the meantime keeps that
  * status.

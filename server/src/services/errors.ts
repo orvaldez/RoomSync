@@ -219,9 +219,38 @@ export class NotHouseholdOwnerError extends AppError {
   readonly code = "NOT_HOUSEHOLD_OWNER";
   readonly status = 403;
 
-  constructor() {
-    super("Only the household owner can invite roommates.");
+  constructor(message = "Only the household owner can invite roommates.") {
+    super(message);
     this.name = "NotHouseholdOwnerError";
+  }
+}
+
+/**
+ * 404 — no invitation with this id in this household (UC-14 4a). One from
+ * another household gets the same answer, like `EXPENSE_NOT_FOUND`.
+ */
+export class InvitationNotFoundError extends AppError {
+  readonly code = "INVITATION_NOT_FOUND";
+  readonly status = 404;
+
+  constructor() {
+    super("Invitation not found.");
+    this.name = "InvitationNotFoundError";
+  }
+}
+
+/**
+ * 409 — the invitation was already accepted, revoked or expired, so there is
+ * nothing to revoke (UC-14 4b). Named rather than answered with a quiet 200,
+ * so the owner learns that an accepted link already let someone in.
+ */
+export class InvitationNotPendingError extends AppError {
+  readonly code = "INVITATION_NOT_PENDING";
+  readonly status = 409;
+
+  constructor() {
+    super("This invitation is no longer pending.");
+    this.name = "InvitationNotPendingError";
   }
 }
 
