@@ -81,7 +81,7 @@ flowchart LR
 |---|---|---|---|---|---|---|
 | H1 | **I/E:** Reading or changing another household's data by changing the id in the URL | Medium | High | Every `/households/:householdId` route runs `requireHouseholdMember` (`middleware/require-household-member.ts`), which checks the membership in the database on every request and answers `404` for a non-member, the same as a household that doesn't exist (`services/household.service.ts`, `requireMembership`). Integration tests check the 404 against PostgreSQL (`integration/household.integration.test.ts`) | None known | **Mitigated** |
 | H2 | **E:** A member doing an owner-only action, such as inviting | Low | Medium | The role is read from the database per request, and `createInvitation` refuses a non-owner with `403` (`services/invitation.service.ts`). Integration-tested | None known | **Mitigated** |
-| H3 | **T:** Joining two households at once by sending two requests together, breaking the one-household rule | Low | Medium | `createHousehold` and `acceptInvitation` check for an existing membership first (`services/household.service.ts`, `services/invitation.service.ts`) | The check and the insert are separate steps, and `memberships` is unique only per user *and* household (`prisma/schema.prisma`). Two simultaneous requests can both pass. Only the user's own account is affected | **Mitigate** in #73: a database constraint or a lock, with a concurrent integration test |
+| H3 | **T:** Joining two households at once by sending two requests together, breaking the one-household rule | Low | Medium | `createHousehold` and `acceptInvitation` check for an existing membership, then the repository checks again under a per-user advisory lock, in the same transaction as the insert (`lockMemberships`, `repositories/household.repository.ts`) | None known: `one-household.integration.test.ts` fires creation and acceptance races against PostgreSQL and exactly one request wins each time ([before and after](one-household-race.md)) | **Mitigated** in #73 |
 | H4 | **T/R:** A member recording a payment *between two other members*, wiping out a debt owed to someone else | Medium | Medium | The amount can't exceed what is owed (`EXCEEDS_BALANCE`, checked inside the transaction in `repositories/ledger.repository.ts`). Both members must belong to the household. The balances screen only offers payments that involve you (`client/src/pages/BalancesPage.tsx`) | The API accepts any pair of members (`services/settlement.service.ts`). The restriction is only in the interface, so a member using the API directly can record a payment they had no part in. Nothing records who entered it, so the false record can't be traced | **Mitigate:** require the requester to be the payer or the recipient, and store who recorded each settlement and expense (#90) |
 
 ### Invitation tokens
@@ -124,7 +124,7 @@ document.
 
 | Threat | Action | Where |
 |---|---|---|
-| H3 | Make one-household-per-user atomic, with a concurrent test | #73 (Sprint 4) |
+| H3 | Make one-household-per-user atomic, with a concurrent test | Done in #73 |
 | H4, M4 | Require the requester to be the payer or recipient of a settlement; store who recorded each expense and settlement | #90 (Sprint 4) |
 | I2 | Revoke an invitation; remove a member | #75, #74 (Sprint 4) |
 | M5 | Ownership and a trace for edits and deletes | #60 (Sprint 4) |

@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { getPrisma } from "./prisma";
 
 /**
@@ -25,16 +26,55 @@ export type NewHousehold = {
 };
 
 /**
- * Create a household and the creator's OWNER membership in one transaction.
+ * The first key of every membership lock, so these locks cannot collide with
+ * the ledger lock (41) or an advisory lock taken for any other purpose.
+ */
+const MEMBERSHIP_LOCK_NAMESPACE = 42;
+
+/**
+ * Take this user's membership lock for the rest of the transaction `tx`
+ * (#73).
+ *
+ * The one-household-per-user rule is a check followed by a write, and two
+ * requests for the same user — a double-clicked button, or two invitations
+ * accepted at once — could both pass the check before either wrote. Every
+ * write that adds a membership takes this lock first and checks inside it, so
+ * those writes for one user happen one at a time and the second sees the
+ * first. Other users never wait.
+ *
+ * A lock rather than `@@unique` on `Membership.userId`, which would turn the
+ * post-MVP multi-household feature into a migration (analysis model §7). Like
+ * the ledger lock, it is transaction-scoped, so it cannot be left held.
+ */
+export async function lockMemberships(
+  tx: Prisma.TransactionClient,
+  userId: string
+): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${MEMBERSHIP_LOCK_NAMESPACE}::int, hashtext(${userId}))`;
+}
+
+/**
+ * Create a household and the creator's OWNER membership in one transaction,
+ * or return null if the creator already belongs to a household (UC-03 1a).
  *
  * UC-03 special requirement: these two writes are atomic. A household with no
  * membership row would be unreachable — nobody could list it, invite to it, or
  * delete it — so a partial write here is worse than no write at all.
+ *
+ * The one-household check runs under the creator's membership lock, in the
+ * same transaction as the writes, so two concurrent creations cannot both
+ * pass it (#73).
  */
 export async function createWithOwner(
   household: NewHousehold
-): Promise<HouseholdWithRole> {
+): Promise<HouseholdWithRole | null> {
   return getPrisma().$transaction(async (tx) => {
+    await lockMemberships(tx, household.ownerUserId);
+
+    if ((await tx.membership.count({ where: { userId: household.ownerUserId } })) > 0) {
+      return null;
+    }
+
     const created = await tx.household.create({
       data: { name: household.name },
     });

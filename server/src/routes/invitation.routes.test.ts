@@ -98,7 +98,7 @@ beforeEach(() => {
   findInHousehold.mockResolvedValue(PENDING);
   revokePending.mockResolvedValue(true);
   hasMembership.mockResolvedValue(false);
-  acceptIntoHousehold.mockResolvedValue(true);
+  acceptIntoHousehold.mockResolvedValue("JOINED");
 });
 
 describe("GET /api/households/:householdId/invitations", () => {
