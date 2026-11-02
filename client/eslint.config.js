@@ -19,4 +19,12 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // Fast refresh never reloads a test, and the shared test helpers export
+    // fixtures and render functions beside the components they render (#76).
+    files: ['src/**/*.test.tsx', 'src/test/**'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

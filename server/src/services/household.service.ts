@@ -63,6 +63,12 @@ export async function createHousehold(
     ownerUserId: input.userId,
   });
 
+  // They joined or created a household between the check above and the write,
+  // which re-checks under the user's membership lock (#73).
+  if (!household) {
+    throw new AlreadyInHouseholdError();
+  }
+
   return toPublicHousehold(household);
 }
 

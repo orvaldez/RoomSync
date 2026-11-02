@@ -6,6 +6,8 @@ import {
   AlreadyInHouseholdError,
   InvitationExpiredError,
   InvitationInvalidError,
+  InvitationNotFoundError,
+  InvitationNotPendingError,
   NotHouseholdOwnerError,
 } from "./errors";
 import type { PublicHousehold } from "./household.service";
@@ -64,13 +66,67 @@ export async function createInvitation(
     expiresAt: new Date(Date.now() + INVITATION_LIFETIME_MS),
   });
 
-  return {
-    id: invitation.id,
-    token: invitation.token,
-    status: invitation.status,
-    expiresAt: invitation.expiresAt,
-    createdAt: invitation.createdAt,
-  };
+  return toPublicInvitation(invitation);
+}
+
+/**
+ * The household's live invitations, newest first (UC-14 steps 1-2). OWNER
+ * only: the list carries each link's token, and anyone holding a token can
+ * join.
+ */
+export async function listPendingInvitations(
+  householdId: string,
+  role: householdRepository.MembershipRole
+): Promise<PublicInvitation[]> {
+  if (role !== "OWNER") {
+    throw new NotHouseholdOwnerError("Only the household owner can see invitations.");
+  }
+
+  const invitations = await invitationRepository.listPending(householdId);
+  return invitations.map(toPublicInvitation);
+}
+
+/**
+ * Revoke a pending invitation, so its link answers like one that never existed
+ * (UC-14 steps 3-6). OWNER only (1a).
+ *
+ * The checks run in this order so a member who is not the owner learns
+ * nothing about which invitation ids exist: 403, then 404 (4a), then 409 (4b).
+ * An invitation past `expiresAt` counts as no longer pending even if its
+ * stored status still says PENDING, the same rule `assertUsable` applies.
+ */
+export async function revokeInvitation(
+  householdId: string,
+  role: householdRepository.MembershipRole,
+  invitationId: unknown
+): Promise<PublicInvitation> {
+  if (role !== "OWNER") {
+    throw new NotHouseholdOwnerError("Only the household owner can revoke invitations.");
+  }
+
+  if (typeof invitationId !== "string" || invitationId.length === 0) {
+    throw new InvitationNotFoundError();
+  }
+
+  const invitation = await invitationRepository.findInHousehold(
+    householdId,
+    invitationId
+  );
+
+  if (!invitation) {
+    throw new InvitationNotFoundError();
+  }
+
+  if (invitation.status !== "PENDING" || invitation.expiresAt.getTime() <= Date.now()) {
+    throw new InvitationNotPendingError();
+  }
+
+  // Accepted or expired between the read above and this write (4b).
+  if (!(await invitationRepository.revokePending(invitation.id))) {
+    throw new InvitationNotPendingError();
+  }
+
+  return toPublicInvitation({ ...invitation, status: "REVOKED" });
 }
 
 /** The household name for the confirmation screen, if the invitation is usable. */
@@ -87,10 +143,10 @@ export async function previewInvitation(token: unknown): Promise<InvitationPrevi
 /**
  * Join the invitation's household as a MEMBER (UC-04 steps 9-11).
  *
- * The known limitation from household creation (#39) applies here too: the
- * one-household check and the join are not one atomic step, so two different
- * invitations accepted by the same user at the same instant could both
- * succeed. The single-invitation race is closed — see `acceptIntoHousehold`.
+ * The one-household check below is the fast answer; `acceptIntoHousehold`
+ * repeats it under the user's membership lock, in the same transaction as the
+ * join, so two invitations accepted at the same instant, or an accept racing a
+ * household creation, cannot both succeed (#73).
  */
 export async function acceptInvitation(
   userId: string,
@@ -116,9 +172,9 @@ export async function acceptInvitation(
     throw new AlreadyInHouseholdError();
   }
 
-  let joined: boolean;
+  let outcome: invitationRepository.AcceptOutcome;
   try {
-    joined = await invitationRepository.acceptIntoHousehold({
+    outcome = await invitationRepository.acceptIntoHousehold({
       invitationId: invitation.id,
       userId,
       householdId: invitation.householdId,
@@ -132,8 +188,14 @@ export async function acceptInvitation(
     throw error;
   }
 
+  // They joined or created another household since the check above; the
+  // repository re-checks under the user's membership lock (9a, #73).
+  if (outcome === "ALREADY_IN_HOUSEHOLD") {
+    throw new AlreadyInHouseholdError();
+  }
+
   // Someone else accepted it, or it expired, since we looked.
-  if (!joined) {
+  if (outcome === "INVITATION_UNAVAILABLE") {
     throw new InvitationInvalidError();
   }
 
@@ -178,6 +240,18 @@ async function assertUsable(
     await invitationRepository.markExpired(invitation.id);
     throw new InvitationExpiredError();
   }
+}
+
+function toPublicInvitation(
+  invitation: invitationRepository.InvitationRecord
+): PublicInvitation {
+  return {
+    id: invitation.id,
+    token: invitation.token,
+    status: invitation.status,
+    expiresAt: invitation.expiresAt,
+    createdAt: invitation.createdAt,
+  };
 }
 
 function toPublicHousehold(

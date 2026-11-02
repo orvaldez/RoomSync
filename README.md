@@ -63,7 +63,7 @@ but not finished; it moves to Milestone 3, with the other open items in
 | Containerization | Docker Compose, for the database in development | In place |
 | CI | GitHub Actions: lint, typecheck, build, unit tests with coverage, integration tests | In place; required to merge |
 | Testing | Vitest 2 + Supertest; `@vitest/coverage-v8`; integration tests against PostgreSQL | In place |
-| Component tests | React Testing Library | Planned (#76) |
+| Component tests | React Testing Library, in jsdom | In place (#76) |
 | Deployment | Render | Planned for Milestone 3 |
 
 Version pins worth knowing: Vite 6 rather than 8, and Vitest 2 rather than 4,
@@ -351,11 +351,11 @@ All of them also run in CI on every pull request
 
 | Suite | Command | Needs | Expected |
 |---|---|---|---|
-| Server unit | `cd server && npx prisma generate && npm test` | Nothing running | `Tests 481 passed`, 0 failed |
-| Server coverage | `cd server && npm run test:coverage` | Nothing running | The same 481 pass, a coverage table prints, and every target in `vitest.config.ts` is met (the run fails if not) |
-| Server integration | `cd server && npm run test:integration` | `docker compose up -d` | `Tests 30 passed` across 8 files, including the 500-expense timing check |
-| Client unit | `cd client && npm test` | Nothing running | `Tests 135 passed`, 0 failed |
-| Client coverage | `cd client && npm run test:coverage` | Nothing running | The same 135 pass and the `src/lib` targets are met |
+| Server unit | `cd server && npx prisma generate && npm test` | Nothing running | `Tests 483 passed`, 0 failed |
+| Server coverage | `cd server && npm run test:coverage` | Nothing running | The same 483 pass, a coverage table prints, and every target in `vitest.config.ts` is met (the run fails if not) |
+| Server integration | `cd server && npm run test:integration` | `docker compose up -d` | `Tests 33 passed` across 9 files, including the 500-expense timing check and the concurrent one-household-per-user check |
+| Client unit | `cd client && npm test` | Nothing running | `Tests 157 passed`, 0 failed, 12 files: the `lib` tests and the component tests |
+| Client coverage | `cd client && npm run test:coverage` | Nothing running | The same 157 pass and every target in `vitest.config.ts` is met |
 | Lint, types, build | `cd server && npm run lint && npm run typecheck`, `cd client && npm run lint && npm run build` | Nothing running | No errors |
 
 The sections below explain each suite.
@@ -385,8 +385,11 @@ user types into the integer cents the server stores, and the wording of
 balances, chore due dates and dashboard activity, where the direction of a
 sentence ("you owe" or "owes you") is the easiest thing to get backwards. It also
 covers the History and expense-editing wording, and turning a saved expense
-back into the edit form. Component tests are planned (#76); until then the
-screens are checked by hand at 375px and 1280px
+back into the edit form. The component tests in `client/src/pages/*.test.tsx`
+render screens with React Testing Library and click through them, with
+`lib/api.ts` mocked: login and the return path after it, Add expense,
+recording a payment, completing a chore, and the dashboard. The screens are
+also checked by hand at 375px and 1280px
 ([responsive-design.md](./docs/design/responsive-design.md)).
 
 #### Coverage
@@ -458,8 +461,9 @@ docker compose down           # data persists in a named volume
 - [Prioritized backlog](./BACKLOG.md)
 - [Quality-assurance plan](./docs/testing/qa-plan.md): test levels, who runs what and when, milestone entry and exit criteria, the pre-release checklist, and defect handling
 - [Changelog and versioning](./CHANGELOG.md)
-- [Threat model](./docs/security/threat-model.md) and
-  [rate limiting on login and registration](./docs/security/rate-limiting.md)
+- [Threat model](./docs/security/threat-model.md),
+  [rate limiting on login and registration](./docs/security/rate-limiting.md), and
+  [one household per user under concurrent requests](./docs/security/one-household-race.md)
 - [OWASP Top 10 review](./docs/security/owasp-review.md) and the
   [dependency audit](./docs/security/dependency-audit.md)
 - [API contract](./docs/design/api-contract.md)

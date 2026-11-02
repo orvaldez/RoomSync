@@ -6,6 +6,9 @@ vi.mock("../repositories/invitation.repository", () => ({
   create: vi.fn(),
   findByToken: vi.fn(),
   markExpired: vi.fn(),
+  listPending: vi.fn(),
+  findInHousehold: vi.fn(),
+  revokePending: vi.fn(),
   acceptIntoHousehold: vi.fn(),
 }));
 
@@ -24,18 +27,25 @@ import {
   INVITATION_LIFETIME_MS,
   acceptInvitation,
   createInvitation,
+  listPendingInvitations,
   previewInvitation,
+  revokeInvitation,
 } from "./invitation.service";
 import {
   AlreadyInHouseholdError,
   InvitationExpiredError,
   InvitationInvalidError,
+  InvitationNotFoundError,
+  InvitationNotPendingError,
   NotHouseholdOwnerError,
 } from "./errors";
 
 const create = vi.mocked(invitationRepository.create);
 const findByToken = vi.mocked(invitationRepository.findByToken);
 const markExpired = vi.mocked(invitationRepository.markExpired);
+const listPending = vi.mocked(invitationRepository.listPending);
+const findInHousehold = vi.mocked(invitationRepository.findInHousehold);
+const revokePending = vi.mocked(invitationRepository.revokePending);
 const acceptIntoHousehold = vi.mocked(invitationRepository.acceptIntoHousehold);
 const findRole = vi.mocked(householdRepository.findRole);
 const hasMembership = vi.mocked(householdRepository.hasMembership);
@@ -83,9 +93,11 @@ beforeEach(() => {
     createdAt: new Date(),
   }));
   findByToken.mockResolvedValue(invitation());
+  findInHousehold.mockResolvedValue(invitation());
+  revokePending.mockResolvedValue(true);
   findRole.mockResolvedValue(null);
   hasMembership.mockResolvedValue(false);
-  acceptIntoHousehold.mockResolvedValue(true);
+  acceptIntoHousehold.mockResolvedValue("JOINED");
 });
 
 describe("createInvitation (UC-04 steps 1-3)", () => {
@@ -127,6 +139,114 @@ describe("createInvitation (UC-04 steps 1-3)", () => {
     expect(error).toBeInstanceOf(NotHouseholdOwnerError);
     expect(error).toMatchObject({ code: "NOT_HOUSEHOLD_OWNER", status: 403 });
     expect(create).not.toHaveBeenCalled();
+  });
+});
+
+describe("listPendingInvitations (UC-14 steps 1-2)", () => {
+  it("returns the household's pending invitations as the repository orders them", async () => {
+    const newer = invitation({ id: "clxNEWER0000000000000000" });
+    const older = invitation({ id: "clxOLDER0000000000000000" });
+    listPending.mockResolvedValue([newer, older]);
+
+    const invitations = await listPendingInvitations(HOUSEHOLD_ID, "OWNER");
+
+    expect(listPending).toHaveBeenCalledWith(HOUSEHOLD_ID);
+    expect(invitations.map((i) => i.id)).toEqual([newer.id, older.id]);
+    expect(Object.keys(invitations[0]).sort()).toEqual([
+      "createdAt",
+      "expiresAt",
+      "id",
+      "status",
+      "token",
+    ]);
+  });
+
+  it("rejects a member who is not the owner, reading nothing (UC-14 1a)", async () => {
+    const error = await rejectionOf(listPendingInvitations(HOUSEHOLD_ID, "MEMBER"));
+
+    expect(error).toBeInstanceOf(NotHouseholdOwnerError);
+    expect(error).toMatchObject({
+      code: "NOT_HOUSEHOLD_OWNER",
+      status: 403,
+      message: "Only the household owner can see invitations.",
+    });
+    expect(listPending).not.toHaveBeenCalled();
+  });
+});
+
+describe("revokeInvitation (UC-14 steps 3-6)", () => {
+  const INVITATION_ID = "clxINVITATION00000000000";
+
+  it("revokes a pending invitation and returns it as REVOKED", async () => {
+    const revoked = await revokeInvitation(HOUSEHOLD_ID, "OWNER", INVITATION_ID);
+
+    expect(findInHousehold).toHaveBeenCalledWith(HOUSEHOLD_ID, INVITATION_ID);
+    expect(revokePending).toHaveBeenCalledWith(INVITATION_ID);
+    expect(revoked).toMatchObject({ id: INVITATION_ID, status: "REVOKED" });
+  });
+
+  it("rejects a member who is not the owner before looking anything up (1a)", async () => {
+    const error = await rejectionOf(revokeInvitation(HOUSEHOLD_ID, "MEMBER", INVITATION_ID));
+
+    expect(error).toBeInstanceOf(NotHouseholdOwnerError);
+    expect(error).toMatchObject({
+      status: 403,
+      message: "Only the household owner can revoke invitations.",
+    });
+    expect(findInHousehold).not.toHaveBeenCalled();
+    expect(revokePending).not.toHaveBeenCalled();
+  });
+
+  it("answers an id that is not in this household with INVITATION_NOT_FOUND (4a)", async () => {
+    findInHousehold.mockResolvedValue(null);
+
+    const error = await rejectionOf(revokeInvitation(HOUSEHOLD_ID, "OWNER", "clxOTHER"));
+
+    expect(error).toBeInstanceOf(InvitationNotFoundError);
+    expect(error).toMatchObject({ code: "INVITATION_NOT_FOUND", status: 404 });
+    expect(revokePending).not.toHaveBeenCalled();
+  });
+
+  it("rejects an empty or missing id without a lookup", async () => {
+    await expect(revokeInvitation(HOUSEHOLD_ID, "OWNER", "")).rejects.toThrow(
+      InvitationNotFoundError
+    );
+    await expect(revokeInvitation(HOUSEHOLD_ID, "OWNER", undefined)).rejects.toThrow(
+      InvitationNotFoundError
+    );
+    expect(findInHousehold).not.toHaveBeenCalled();
+  });
+
+  it.each(["ACCEPTED", "REVOKED", "EXPIRED"] as const)(
+    "refuses a %s invitation with INVITATION_NOT_PENDING (4b)",
+    async (status) => {
+      findInHousehold.mockResolvedValue(invitation({ status }));
+
+      const error = await rejectionOf(revokeInvitation(HOUSEHOLD_ID, "OWNER", INVITATION_ID));
+
+      expect(error).toBeInstanceOf(InvitationNotPendingError);
+      expect(error).toMatchObject({ code: "INVITATION_NOT_PENDING", status: 409 });
+      expect(revokePending).not.toHaveBeenCalled();
+    }
+  );
+
+  it("refuses a pending invitation already past its expiry (4b)", async () => {
+    findInHousehold.mockResolvedValue(
+      invitation({ expiresAt: new Date(Date.now() - 1000) })
+    );
+
+    await expect(revokeInvitation(HOUSEHOLD_ID, "OWNER", INVITATION_ID)).rejects.toThrow(
+      InvitationNotPendingError
+    );
+    expect(revokePending).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the invitation was accepted between the read and the write (4b)", async () => {
+    revokePending.mockResolvedValue(false);
+
+    await expect(revokeInvitation(HOUSEHOLD_ID, "OWNER", INVITATION_ID)).rejects.toThrow(
+      InvitationNotPendingError
+    );
   });
 });
 
@@ -256,11 +376,20 @@ describe("acceptInvitation (UC-04 steps 9-11)", () => {
   });
 
   it("rejects when someone else claimed the invitation first", async () => {
-    acceptIntoHousehold.mockResolvedValue(false);
+    acceptIntoHousehold.mockResolvedValue("INVITATION_UNAVAILABLE");
 
     await expect(acceptInvitation(RECIPIENT, TOKEN)).rejects.toThrow(
       InvitationInvalidError
     );
+  });
+
+  it("rejects with ALREADY_IN_HOUSEHOLD when they joined elsewhere while this request ran (9a, #73)", async () => {
+    acceptIntoHousehold.mockResolvedValue("ALREADY_IN_HOUSEHOLD");
+
+    const error = await rejectionOf(acceptInvitation(RECIPIENT, TOKEN));
+
+    expect(error).toBeInstanceOf(AlreadyInHouseholdError);
+    expect(error).toMatchObject({ code: "ALREADY_IN_HOUSEHOLD", status: 409 });
   });
 
   it("treats joining this household concurrently as 9b rather than an error", async () => {

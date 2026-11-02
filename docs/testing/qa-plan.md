@@ -19,7 +19,7 @@ below, in a form the author ticks.
 | **Client unit tests** | The logic in `client/src/lib/`: turning typed amounts into cents, and the wording of balances, chores, activity and history | Vitest | `client/src/lib/*.test.ts` | Every PR, in CI (`client` job) |
 | **Coverage** | That the unit tests keep reaching the code they're meant to, with a target per area | `@vitest/coverage-v8` | Thresholds in each `vitest.config.ts`; [`coverage.md`](./coverage.md) | Every PR, in CI. Below a target fails the job |
 | **Integration tests** | The main user flows through the real app and real PostgreSQL, nothing mocked: account, household and invitations, expenses and balances, settlements, chores, the dashboard, 404 for outsiders, and NFR-02 with 500 expenses | Vitest, Supertest, PostgreSQL | `server/src/integration/` | Every PR, in CI (`integration` job) |
-| **Component tests** | Screens render each state (loading, empty, error, ready) and respond to input | React Testing Library | Planned in #76 (Sprint 4) | Every PR, in CI, once they exist |
+| **Component tests** | Screens render each state and respond to input: login and the auth guard, Add expense, Balances, Chores, the dashboard. `lib/api.ts` is mocked, so no network | React Testing Library, user-event, jsdom | `client/src/pages/*.test.tsx`, helpers in `client/src/test/` | Every PR, in CI (`client` job) |
 | **Cross-viewport and device testing** | Every screen at 375px and 1280px with no horizontal scroll, and on real phones | Headless Edge script, then real devices | [`responsive-design.md`](../design/responsive-design.md) §5; real devices in #66 (Sprint 4) | No. Run by hand (§2) |
 | **Manual walkthrough** | The whole app from a clean clone, as a TA would run it | The README's Getting started and Verifying sections | §4 below | No. Run by hand before a release |
 | **Security checks** | The threat model's controls still hold; new dependencies are audited | `npm audit`, the rate-limit evidence script | [`threat-model.md`](../security/threat-model.md), [`dependency-audit.md`](../security/dependency-audit.md), [`rate-limiting.md`](../security/rate-limiting.md) | No. Run when a dependency is added, and before a milestone |
@@ -27,9 +27,9 @@ below, in a form the author ticks.
 Why these levels: the unit tests are fast and catch most mistakes in the
 arithmetic and the API contract, but they mock the database, so the
 integration tests exist to catch what only real SQL shows (a missing join,
-an ordering, a transaction). Neither renders a screen, which is why the
-cross-viewport check and the walkthrough stay manual until the component tests
-arrive.
+an ordering, a transaction). Neither renders a screen; the component tests do,
+for what a screen does when someone clicks. How it looks on a given device is
+still the cross-viewport check and the walkthrough, which stay manual.
 
 ## 2. Who runs what, and when
 
@@ -121,10 +121,11 @@ contract, a requirement, or the README.
   belongs, with the reason: a known gap in `docs/product-brief.md` §5, or an
   accepted risk in the threat model. The issue stays open with a note.
 
-For example, #73 is a `bug`: the one-household-per-user check isn't atomic.
+For example, #73 was a `bug`: the one-household-per-user check wasn't atomic.
 It was found in review of #39, accepted for Milestone 1 and recorded in the
-product brief, and its fix comes with a concurrent test against the
-integration database.
+product brief, and its fix came with a concurrent test against the
+integration database that fails without the fix
+([`one-household-race.md`](../security/one-household-race.md)).
 
 ## 6. Related evidence
 

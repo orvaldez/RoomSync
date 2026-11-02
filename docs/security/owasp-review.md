@@ -20,7 +20,7 @@ list and asks whether RoomSync has each weakness. Threat ids such as **H1** or
 | A03 | Software Supply Chain Failures | Yes | **Fixed in #65**, with an accepted residual | Dev-only Vitest advisories: #101. Automated alerts: #100 |
 | A04 | Cryptographic Failures | Yes | **Handled** | None new |
 | A05 | Injection | Yes | **Handled** (re-checked, as the threat model asked under M3) | None |
-| A06 | Insecure Design | Yes | **Handled, with known items filed** | H3 (#73), H4 and M4 (#90) |
+| A06 | Insecure Design | Yes | **Handled, with known items filed** | H3 fixed (#73); H4 and M4 (#90) |
 | A07 | Authentication Failures | Yes | **Handled** | Accepted: A2 enumeration, 14-day sessions |
 | A08 | Software or Data Integrity Failures | Partly | **Handled** | Actions pinned by tag, not SHA: #100 |
 | A09 | Security Logging and Alerting Failures | Yes | **Gap** | No security events are logged: #99 |
@@ -195,8 +195,9 @@ catch.
 - **Abuse limits.** Login and registration are rate-limited (#71).
 - **Threat-modelled.** The threat model (#70) drove three design issues.
 
-**Known items, filed:** the one-household-per-user check isn't atomic (**H3**,
-#73); a member can record a settlement between two others, and nothing
+**Known items:** the one-household-per-user check wasn't atomic (**H3**); it
+now runs under a per-user advisory lock, with a concurrent test (#73). Still
+filed: a member can record a settlement between two others, and nothing
 records who entered a record (**H4**, **M4**, #90). Editing and deleting
 expenses (#60, in review in #98) settles who may change a record: the payer or
 the owner. A delete is soft and records who did it (threat model M5).

@@ -1,5 +1,6 @@
 import { getPrisma } from "./prisma";
 import { UniqueConstraintError, isUniqueViolation } from "./errors";
+import { lockMemberships } from "./household.repository";
 
 /**
  * Declared here rather than imported from the generated Prisma client, for the
@@ -75,6 +76,51 @@ export async function findByToken(
 }
 
 /**
+ * The household's invitations that can still be accepted: PENDING and not yet
+ * past `expiresAt`, newest first (UC-14 step 2). A pending invitation whose
+ * time has run out is left out even though its stored status has not caught
+ * up yet, since it is no longer a live link.
+ */
+export async function listPending(householdId: string): Promise<InvitationRecord[]> {
+  const rows = await getPrisma().invitation.findMany({
+    where: { householdId, status: "PENDING", expiresAt: { gt: new Date() } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return rows.map(toInvitationRecord);
+}
+
+/**
+ * The invitation with this id in this household, whatever its status, or
+ * null. One belonging to another household is null too, so a caller cannot
+ * tell it apart from an id that does not exist.
+ */
+export async function findInHousehold(
+  householdId: string,
+  invitationId: string
+): Promise<InvitationRecord | null> {
+  const row = await getPrisma().invitation.findFirst({
+    where: { id: invitationId, householdId },
+  });
+
+  return row ? toInvitationRecord(row) : null;
+}
+
+/**
+ * Revoke a pending, unexpired invitation (UC-14 step 5). A conditional update,
+ * like `acceptIntoHousehold`'s claim, so a link accepted or expiring at the
+ * same moment is never also revoked: returns false when nothing changed.
+ */
+export async function revokePending(invitationId: string): Promise<boolean> {
+  const revoked = await getPrisma().invitation.updateMany({
+    where: { id: invitationId, status: "PENDING", expiresAt: { gt: new Date() } },
+    data: { status: "REVOKED" },
+  });
+
+  return revoked.count === 1;
+}
+
+/**
  * Record that a pending invitation has expired (UC-04 6b). Only moves it from
  * PENDING, so an invitation that was accepted in the meantime keeps that
  * status.
@@ -87,14 +133,26 @@ export async function markExpired(invitationId: string): Promise<void> {
 }
 
 /**
+ * What `acceptIntoHousehold` did: joined, found the invitation no longer
+ * usable, or found the user already in a different household.
+ */
+export type AcceptOutcome = "JOINED" | "INVITATION_UNAVAILABLE" | "ALREADY_IN_HOUSEHOLD";
+
+/**
  * Claim the invitation and add the user to its household as a MEMBER, in one
  * transaction (UC-04 steps 10-11).
  *
+ * The user's membership lock is taken first and the one-household rule
+ * checked under it, so two invitations accepted at once, or an accept racing
+ * a household creation, cannot leave the user in two households (#73). A
+ * user already elsewhere gets "ALREADY_IN_HOUSEHOLD", and the invitation is
+ * left unused.
+ *
  * The claim is a conditional update — only a PENDING, unexpired invitation
  * changes — so two people accepting the same link at once cannot both get in:
- * the second update matches nothing, and this returns false. It also means a
- * membership is never created without its invitation being marked ACCEPTED,
- * or the other way round.
+ * the second update matches nothing, and this returns
+ * "INVITATION_UNAVAILABLE". It also means a membership is never created
+ * without its invitation being marked ACCEPTED, or the other way round.
  *
  * Throws `UniqueConstraintError` when the user is already a member of this
  * household, having joined between the caller's check and this write.
@@ -103,9 +161,22 @@ export async function acceptIntoHousehold(accept: {
   invitationId: string;
   userId: string;
   householdId: string;
-}): Promise<boolean> {
+}): Promise<AcceptOutcome> {
   try {
     return await getPrisma().$transaction(async (tx) => {
+      await lockMemberships(tx, accept.userId);
+
+      const memberships = await tx.membership.findMany({
+        where: { userId: accept.userId },
+        select: { householdId: true },
+      });
+      if (memberships.some((m) => m.householdId === accept.householdId)) {
+        throw new UniqueConstraintError("membership");
+      }
+      if (memberships.length > 0) {
+        return "ALREADY_IN_HOUSEHOLD";
+      }
+
       const claimed = await tx.invitation.updateMany({
         where: {
           id: accept.invitationId,
@@ -116,7 +187,7 @@ export async function acceptIntoHousehold(accept: {
       });
 
       if (claimed.count === 0) {
-        return false;
+        return "INVITATION_UNAVAILABLE";
       }
 
       await tx.membership.create({
@@ -127,9 +198,12 @@ export async function acceptIntoHousehold(accept: {
         },
       });
 
-      return true;
+      return "JOINED";
     });
   } catch (error) {
+    if (error instanceof UniqueConstraintError) {
+      throw error;
+    }
     if (isUniqueViolation(error)) {
       throw new UniqueConstraintError("membership");
     }

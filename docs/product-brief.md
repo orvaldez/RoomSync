@@ -134,9 +134,10 @@ Recorded here so they are deliberate rather than discovered:
 blocks merges from Milestone 3. Until then the tests, the layering checks in
 `docs/design/module-structure.md`, and the Definition of Done are run by hand.
 
-**Client tests cover logic, not components.** The client suite tests
-`client/src/lib/`; there are no component tests and no coverage report yet.
-Both belong to the Milestone 2 test plan.
+**Some screens have no component test.** Component tests (#76) cover login,
+the auth guard, Add expense, Balances, Chores and the dashboard. History,
+Join, Register and the expense detail are checked by hand and in the
+cross-viewport testing, not by a component test yet.
 
 **NFR-02 is measured, not load-tested.** `history-load.integration.test.ts`
 builds the household NFR-02 names, five members and 500 expenses, in the test
@@ -161,13 +162,6 @@ paginate first.
 already taken, which reveals that the account exists even though the message
 does not. Closing it properly requires email verification, which the MVP does
 not have. Recorded for the Milestone 2 threat model.
-
-**One known race.** The one-household-per-user check and the write that adds
-the membership are not one atomic step, in both household creation and
-accepting an invitation. A double-clicked button or two invitations accepted at
-the same instant could leave one user in two households. Raised in review on
-#39 and accepted as non-blocking; the fix is a database constraint or a lock
-around the check.
 
 **Untested on real devices.** Every screen is verified at 375px and 1280px in a
 headless browser, with screenshots committed, but has not run on a physical

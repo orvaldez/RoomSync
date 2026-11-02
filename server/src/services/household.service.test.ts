@@ -180,6 +180,17 @@ describe("createHousehold — extension 1a, already in a household", () => {
   });
 });
 
+describe("createHousehold — joined a household while this request ran (#73)", () => {
+  it("rejects with ALREADY_IN_HOUSEHOLD when the locked re-check finds a membership", async () => {
+    hasMembership.mockResolvedValue(false);
+    createWithOwner.mockResolvedValue(null);
+
+    await expect(
+      createHousehold({ userId: USER_ID, name: "Apartment 4B" })
+    ).rejects.toMatchObject({ code: "ALREADY_IN_HOUSEHOLD", status: 409 });
+  });
+});
+
 describe("getCurrentHousehold", () => {
   it("returns the household with the requester's role", async () => {
     findCurrentForUser.mockResolvedValue(storedHousehold({ role: "MEMBER" }));

@@ -23,6 +23,11 @@ Every version is a GitHub release whose notes match its section below.
 
 ### Added
 
+- **Revoke an invitation** (US-14): the owner sees the household's invitation
+  links that can still be used, with when each was created and expires, and
+  can revoke one after confirming. A revoked link answers like one that never
+  existed. Only the owner can list or revoke; a link already used or expired
+  is refused with `409 INVITATION_NOT_PENDING`. No migration (#105).
 - **History** (US-11): the household's expenses, payments and completed chores,
   each newest first with its own empty state, one tap from the dashboard. Each
   expense opens a new **expense detail** screen with the payer, the split
@@ -58,6 +63,12 @@ Every version is a GitHub release whose notes match its section below.
   `server` CI job. It enforces the ADR-001 layering: only repositories may
   import the Prisma client, services may not import Express, and routes and
   middleware may not import repositories (#84).
+- Component tests for the client with React Testing Library, user-event and
+  jsdom, with `lib/api.ts` mocked: login and the auth guard's return path, Add
+  expense (preview, a split that doesn't add up, saving), recording a payment
+  and an overpayment refused, completing your own chore but not someone
+  else's, and the dashboard full, empty and failing to load. Client coverage
+  rises from 7% to 57% of statements, and its floor with it (#112).
 - A quality-assurance plan (`docs/testing/qa-plan.md`): what each level of
   testing checks, who runs it and when, entry and exit criteria for a
   milestone, a pre-release checklist on a clean clone, and how a defect is
@@ -88,6 +99,13 @@ Every version is a GitHub release whose notes match its section below.
   are required status checks (#82, #86).
 - The backlog and process model plan Milestone 2 (#79).
 
+### Fixed
+
+- On iPhone Safari, the date fields on Add expense, Edit expense and Chores ran
+  past their column, because iOS gives a native date input its own minimum
+  width. They now line up with the other fields, with the date on the left.
+  Found on a real iPhone during the cross-viewport check for #66 (#107).
+
 ### Security
 
 - Login is rate-limited per account email and per IP, counting only wrong
@@ -102,6 +120,12 @@ Every version is a GitHub release whose notes match its section below.
   4.22.3 and Prisma to 7.10.1 and cleared every production advisory,
   including the critical `proxy-addr` one. Express 5 was tried and put off to
   Milestone 3. Four gaps were filed: #99, #100, #101, #102 (#103).
+- One household per user now holds under concurrent requests. Two creations,
+  two invitations accepted together, or a creation racing an acceptance could
+  each leave a user in two households. Every write that adds a membership now
+  takes a per-user advisory lock and re-checks inside it, so exactly one
+  request wins and the other gets `409 ALREADY_IN_HOUSEHOLD`. A concurrent
+  integration test fails without the fix and passes with it (#111).
 
 ## [0.1.0] - 2026-09-30
 
