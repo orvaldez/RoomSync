@@ -270,7 +270,8 @@ JSON is still `400 INVALID_JSON`.
 **Already in place:**
 
 - **Async errors reach the handler.** Every async route is wrapped in
-  `asyncHandler` (all 22; `GET /api/health` is synchronous), so a rejected
+  `asyncHandler` (all 24, counting US-12's `PATCH` and `DELETE` from #60;
+  `GET /api/health` is synchronous), so a rejected
   promise becomes a `500` in the contract's shape rather than a hung request.
 - **Fails closed.** An unexpected error in the membership guard or the session
   lookup ends the request with an error; it never falls through to the route.
