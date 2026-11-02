@@ -162,13 +162,6 @@ already taken, which reveals that the account exists even though the message
 does not. Closing it properly requires email verification, which the MVP does
 not have. Recorded for the Milestone 2 threat model.
 
-**One known race.** The one-household-per-user check and the write that adds
-the membership are not one atomic step, in both household creation and
-accepting an invitation. A double-clicked button or two invitations accepted at
-the same instant could leave one user in two households. Raised in review on
-#39 and accepted as non-blocking; the fix is a database constraint or a lock
-around the check.
-
 **Untested on real devices.** Every screen is verified at 375px and 1280px in a
 headless browser, with screenshots committed, but has not run on a physical
 phone, in landscape, or with text scaled to 200%.

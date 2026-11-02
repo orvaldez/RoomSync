@@ -158,3 +158,115 @@ describe("create a household, invite, accept, list the members", () => {
     expect(res.body.error.code).toBe("HOUSEHOLD_NOT_FOUND");
   });
 });
+
+describe("revoke an invitation (UC-14)", () => {
+  it("lists only live invitations, and a revoked link stops working", async () => {
+    const alex = await signUp("Alex");
+    const sam = await signUp("Sam");
+    const jo = await signUp("Jo");
+    const householdId = await createHousehold(alex);
+    const base = `/api/households/${householdId}/invitations`;
+
+    // One accepted, one expired, and two still pending.
+    const accepted = (await alex.agent.post(base)).body.invitation;
+    await sam.agent.post(`/api/invitations/${accepted.token}/accept`);
+    const expired = (await alex.agent.post(base)).body.invitation;
+    await pool.query(
+      "UPDATE invitations SET expires_at = NOW() - INTERVAL '1 minute' WHERE invitation_id = $1",
+      [expired.id]
+    );
+    const older = (await alex.agent.post(base)).body.invitation;
+    const newer = (await alex.agent.post(base)).body.invitation;
+
+    const listed = await alex.agent.get(base);
+    expect(listed.status).toBe(200);
+    expect(listed.body.invitations.map((i: { id: string }) => i.id)).toEqual([
+      newer.id,
+      older.id,
+    ]);
+
+    const revoked = await alex.agent.post(`${base}/${older.id}/revoke`);
+    expect(revoked.status).toBe(200);
+    expect(revoked.body.invitation).toMatchObject({ id: older.id, status: "REVOKED" });
+
+    const { rows } = await pool.query<{ status: string }>(
+      "SELECT status FROM invitations WHERE invitation_id = $1",
+      [older.id]
+    );
+    expect(rows[0].status).toBe("REVOKED");
+
+    // The revoked link answers exactly like one that never existed.
+    const preview = await jo.agent.get(`/api/invitations/${older.token}`);
+    expect(preview.status).toBe(404);
+    expect(preview.body.error.code).toBe("INVITATION_INVALID");
+    const accept = await jo.agent.post(`/api/invitations/${older.token}/accept`);
+    expect(accept.status).toBe(404);
+    expect(accept.body.error.code).toBe("INVITATION_INVALID");
+
+    const after = await alex.agent.get(base);
+    expect(after.body.invitations.map((i: { id: string }) => i.id)).toEqual([newer.id]);
+
+    // The other link still works.
+    const joined = await jo.agent.post(`/api/invitations/${newer.token}/accept`);
+    expect(joined.status).toBe(200);
+  });
+
+  it("refuses to revoke an invitation that is no longer pending", async () => {
+    const alex = await signUp("Alex");
+    const sam = await signUp("Sam");
+    const householdId = await createHousehold(alex);
+    const base = `/api/households/${householdId}/invitations`;
+
+    const used = (await alex.agent.post(base)).body.invitation;
+    await sam.agent.post(`/api/invitations/${used.token}/accept`);
+    const twice = (await alex.agent.post(base)).body.invitation;
+    await alex.agent.post(`${base}/${twice.id}/revoke`);
+
+    for (const id of [used.id, twice.id]) {
+      const res = await alex.agent.post(`${base}/${id}/revoke`);
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe("INVITATION_NOT_PENDING");
+    }
+
+    const { rows } = await pool.query<{ status: string }>(
+      "SELECT status FROM invitations WHERE invitation_id = $1",
+      [used.id]
+    );
+    expect(rows[0].status).toBe("ACCEPTED");
+  });
+
+  it("lets only the owner list or revoke, and only their own household's", async () => {
+    const alex = await signUp("Alex");
+    const sam = await signUp("Sam");
+    const riley = await signUp("Riley");
+    const householdId = await createHousehold(alex);
+    await joinHousehold(householdId, alex, sam);
+    const rileysHouseholdId = await createHousehold(riley, "Oak Avenue");
+    const base = `/api/households/${householdId}/invitations`;
+    const pending = (await alex.agent.post(base)).body.invitation;
+
+    const memberList = await sam.agent.get(base);
+    expect(memberList.status).toBe(403);
+    expect(memberList.body.error.code).toBe("NOT_HOUSEHOLD_OWNER");
+    const memberRevoke = await sam.agent.post(`${base}/${pending.id}/revoke`);
+    expect(memberRevoke.status).toBe(403);
+    expect(memberRevoke.body.error.code).toBe("NOT_HOUSEHOLD_OWNER");
+
+    const outsiderRevoke = await riley.agent.post(`${base}/${pending.id}/revoke`);
+    expect(outsiderRevoke.status).toBe(404);
+    expect(outsiderRevoke.body.error.code).toBe("HOUSEHOLD_NOT_FOUND");
+
+    // Riley owns a household, but the id belongs to Alex's.
+    const viaOwn = await riley.agent.post(
+      `/api/households/${rileysHouseholdId}/invitations/${pending.id}/revoke`
+    );
+    expect(viaOwn.status).toBe(404);
+    expect(viaOwn.body.error.code).toBe("INVITATION_NOT_FOUND");
+
+    const { rows } = await pool.query<{ status: string }>(
+      "SELECT status FROM invitations WHERE invitation_id = $1",
+      [pending.id]
+    );
+    expect(rows[0].status).toBe("PENDING");
+  });
+});

@@ -405,13 +405,14 @@ stateDiagram-v2
     [*] --> PENDING : owner creates it, expires in 7 days
     PENDING --> ACCEPTED : recipient joins
     PENDING --> EXPIRED : looked up after expiresAt
+    PENDING --> REVOKED : owner revokes it (UC-14)
     ACCEPTED --> [*]
     EXPIRED --> [*]
     REVOKED --> [*]
 
     note right of REVOKED
-        In the schema for the post-MVP revoke
-        feature. No endpoint sets it yet.
+        Set by POST .../invitations/:id/revoke,
+        only from PENDING and unexpired (#75).
     end note
 ```
 
@@ -450,11 +451,19 @@ which ones a malformed request could violate if a service forgot them.
 | A settlement's payer and recipient differ | Service |
 | Both settlement parties belong to the household | Service |
 | Passwords are never stored in plain text | Service (bcrypt, NFR-07) |
-| One active household per user in the MVP | Service, deliberately not a DB constraint |
+| One active household per user in the MVP | Service, under a per-user advisory lock (#73), deliberately not a DB constraint |
 
 The last one is deliberate: a `@@unique` on `Membership.userId` would enforce
 it today but would make the post-MVP multiple-households feature a migration
-rather than a code change.
+rather than a code change. A check in the service alone is not enough, though,
+because two requests for the same user can both pass it before either writes.
+So every write that adds a membership, creating a household or accepting an
+invitation, first takes a transaction-scoped advisory lock keyed on the user
+(`lockMemberships` in `household.repository.ts`, namespace 42, beside the
+ledger lock's 41) and re-checks inside it. Requests for one user then run one
+at a time, other users never wait, and there is no migration. The concurrent
+integration test and its before-and-after output are in
+`docs/security/one-household-race.md`.
 
 ---
 
@@ -467,8 +476,6 @@ that names its gaps:
   with Milestone 2's US-12 (#60); §8.1 records the decisions.
 - **Member removal** is post-MVP. The `Restrict` delete rules in §2 mean it
   will need a deliberate decision about what happens to that member's history.
-- **Revoking an invitation** is post-MVP; the `REVOKED` status exists so it
-  needs no migration (§6.2).
 - **Recurring expenses and chores** are post-MVP; nothing in the schema
   anticipates them.
 - **Multi-household users** are modelled but blocked by a service check, as

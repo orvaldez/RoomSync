@@ -133,6 +133,8 @@ that member, zero means settled.
 | GET | `/api/households/current` | none | 200 `{ household }` or `{ household: null }` | US-03, US-10 |
 | GET | `/api/households/:householdId/members` | none | 200 `{ members }` | US-03, US-04 |
 | POST | `/api/households/:householdId/invitations` | none | 201 `{ invitation }` | US-04 |
+| GET | `/api/households/:householdId/invitations` | none | 200 `{ invitations }` | US-14 |
+| POST | `/api/households/:householdId/invitations/:invitationId/revoke` | none | 200 `{ invitation }` | US-14 |
 | GET | `/api/invitations/:token` | none | 200 `{ invitation }` | US-04 |
 | POST | `/api/invitations/:token/accept` | none | 200 `{ household }` | US-04 |
 | POST | `/api/households/:householdId/expenses/preview` | expense body | 200 `{ shares }` | US-05, US-06 |
@@ -150,8 +152,9 @@ that member, zero means settled.
 | POST | `/api/households/:householdId/chores/:choreId/complete` | none | 200 `{ chore }` | US-09 |
 | GET | `/api/households/:householdId/dashboard` | none | 200 `{ household, members, balances, upcomingChores, recentActivity }` | US-10 |
 
-25 endpoints: the 23 of Milestone 1, and US-12's edit and delete. US-11 (history) is served by the list endpoints above, so it
-needed no new routes.
+27 endpoints: the 23 of Milestone 1, US-12's edit and delete, and US-14's list and
+revoke of invitations (#75). US-11 (history) is served by the list endpoints above, so
+it needed no new routes.
 
 ---
 
@@ -213,7 +216,7 @@ Errors: common errors only
 
 The client calls this on load to decide between the login screen and the app.
 
-### Households and invitations (US-03, US-04) - owner: Agustin
+### Households and invitations (US-03, US-04, US-14) - owner: Agustin
 
 ## POST /api/households
 Auth: required
@@ -250,6 +253,31 @@ Errors:
 
 The client builds the shareable link as `<app origin>/join/<token>`. RoomSync
 does not send email in the MVP (UC-04 step 4).
+
+## GET /api/households/:householdId/invitations
+Auth: required, OWNER only
+Success: 200 { invitations: InvitationPublic[] }   PENDING and not past expiresAt, newest first
+Errors:
+  403 NOT_HOUSEHOLD_OWNER      - "Only the household owner can see invitations."         UC-14 1a
+
+The links the owner can still revoke (UC-14 step 2). Accepted, revoked and
+expired invitations are left out. Owner only because each entry carries its
+token, and a token is enough to join.
+
+## POST /api/households/:householdId/invitations/:invitationId/revoke
+Auth: required, OWNER only
+Request: none
+Success: 200 { invitation: InvitationPublic }   (status is "REVOKED")
+Errors:
+  403 NOT_HOUSEHOLD_OWNER      - "Only the household owner can revoke invitations."      UC-14 1a
+  404 INVITATION_NOT_FOUND     - "Invitation not found."                                 UC-14 4a
+  409 INVITATION_NOT_PENDING   - "This invitation is no longer pending."                 UC-14 4b
+
+Checked in that order, so a member learns nothing about which invitation ids
+exist. An id from another household gets 404, like one that never existed. The
+update only applies to a PENDING, unexpired invitation, so one accepted at the
+same moment is never also revoked. After revoking, the link's lookup and accept
+both answer 404 INVITATION_INVALID (UC-04 6c).
 
 ## GET /api/invitations/:token
 Auth: required (an unauthenticated visitor is sent to log in or register, then back; UC-04 step 7)
@@ -513,11 +541,12 @@ guidance (UC-10 3a-6a).
 | `ASSIGNEE_NOT_MEMBER` | 400 | chores create, chores patch |
 | `UNAUTHENTICATED` | 401 | every auth-required endpoint |
 | `INVALID_CREDENTIALS` | 401 | login |
-| `NOT_HOUSEHOLD_OWNER` | 403 | invitations create |
+| `NOT_HOUSEHOLD_OWNER` | 403 | invitations create, list, revoke |
 | `CHORE_NOT_ASSIGNED_TO_YOU` | 403 | chore complete |
 | `NOT_EXPENSE_EDITOR` | 403 | expense edit, delete |
 | `HOUSEHOLD_NOT_FOUND` | 404 | every household-scoped endpoint |
 | `INVITATION_INVALID` | 404 | invitation lookup, accept |
+| `INVITATION_NOT_FOUND` | 404 | invitation revoke |
 | `EXPENSE_NOT_FOUND` | 404 | expense by id |
 | `CHORE_NOT_FOUND` | 404 | chore patch, complete |
 | `EMAIL_UNAVAILABLE` | 409 | register |
@@ -525,6 +554,7 @@ guidance (UC-10 3a-6a).
 | `EXCEEDS_BALANCE` | 409 | settlements |
 | `CHORE_ALREADY_COMPLETE` | 409 | chore patch |
 | `EXPENSE_DELETED` | 409 | expense edit |
+| `INVITATION_NOT_PENDING` | 409 | invitation revoke |
 | `INVITATION_EXPIRED` | 410 | invitation lookup, accept |
 | `RATE_LIMITED` | 429 | login, register |
 | `INTERNAL_ERROR` | 500 | any |
