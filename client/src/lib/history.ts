@@ -87,3 +87,27 @@ export function describeCompletedChore(chore: Chore, currentUserId: string): str
   const when = chore.completedAt ? ` · completed ${formatActivityDate(chore.completedAt)}` : "";
   return `${who}${when}`;
 }
+
+/**
+ * Whether the reader may edit or delete `expense` (US-12): the member who paid
+ * it, or the household owner. The server decides; this only chooses whether
+ * to show the buttons, so nobody is offered an action that would be refused.
+ */
+export function canChangeExpense(
+  expense: Pick<Expense, "paidBy" | "deleted">,
+  currentUserId: string,
+  role: "OWNER" | "MEMBER"
+): boolean {
+  if (expense.deleted) return false;
+  return role === "OWNER" || expense.paidBy.userId === currentUserId;
+}
+
+/** "Deleted by Sam on Oct 21", or "Deleted by you on Oct 21"; null if it wasn't. */
+export function describeDeleted(
+  expense: Pick<Expense, "deleted">,
+  currentUserId: string
+): string | null {
+  if (!expense.deleted) return null;
+  const who = expense.deleted.by.userId === currentUserId ? "you" : expense.deleted.by.name;
+  return `Deleted by ${who} on ${formatActivityDate(expense.deleted.at)}`;
+}

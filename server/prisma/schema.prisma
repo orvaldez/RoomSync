@@ -42,6 +42,7 @@ model User {
 
   memberships         Membership[]
   expensesPaid        Expense[]      @relation("ExpensePaidBy")
+  expensesDeleted     Expense[]      @relation("ExpenseDeletedBy")
   expenseShares       ExpenseShare[]
   settlementsSent     Settlement[]   @relation("SettlementFrom")
   settlementsReceived Settlement[]   @relation("SettlementTo")
@@ -102,9 +103,16 @@ model Expense {
   splitMethod      SplitMethod @map("split_method")
   expenseDate      DateTime    @default(now()) @map("expense_date")
   createdAt        DateTime    @default(now()) @map("created_at")
+  // US-12: set on every edit; equals created_at until the expense is edited.
+  updatedAt        DateTime    @default(now()) @updatedAt @map("updated_at")
+  // US-12: a soft delete. A deleted expense stays for the history but no
+  // longer counts toward balances (analysis-model.md §8.1).
+  deletedAt        DateTime?   @map("deleted_at")
+  deletedByUserId  String?     @map("deleted_by_user_id")
 
   household Household      @relation(fields: [householdId], references: [id], onDelete: Cascade)
   paidBy    User           @relation("ExpensePaidBy", fields: [paidByUserId], references: [id], onDelete: Restrict)
+  deletedBy User?          @relation("ExpenseDeletedBy", fields: [deletedByUserId], references: [id], onDelete: Restrict)
   shares    ExpenseShare[]
 
   @@index([householdId, expenseDate])
@@ -164,6 +172,7 @@ model Chore {
   @@index([assignedUserId])
   @@map("chores")
 }
+
 /// Session store for express-session, via connect-pg-simple.
 ///
 /// Modeled here rather than letting the store run its own CREATE TABLE, so

@@ -27,6 +27,9 @@ export type ExpenseRecord = {
   splitMethod: SplitMethod;
   shares: ShareRecord[];
   createdAt: Date;
+  updatedAt: Date;
+  /** Null unless the expense was deleted (US-12). */
+  deleted: { at: Date; by: { userId: string; name: string } } | null;
 };
 
 export type NewExpense = {
@@ -53,6 +56,7 @@ export type NewExpense = {
  */
 const EXPENSE_INCLUDE = {
   paidBy: { select: { name: true } },
+  deletedBy: { select: { name: true } },
   shares: {
     orderBy: { id: "asc" },
     select: {
@@ -82,6 +86,14 @@ function toExpenseRecord(row: ExpenseRow): ExpenseRecord {
       percentBasisPoints: share.percentBasisPoints,
     })),
     createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    deleted:
+      row.deletedAt && row.deletedByUserId && row.deletedBy
+        ? {
+            at: row.deletedAt,
+            by: { userId: row.deletedByUserId, name: row.deletedBy.name },
+          }
+        : null,
   };
 }
 
@@ -119,12 +131,84 @@ export async function createWithShares(
   });
 }
 
-/** Every expense in a household, newest expenseDate first, then newest created. */
+/**
+ * Replace an expense's fields and all of its shares atomically (US-12).
+ *
+ * Under the household's ledger lock, like create, so a settlement checked at
+ * the same moment sees either the old expense or the new one. Rechecks inside
+ * the lock that the expense still exists and isn't deleted, so a delete that
+ * lands between the service's read and this write can't be undone by it.
+ */
+export async function replaceWithShares(
+  expenseId: string,
+  expense: NewExpense
+): Promise<
+  | { status: "updated"; expense: ExpenseRecord }
+  | { status: "not-found" }
+  | { status: "deleted" }
+> {
+  return getPrisma().$transaction(async (tx) => {
+    await lockLedger(tx, expense.householdId);
+
+    const current = await tx.expense.findFirst({
+      where: { id: expenseId, householdId: expense.householdId },
+      select: { deletedAt: true },
+    });
+    if (!current) return { status: "not-found" as const };
+    if (current.deletedAt) return { status: "deleted" as const };
+
+    await tx.expenseShare.deleteMany({ where: { expenseId } });
+
+    const row = await tx.expense.update({
+      where: { id: expenseId },
+      data: {
+        description: expense.description,
+        totalAmountCents: expense.totalAmountCents,
+        expenseDate: expense.expenseDate,
+        paidByUserId: expense.paidByUserId,
+        splitMethod: expense.splitMethod,
+        shares: { create: expense.shares },
+      },
+      include: EXPENSE_INCLUDE,
+    });
+
+    return { status: "updated" as const, expense: toExpenseRecord(row) };
+  });
+}
+
+/**
+ * Soft-delete an expense (US-12): it stays in the database, with who deleted
+ * it and when, and every balance query skips it from then on.
+ *
+ * Under the ledger lock, because deleting an expense changes balances.
+ * Deleting an already-deleted expense changes nothing, so the first delete's
+ * time and author are kept.
+ */
+export async function softDelete(
+  householdId: string,
+  expenseId: string,
+  deletedByUserId: string
+): Promise<void> {
+  await getPrisma().$transaction(async (tx) => {
+    await lockLedger(tx, householdId);
+
+    await tx.expense.updateMany({
+      where: { id: expenseId, householdId, deletedAt: null },
+      data: { deletedAt: new Date(), deletedByUserId },
+    });
+  });
+}
+
+/**
+ * The household's expenses, newest expenseDate first, then newest created.
+ * Deleted ones are left out unless `includeDeleted`, for the History screen.
+ */
 export async function listForHousehold(
-  householdId: string
+  householdId: string,
+  { includeDeleted = false }: { includeDeleted?: boolean } = {}
 ): Promise<ExpenseRecord[]> {
   const rows = await getPrisma().expense.findMany({
-    where: { householdId },
+    where: includeDeleted ? { householdId } : { householdId, deletedAt: null },
     orderBy: [{ expenseDate: "desc" }, { createdAt: "desc" }],
     include: EXPENSE_INCLUDE,
   });
@@ -143,7 +227,7 @@ export async function listRecent(
   limit: number
 ): Promise<ExpenseRecord[]> {
   const rows = await getPrisma().expense.findMany({
-    where: { householdId },
+    where: { householdId, deletedAt: null },
     orderBy: { createdAt: "desc" },
     take: limit,
     include: EXPENSE_INCLUDE,
@@ -153,7 +237,8 @@ export async function listRecent(
 }
 
 /**
- * One expense, or null when it does not exist *in this household*.
+ * One expense, or null when it does not exist *in this household*. A deleted
+ * expense is returned, with `deleted` set, so a link to it still explains it.
  *
  * Filtering on both ids means an expense id from another household is
  * indistinguishable from a made-up one.
