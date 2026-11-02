@@ -80,10 +80,10 @@ balances, due dates and activity.
 
 ## 3. What is not built
 
-| Capability | Story | State |
-|---|---|---|
-| History of expenses, settlements and completed chores | US-11 | P1, scheduled for Sprint 3 |
-| Expense detail screen | US-05, US-11 | Designed in the wireframes; the endpoint exists, the screen arrives with US-11 |
+Every MVP story is built, and so is History with the expense detail screen
+(US-11, Sprint 3, #23). The other Milestone 2 stories, expense editing and
+deletion (US-12), removing a member (US-13) and revoking an invitation
+(US-14), are planned in `BACKLOG.md`.
 
 Outside the MVP, as the proposal set out and the analysis model records:
 editing or deleting an expense, removing a member, revoking an invitation,
@@ -121,7 +121,8 @@ record an expense, split it, see the balance. US-01, 02, 03, 05, 06, 07.
 **Tier 2 — completes the MVP.** Invitations (US-04), settlements (US-08),
 chores (US-09), the full dashboard (US-10). **Delivered.**
 
-**Tier 3 — P1.** History (US-11), scheduled for Sprint 3.
+**Tier 3 — P1.** History (US-11), with the expense detail screen. **Delivered
+in Sprint 3 (#23).**
 
 ---
 
@@ -137,9 +138,24 @@ blocks merges from Milestone 3. Until then the tests, the layering checks in
 `client/src/lib/`; there are no component tests and no coverage report yet.
 Both belong to the Milestone 2 test plan.
 
-**NFR-02 is not load-tested.** The dashboard answers in about 60 ms against the
-seed data, and each activity source is capped before merging, but nobody has
-measured it against the 500 expenses NFR-02 names.
+**NFR-02 is measured, not load-tested.** `history-load.integration.test.ts`
+builds the household NFR-02 names, five members and 500 expenses, in the test
+database and times each request after one warm-up. It fails if any takes two
+seconds or more. On October 12, 2026, on a developer laptop against the Docker
+Compose PostgreSQL, three runs measured:
+
+| Request | Time |
+|---|---|
+| `GET .../expenses` (all 500, with shares) | 70–78 ms |
+| `GET .../dashboard` | 28–30 ms |
+| `GET .../balances` | 23–26 ms |
+| `GET .../settlements`, `GET .../chores?status=completed` | 8–11 ms |
+
+So the History lists are not paginated: at the size the requirement names, the
+largest is about 25 times inside the budget. This is a single sequential user,
+not concurrent load; load testing belongs with deployment at Milestone 3. If a
+household grows well past 500 expenses, the expense list is the one to
+paginate first.
 
 **One accepted security limitation.** Registration returns 409 when an email is
 already taken, which reveals that the account exists even though the message

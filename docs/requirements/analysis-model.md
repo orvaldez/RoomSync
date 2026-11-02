@@ -76,7 +76,7 @@ Reading it:
 - **Create household** is offered only to a signed-in user who belongs to no
   household (UC-03 1a), which is why it hangs off Member rather than Visitor.
 
-US-11 (history, P1, Sprint 3) is not drawn: it adds no new behaviour, only a
+US-11 (history, built in Sprint 3) is not drawn: it adds no new behaviour, only a
 view over the list endpoints UC-05, UC-08 and UC-09 already use.
 
 ---

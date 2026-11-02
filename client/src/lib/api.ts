@@ -345,9 +345,20 @@ export const api = {
     );
   },
 
-  /** Outstanding chores first (soonest due), then completed (newest first). */
-  chores(householdId: string) {
-    return request<{ chores: Chore[] }>(`/households/${householdId}/chores`);
+  /** 404 EXPENSE_NOT_FOUND if it is not in this household (UC-11). */
+  expense(householdId: string, expenseId: string) {
+    return request<{ expense: Expense }>(
+      `/households/${householdId}/expenses/${encodeURIComponent(expenseId)}`
+    );
+  },
+
+  /**
+   * Outstanding chores first (soonest due), then completed (newest first).
+   * `status` narrows the list to one of the two.
+   */
+  chores(householdId: string, status?: "open" | "completed") {
+    const query = status ? `?status=${status}` : "";
+    return request<{ chores: Chore[] }>(`/households/${householdId}/chores${query}`);
   },
 
   createChore(householdId: string, input: ChoreInput) {

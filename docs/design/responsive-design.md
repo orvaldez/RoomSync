@@ -201,15 +201,21 @@ then saved a full-page screenshot.
 | Add an expense, with the split preview | UC-05, UC-06 | [mobile](screenshots/mobile/07-add-expense.png) | [desktop](screenshots/desktop/07-add-expense.png) | None |
 | Chores | UC-09 | [mobile](screenshots/mobile/08-chores.png) | [desktop](screenshots/desktop/08-chores.png) | None |
 | Balances, recording a payment | UC-07, UC-08 | [mobile](screenshots/mobile/09-balances-record-payment.png) | [desktop](screenshots/desktop/09-balances-record-payment.png) | None |
+| History | UC-11 | [mobile](screenshots/mobile/10-history.png) | [desktop](screenshots/desktop/10-history.png) | None |
+| Expense detail, percentage split | UC-11 | [mobile](screenshots/mobile/11-expense-detail.png) | [desktop](screenshots/desktop/11-expense-detail.png) | None |
+| Expense not found | UC-11 | [mobile](screenshots/mobile/12-expense-not-found.png) | [desktop](screenshots/desktop/12-expense-not-found.png) | None |
 
-Every screen in the MVP is in the table; the expense list is a panel on the
-dashboard (rows 5 and 6). The one screen in the wireframes that is not here,
-expense detail, is not built (US-11, Sprint 3).
+Every screen is in the table; the expense list is a panel on the dashboard
+(rows 5 and 6) and a list on History. Rows 10 to 12 and the dashboard
+screenshots were taken on October 12, 2026 (#23), the dashboard because it
+gained the History button and its expenses panel now shows the five newest.
+The same check ran on the detail screen of every seed expense, covering all
+three split methods, at both widths.
 
 | Check | Result |
 |---|---|
-| No horizontal scroll at 375px, all nine screens | **Pass** — `scrollWidth` is 375 on every one |
-| No horizontal scroll at 1280px, all nine screens | **Pass** |
+| No horizontal scroll at 375px, all twelve screens | **Pass** — `scrollWidth` is 375 on every one |
+| No horizontal scroll at 1280px, all twelve screens | **Pass** |
 | Interactive elements at least 24×24px | **Pass** — the only smaller ones are the 18px checkboxes and radios on Add expense, whose 36px label rows are the target (§3.6) |
 | Inputs at least 16px, so iOS does not zoom | **Pass** — set on `.field input`, `.field select` and the invitation link (§3.1) |
 | Real iOS or Android device | **Not tested** |
