@@ -14,7 +14,7 @@ goes up with each release, and the API may still change between releases.
 | Version | Marks | Commit |
 |---|---|---|
 | `v0.1.0` | Milestone 1: the MVP | `1eca04e`, tagged `milestone-1` |
-| `v0.2.0` | The end of Sprint 3 (October 14, 2026) | |
+| `v0.2.0` | The end of Sprint 3 (October 14, 2026) | `d1aff59` |
 | `v0.3.0` | Milestone 2 | The commit tagged `milestone-2` |
 
 Every version is a GitHub release whose notes match its section below.
@@ -38,6 +38,35 @@ Every version is a GitHub release whose notes match its section below.
   endpoints, error codes `NOT_EXPENSE_EDITOR` and `EXPENSE_DELETED`, and a
   migration adding `updated_at`, `deleted_at` and `deleted_by_user_id` to
   `expenses` (#98).
+- Integration tests for the money and chore flows: expenses with each split
+  method and the balances they produce, checked against amounts worked out by
+  hand; settlements, including refusing more than is owed; chores only their
+  assignee can complete; the dashboard reflecting all of it; and 404 from
+  every household endpoint for a user from another household (#95).
+- A quality-assurance plan (`docs/testing/qa-plan.md`): what each level of
+  testing checks, who runs it and when, entry and exit criteria for a
+  milestone, a pre-release checklist on a clean clone, and how a defect is
+  handled. A pull request template carries its per-PR checklist (#97).
+
+### Security
+
+- An OWASP Top 10:2025 review (`docs/security/owasp-review.md`). From it:
+  security headers on every API response and no `X-Powered-By`; a request
+  body over the limit, or in an encoding the server can't read, is now
+  `413 PAYLOAD_TOO_LARGE` or `415 UNSUPPORTED_MEDIA_TYPE` rather than a
+  logged `500`; and the dependency audit re-run, which raised Express to
+  4.22.3 and Prisma to 7.10.1 and cleared every production advisory,
+  including the critical `proxy-addr` one. Express 5 was tried and put off to
+  Milestone 3. Four gaps were filed: #99, #100, #101, #102 (#103).
+
+## [0.2.0] - 2026-10-14
+
+The end of Sprint 3: continuous integration with required checks, integration
+tests against PostgreSQL, coverage targets, server linting, a threat model,
+contribution conventions, and rate limiting on login and registration.
+
+### Added
+
 - Continuous integration with GitHub Actions on every pull request and every
   push to `main`: a `server` job (Prisma client generation, typecheck, unit
   tests), a `client` job (lint, build, tests) and an `integration` job (#81,
@@ -47,21 +76,12 @@ Every version is a GitHub release whose notes match its section below.
   with the session stored in the database (#83). The household flow follows:
   create a household, invite, accept, and list the members, with single-use
   and expired links, owner-only invites, one household per user, and 404 for
-  outsiders (#87). Then the money and chore flows: expenses with each split
-  method and the balances they produce, checked against amounts worked out by
-  hand; settlements, including refusing more than is owed; chores only their
-  assignee can complete; the dashboard reflecting all of it; and 404 from
-  every household endpoint for a user from another household (#95). They use
-  a separate database whose name must end in `_test`, emptied before every
-  test, and run with `npm run test:integration`.
+  outsiders (#87). They use a separate database whose name must end in
+  `_test`, emptied before every test, and run with `npm run test:integration`.
 - Server linting with ESLint and typescript-eslint (`npm run lint`), run by the
   `server` CI job. It enforces the ADR-001 layering: only repositories may
   import the Prisma client, services may not import Express, and routes and
   middleware may not import repositories (#84).
-- A quality-assurance plan (`docs/testing/qa-plan.md`): what each level of
-  testing checks, who runs it and when, entry and exit criteria for a
-  milestone, a pre-release checklist on a clean clone, and how a defect is
-  handled. A pull request template carries its per-PR checklist (#97).
 - A threat model: a data-flow diagram with its trust boundaries, and STRIDE
   applied to accounts and sessions, household membership, invitation links,
   money writes and the session store, with a decision for each threat (#91).
@@ -89,14 +109,6 @@ Every version is a GitHub release whose notes match its section below.
   passwords, and registration per IP. Over a limit the API answers
   `429 RATE_LIMITED` with `Retry-After`, and the login screen says how long
   to wait. The limits are set by environment variables (#88).
-- An OWASP Top 10:2025 review (`docs/security/owasp-review.md`). From it:
-  security headers on every API response and no `X-Powered-By`; a request
-  body over the limit, or in an encoding the server can't read, is now
-  `413 PAYLOAD_TOO_LARGE` or `415 UNSUPPORTED_MEDIA_TYPE` rather than a
-  logged `500`; and the dependency audit re-run, which raised Express to
-  4.22.3 and Prisma to 7.10.1 and cleared every production advisory,
-  including the critical `proxy-addr` one. Express 5 was tried and put off to
-  Milestone 3. Four gaps were filed: #99, #100, #101, #102 (#103).
 
 ## [0.1.0] - 2026-09-30
 
@@ -151,5 +163,6 @@ React through Express and Prisma to PostgreSQL.
   doesn't exist, so the API can't be used to discover other households (#40).
 - Invitation tokens are 32 random bytes (#51).
 
-[Unreleased]: https://github.com/orvaldez/RoomSync/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/orvaldez/RoomSync/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/orvaldez/RoomSync/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/orvaldez/RoomSync/releases/tag/v0.1.0
