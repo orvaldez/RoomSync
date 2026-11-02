@@ -4,9 +4,9 @@ RoomSync — Software Design and Development
 Orlando Rodriguez Valdez, Agustin Lemuz-Juarez
 Issue #4 · Milestone 1 deliverable
  
-Eleven use cases, one per user story from US-01 through US-11, expanding the acceptance
-criteria in proposal Section 5 into concrete actor-system interactions. UC-01 to UC-10
-were written for Milestone 1; UC-11 was added with US-11 in Sprint 3 (#23).
+One use case per user story, expanding the acceptance criteria in proposal Section 5
+into concrete actor-system interactions. UC-01 to UC-10 were written for Milestone 1;
+UC-11 was added with US-11 in Sprint 3 (#23), and UC-14 with US-14 in Sprint 4 (#75).
  
 ---
  
@@ -522,6 +522,53 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
 
 ---
 
+## UC-14 — Revoke an Invitation
+
+| | |
+|---|---|
+| **User story** | US-14 (P0 for Milestone 2) |
+| **Primary actor** | Owner |
+| **Goal** | Stop a link shared by mistake from adding anyone to the household |
+| **Preconditions** | The owner is authenticated and holds the `OWNER` role in the household |
+| **Postconditions** | The invitation is `REVOKED`, and its link answers like one that never existed. Existing members are unaffected |
+
+**Main success scenario**
+
+1. Owner opens the dashboard's Members panel.
+2. System lists the household's invitation links that can still be used, `PENDING` and
+   not yet expired, newest first, each with when it was created and when it expires.
+3. Owner selects Revoke on one link.
+4. System asks the owner to confirm, saying anyone holding the link will no longer be
+   able to join.
+5. Owner confirms. System marks the invitation `REVOKED`, unless it was accepted or
+   expired in the meantime.
+6. System removes the link from the list and confirms it was revoked. Opening or
+   accepting the link now answers 404 `INVITATION_INVALID`, as in UC-04 6c.
+
+**Extensions**
+
+- **1a. The requester is a Member without the `OWNER` role.** System refuses to list or
+  revoke invitations with 403 `NOT_HOUSEHOLD_OWNER`. Enforced server-side, not by hiding
+  the panel (FR-06, SC-09). Someone outside the household gets 404
+  `HOUSEHOLD_NOT_FOUND`.
+- **3a. Owner selects Keep it.** System changes nothing.
+- **4a. No invitation with that id belongs to this household.** System answers 404
+  `INVITATION_NOT_FOUND`, the same for an id from another household.
+- **4b. The invitation is no longer pending:** accepted, already revoked, or expired,
+  including one accepted between the list loading and the confirmation. System refuses
+  with 409 `INVITATION_NOT_PENDING` and changes nothing; the screen says the link was
+  already used or had expired and drops it from the list.
+
+**Special requirements**
+
+- Revoking is a conditional update on a `PENDING`, unexpired invitation, so a link
+  accepted at the same moment is either accepted or revoked, never both
+- Only the owner sees tokens in the list, since anyone holding a token can join
+- No migration: `REVOKED` was in the schema from Milestone 1
+- Fully usable at a viewport width of 375 pixels (NFR-05)
+
+---
+
 ## Traceability
  
 | Use case | User story | Functional requirements | Success criteria |
@@ -537,9 +584,10 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
 | UC-09 Manage Chores | US-09 | FR-13, FR-14, FR-15 | SC-07 |
 | UC-10 View Dashboard | US-10 | FR-16 | SC-08 |
 | UC-11 View History | US-11 | FR-12, FR-16 | SC-08 |
+| UC-14 Revoke an Invitation | US-14 | FR-06 | SC-09 |
  
 FR-17 (persistent database storage), NFR-06 and NFR-07 (server-side authorization on every
-request) underpin all eleven and are not listed per-row.
+request) underpin all of them and are not listed per-row.
  
 ---
  
