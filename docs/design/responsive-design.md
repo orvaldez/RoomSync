@@ -231,7 +231,7 @@ links still in use, and row 18 shows the revoke confirmation open. Rows 13 to
 | Desktop browsers | **Pass** — Chrome, Edge and Firefox, all eighteen screens (§5.1) |
 | Landscape orientation on a phone | **Pass** in emulation — all eighteen screens at 812×375 (§5.1); a real phone is the next row |
 | Text scaled to 200% (WCAG 1.4.4) | **Pass** — all eighteen screens at 200% browser zoom (§5.1) |
-| Real iOS or Android device | **Pending** — Agustin's phone, recorded in §5.1 when done |
+| Real iOS or Android device | **Pass after one fix** — iPhone 15 Pro, Safari; the date fields overflowed and were fixed in #106 (§5.1) |
 
 ### 5.1 Cross-browser, landscape and 200% zoom (#66)
 
@@ -264,10 +264,52 @@ Notes:
   is an iPhone.
 - Firefox draws the headings in a lighter weight of the same system font. That
   is the font's rendering, not a layout difference.
-- No problem was found, so no `bug` issues were filed.
+- The automated setups found no problem. The real phone found one, filed as #106 (below).
 
-**Real phone.** Pending: device, OS, browser and date go here, with the
-screenshots under `screenshots/phone/`.
+#### Real phone
+
+Agustin checked the screens by hand on November 2, 2026, on an **iPhone 15 Pro**
+(393 points wide) running **iOS 27.0.1**, in **Safari**, with the phone in dark
+mode, against the same seeded database over the local network. The screenshots
+in [`phone/`](screenshots/phone/) are scaled from the phone's 3× to 1×.
+
+| Screen | Result | Screenshot |
+|---|---|---|
+| Log in, Create account | Pass | [01-login](screenshots/phone/01-login.png), [02-register](screenshots/phone/02-register.png) |
+| Set up your household | Pass | [03-create-household](screenshots/phone/03-create-household.png) |
+| Dashboard, owner, with the invitation links | Pass; the header wraps the long name under RoomSync, by design | [05-dashboard-owner](screenshots/phone/05-dashboard-owner.png) |
+| Revoke confirmation | Pass | [18-revoke-invitation](screenshots/phone/18-revoke-invitation.png) |
+| Dashboard, member | Pass | [06-dashboard](screenshots/phone/06-dashboard.png) |
+| Add an expense, with the split preview | **Date field overflowed, fixed in #106** | [07-add-expense](screenshots/phone/07-add-expense.png), [07-add-expense-preview](screenshots/phone/07-add-expense-preview.png), after the fix: [07-add-expense-after-fix](screenshots/phone/07-add-expense-after-fix.png) |
+| Chores | **Due date field overflowed, fixed in #106** | before: [08-chores-before-fix](screenshots/phone/08-chores-before-fix.png), [08-chores-list](screenshots/phone/08-chores-list.png), after: [08-chores-after-fix](screenshots/phone/08-chores-after-fix.png) |
+| Balances, recording a payment | Pass | [09-balances-record-payment](screenshots/phone/09-balances-record-payment.png) |
+| History | Pass | [10-history](screenshots/phone/10-history.png) |
+| Expense detail, percentage split, with Edit and Delete | Pass | [13-expense-detail-actions](screenshots/phone/13-expense-detail-actions.png) |
+| Edit expense | **Date field overflowed, fixed in #106**; the rest passes | before: [14-edit-expense-before-fix](screenshots/phone/14-edit-expense-before-fix.png), [14-edit-expense-shares](screenshots/phone/14-edit-expense-shares.png) |
+| Delete confirmation, deleted expense, History with it | Pass | [15-delete-confirm](screenshots/phone/15-delete-confirm.png), [16-expense-deleted](screenshots/phone/16-expense-deleted.png), [17-history-with-deleted](screenshots/phone/17-history-with-deleted.png) |
+| Landscape | Pass | [landscape-dashboard](screenshots/phone/landscape-dashboard.png) |
+| Safari page zoom at 200% | Pass | [zoom-200-dashboard](screenshots/phone/zoom-200-dashboard.png) |
+| iOS Text Size at its largest | No effect, as expected | [text-size-largest](screenshots/phone/text-size-largest.png) |
+
+**The one problem: date fields on iPhone Safari (#106).** On Add and Edit
+expense the Date field reached the right edge of the screen, past the margin
+every other field keeps, with its date centred; on Chores the due date ran past
+the panel's border. iOS draws a date input with its native control, which has a
+minimum width of its own and ignores `width: 100%`. None of the automated setups
+showed it, which is the case for testing on a real device. #106 drops the native
+appearance for date inputs and left-aligns the date; Chrome and Firefox measure
+the same before and after. Re-checked on the same iPhone: both fields now line
+up with their neighbours ([Add expense](screenshots/phone/07-add-expense-after-fix.png), [Chores](screenshots/phone/08-chores-after-fix.png)).
+
+Notes:
+
+- **iOS Text Size** (Settings → Display & Brightness) does not change Safari's
+  web pages unless a site opts in with Apple's system font styles, so the
+  largest setting leaves RoomSync as it was. Safari's own page zoom is the
+  setting that applies, and it passes at 200%.
+- **Not captured on the phone:** Join a household (4) and Expense not found
+  (12). Both are single short screens that pass in every automated setup
+  above.
 
 To re-check after a layout change, run the seed, open each screen in a
 browser's device toolbar at 375px signed in as a seed account, and compare
