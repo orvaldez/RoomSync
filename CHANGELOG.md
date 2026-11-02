@@ -48,6 +48,12 @@ Every version is a GitHub release whose notes match its section below.
   hand; settlements, including refusing more than is owed; chores only their
   assignee can complete; the dashboard reflecting all of it; and 404 from
   every household endpoint for a user from another household (#95).
+- Component tests for the client with React Testing Library, user-event and
+  jsdom, with `lib/api.ts` mocked: login and the auth guard's return path, Add
+  expense (preview, a split that doesn't add up, saving), recording a payment
+  and an overpayment refused, completing your own chore but not someone
+  else's, and the dashboard full, empty and failing to load. Client coverage
+  rises from 7% to 57% of statements, and its floor with it (#112).
 - A quality-assurance plan (`docs/testing/qa-plan.md`): what each level of
   testing checks, who runs it and when, entry and exit criteria for a
   milestone, a pre-release checklist on a clean clone, and how a defect is
