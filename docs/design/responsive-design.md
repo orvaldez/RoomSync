@@ -196,7 +196,7 @@ then saved a full-page screenshot.
 | Create account | UC-01 | [mobile](screenshots/mobile/02-register.png) | [desktop](screenshots/desktop/02-register.png) | None |
 | Set up your household | UC-03 | [mobile](screenshots/mobile/03-create-household.png) | [desktop](screenshots/desktop/03-create-household.png) | None |
 | Join a household | UC-04 | [mobile](screenshots/mobile/04-join-household.png) | [desktop](screenshots/desktop/04-join-household.png) | None |
-| Dashboard, owner with an invitation link open | UC-04, UC-10 | [mobile](screenshots/mobile/05-dashboard-owner-invite.png) | [desktop](screenshots/desktop/05-dashboard-owner-invite.png) | None |
+| Dashboard, owner with an invitation link open and the link listed | UC-04, UC-10, UC-14 | [mobile](screenshots/mobile/05-dashboard-owner-invite.png) | [desktop](screenshots/desktop/05-dashboard-owner-invite.png) | None |
 | Dashboard, member | UC-10 | [mobile](screenshots/mobile/06-dashboard.png) | [desktop](screenshots/desktop/06-dashboard.png) | None |
 | Add an expense, with the split preview | UC-05, UC-06 | [mobile](screenshots/mobile/07-add-expense.png) | [desktop](screenshots/desktop/07-add-expense.png) | None |
 | Chores | UC-09 | [mobile](screenshots/mobile/08-chores.png) | [desktop](screenshots/desktop/08-chores.png) | None |
@@ -204,13 +204,17 @@ then saved a full-page screenshot.
 | History | UC-11 | [mobile](screenshots/mobile/10-history.png) | [desktop](screenshots/desktop/10-history.png) | None |
 | Expense detail, percentage split | UC-11 | [mobile](screenshots/mobile/11-expense-detail.png) | [desktop](screenshots/desktop/11-expense-detail.png) | None |
 | Expense not found | UC-11 | [mobile](screenshots/mobile/12-expense-not-found.png) | [desktop](screenshots/desktop/12-expense-not-found.png) | None |
+| Dashboard, owner confirming a revoke | UC-14 | [mobile](screenshots/mobile/18-revoke-invitation.png) | [desktop](screenshots/desktop/18-revoke-invitation.png) | None |
 
 Every screen is in the table; the expense list is a panel on the dashboard
 (rows 5 and 6) and a list on History. Rows 10 to 12 and the dashboard
 screenshots were taken on October 12, 2026 (#23), the dashboard because it
 gained the History button and its expenses panel now shows the five newest.
 The same check ran on the detail screen of every seed expense, covering all
-three split methods, at both widths.
+three split methods, at both widths. Row 18 and a retake of row 5 were taken on
+November 2, 2026 (#75): the owner's Members panel now lists the invitation
+links still in use, and row 18 shows the revoke confirmation open. Rows 13 to
+17 are reserved for US-12 (#60).
 
 | Check | Result |
 |---|---|
