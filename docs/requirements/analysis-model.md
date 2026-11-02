@@ -405,13 +405,14 @@ stateDiagram-v2
     [*] --> PENDING : owner creates it, expires in 7 days
     PENDING --> ACCEPTED : recipient joins
     PENDING --> EXPIRED : looked up after expiresAt
+    PENDING --> REVOKED : owner revokes it (UC-14)
     ACCEPTED --> [*]
     EXPIRED --> [*]
     REVOKED --> [*]
 
     note right of REVOKED
-        In the schema for the post-MVP revoke
-        feature. No endpoint sets it yet.
+        Set by POST .../invitations/:id/revoke,
+        only from PENDING and unexpired (#75).
     end note
 ```
 
@@ -467,8 +468,6 @@ that names its gaps:
   with Milestone 2's US-12 (#60); §8.1 records the decisions.
 - **Member removal** is post-MVP. The `Restrict` delete rules in §2 mean it
   will need a deliberate decision about what happens to that member's history.
-- **Revoking an invitation** is post-MVP; the `REVOKED` status exists so it
-  needs no migration (§6.2).
 - **Recurring expenses and chores** are post-MVP; nothing in the schema
   anticipates them.
 - **Multi-household users** are modelled but blocked by a service check, as

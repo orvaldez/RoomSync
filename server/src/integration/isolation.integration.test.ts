@@ -27,8 +27,10 @@ describe("someone from another household", () => {
     const chore = await alex.agent
       .post(`${base}/chores`)
       .send({ title: "Dishes", assignedUserId: alex.id });
+    const invitation = await alex.agent.post(`${base}/invitations`);
     const expenseId = expense.body.expense.id;
     const choreId = chore.body.chore.id;
+    const invitationId = invitation.body.invitation.id;
 
     const expenseBody = {
       description: "Not mine",
@@ -42,6 +44,8 @@ describe("someone from another household", () => {
     const attempts: [string, () => Promise<{ status: number; body: { error?: { code?: string } } }>][] = [
       ["GET members", () => riley.agent.get(`${base}/members`)],
       ["POST invitations", () => riley.agent.post(`${base}/invitations`)],
+      ["GET invitations", () => riley.agent.get(`${base}/invitations`)],
+      ["POST revoke", () => riley.agent.post(`${base}/invitations/${invitationId}/revoke`)],
       ["GET expenses", () => riley.agent.get(`${base}/expenses`)],
       ["GET expense", () => riley.agent.get(`${base}/expenses/${expenseId}`)],
       ["POST expenses", () => riley.agent.post(`${base}/expenses`).send(expenseBody)],

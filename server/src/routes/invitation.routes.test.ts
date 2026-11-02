@@ -22,6 +22,9 @@ vi.mock("../repositories/invitation.repository", () => ({
   create: vi.fn(),
   findByToken: vi.fn(),
   markExpired: vi.fn(),
+  listPending: vi.fn(),
+  findInHousehold: vi.fn(),
+  revokePending: vi.fn(),
   acceptIntoHousehold: vi.fn(),
 }));
 
@@ -35,6 +38,9 @@ const findRole = vi.mocked(householdRepository.findRole);
 const hasMembership = vi.mocked(householdRepository.hasMembership);
 const create = vi.mocked(invitationRepository.create);
 const findByToken = vi.mocked(invitationRepository.findByToken);
+const listPending = vi.mocked(invitationRepository.listPending);
+const findInHousehold = vi.mocked(invitationRepository.findInHousehold);
+const revokePending = vi.mocked(invitationRepository.revokePending);
 const acceptIntoHousehold = vi.mocked(invitationRepository.acceptIntoHousehold);
 
 const PASSWORD = "correct-horse";
@@ -88,8 +94,136 @@ beforeEach(() => {
     createdAt: new Date(),
   }));
   findByToken.mockResolvedValue(PENDING);
+  listPending.mockResolvedValue([PENDING]);
+  findInHousehold.mockResolvedValue(PENDING);
+  revokePending.mockResolvedValue(true);
   hasMembership.mockResolvedValue(false);
   acceptIntoHousehold.mockResolvedValue(true);
+});
+
+describe("GET /api/households/:householdId/invitations", () => {
+  it("returns the pending invitations to the owner", async () => {
+    findRole.mockResolvedValue("OWNER");
+    const agent = await signedInAgent();
+
+    const res = await agent.get(`/api/households/${HOUSEHOLD_ID}/invitations`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.invitations).toEqual([
+      {
+        id: PENDING.id,
+        token: TOKEN,
+        status: "PENDING",
+        expiresAt: PENDING.expiresAt.toISOString(),
+        createdAt: PENDING.createdAt.toISOString(),
+      },
+    ]);
+    expect(listPending).toHaveBeenCalledWith(HOUSEHOLD_ID);
+  });
+
+  it("returns 403 NOT_HOUSEHOLD_OWNER to a member, revealing no tokens (UC-14 1a)", async () => {
+    findRole.mockResolvedValue("MEMBER");
+    const agent = await signedInAgent();
+
+    const res = await agent.get(`/api/households/${HOUSEHOLD_ID}/invitations`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe("NOT_HOUSEHOLD_OWNER");
+    expect(res.body.invitations).toBeUndefined();
+    expect(listPending).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 HOUSEHOLD_NOT_FOUND to a non-member", async () => {
+    findRole.mockResolvedValue(null);
+    const agent = await signedInAgent();
+
+    const res = await agent.get(`/api/households/${HOUSEHOLD_ID}/invitations`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("HOUSEHOLD_NOT_FOUND");
+    expect(listPending).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 without a session", async () => {
+    const res = await request(app).get(`/api/households/${HOUSEHOLD_ID}/invitations`);
+
+    expect(res.status).toBe(401);
+    expect(listPending).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/households/:householdId/invitations/:invitationId/revoke", () => {
+  const revokeUrl = `/api/households/${HOUSEHOLD_ID}/invitations/${PENDING.id}/revoke`;
+
+  it("returns 200 with the invitation, now REVOKED, for the owner", async () => {
+    findRole.mockResolvedValue("OWNER");
+    const agent = await signedInAgent();
+
+    const res = await agent.post(revokeUrl);
+
+    expect(res.status).toBe(200);
+    expect(res.body.invitation).toMatchObject({ id: PENDING.id, status: "REVOKED" });
+    expect(findInHousehold).toHaveBeenCalledWith(HOUSEHOLD_ID, PENDING.id);
+    expect(revokePending).toHaveBeenCalledWith(PENDING.id);
+  });
+
+  it("returns 403 NOT_HOUSEHOLD_OWNER to a member, revoking nothing (UC-14 1a)", async () => {
+    findRole.mockResolvedValue("MEMBER");
+    const agent = await signedInAgent();
+
+    const res = await agent.post(revokeUrl);
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toEqual({
+      code: "NOT_HOUSEHOLD_OWNER",
+      message: "Only the household owner can revoke invitations.",
+    });
+    expect(revokePending).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 HOUSEHOLD_NOT_FOUND to a non-member", async () => {
+    findRole.mockResolvedValue(null);
+    const agent = await signedInAgent();
+
+    const res = await agent.post(revokeUrl);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("HOUSEHOLD_NOT_FOUND");
+    expect(revokePending).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 INVITATION_NOT_FOUND for an id outside this household (UC-14 4a)", async () => {
+    findRole.mockResolvedValue("OWNER");
+    findInHousehold.mockResolvedValue(null);
+    const agent = await signedInAgent();
+
+    const res = await agent.post(
+      `/api/households/${HOUSEHOLD_ID}/invitations/clxSOMEONEELSES000000000/revoke`
+    );
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("INVITATION_NOT_FOUND");
+    expect(revokePending).not.toHaveBeenCalled();
+  });
+
+  it("returns 409 INVITATION_NOT_PENDING for an accepted invitation (UC-14 4b)", async () => {
+    findRole.mockResolvedValue("OWNER");
+    findInHousehold.mockResolvedValue({ ...PENDING, status: "ACCEPTED" });
+    const agent = await signedInAgent();
+
+    const res = await agent.post(revokeUrl);
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("INVITATION_NOT_PENDING");
+    expect(revokePending).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 without a session", async () => {
+    const res = await request(app).post(revokeUrl);
+
+    expect(res.status).toBe(401);
+    expect(revokePending).not.toHaveBeenCalled();
+  });
 });
 
 describe("POST /api/households/:householdId/invitations", () => {
