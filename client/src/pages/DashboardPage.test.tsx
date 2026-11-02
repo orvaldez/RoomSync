@@ -61,6 +61,8 @@ function setUp(dashboard: Dashboard | null) {
   mockedApi.currentHousehold.mockResolvedValue({ household: dashboard ? dashboard.household : null });
   if (dashboard) mockedApi.dashboard.mockResolvedValue(dashboard);
   mockedApi.expenses.mockResolvedValue({ expenses: dashboard?.recentActivity.length ? [GROCERIES] : [] });
+  // The owner's Members panel lists the invitation links still in use (US-14).
+  mockedApi.pendingInvitations.mockResolvedValue({ invitations: [] });
   renderAt("/", <Route path="/" element={<DashboardPage />} />);
 }
 

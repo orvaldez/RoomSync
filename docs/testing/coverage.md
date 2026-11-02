@@ -48,11 +48,12 @@ measurement, so the trend stays visible.
 | | | `src/lib/` except `api.ts` | 100% | 98.51% | 100% | 100% |
 | | | `src/lib/api.ts` | 0% | 100% | 100% | 0% |
 | | | Pages, components, auth, `App.tsx` | 0% | 5% | 5% | 0% |
-| 2026-11-02 | with #76 | **All files** | 58.08% | 75.2% | 59.05% | 58.08% |
+| 2026-11-02 | with #76 | **All files** | 56.89% | 75.35% | 57.77% | 56.89% |
 | | | `src/auth/` | 86.41% | 90.9% | 100% | 86.41% |
 | | | `src/pages/` | 57.02% | 66.89% | 62.96% | 57.02% |
 
-91 tests on October 12; 152 with the component tests (#76), which add 22.
+91 tests on October 12; 157 with US-14 (#105) and the component tests (#76),
+which add 22.
 The six screens #76 names are covered: `LoginPage` 97%, `RequireAuth` 100%,
 `BalancesPage` 86%, `ChoresPage` 77%, plus `AddExpensePage` and
 `DashboardPage`. The branch figure sits just above its floor because a
@@ -79,7 +80,7 @@ the failure.
 | `client/src/lib/` except `api.ts` | 95 / 90 / 100 / 95 | Turning what a user types into integer cents (`money.ts`), and the direction of every "you owe" and "owes you" sentence (`balances.ts`, `activity.ts`, `chores.ts`). These are the client's SC-04 equivalent: a wrong answer looks plausible. Every exported function must have a test |
 | `client/src/lib/api.ts` | No separate target | The `fetch` wrapper. Its behavior is the server's contract, already tested on the server side, and component tests (#76) exercise it from the screens |
 | Client pages and components | No separate target | The component tests (#76) cover the six screens with the most logic: login and the auth guard, Add expense, Balances, Chores and the dashboard. The rest are simple displays checked by the cross-viewport testing (#66). A per-file target would fail on every new screen, so the all-files floor below carries them |
-| Client, all files | 50 / 75 / 55 / 50 | A floor just under the level #76 brought it to (58 / 75 / 59 / 58), so the number can only go up |
+| Client, all files | 50 / 75 / 55 / 50 | A floor just under the level #76 brought it to (57 / 75 / 58 / 57), so the number can only go up |
 
 ### What the numbers don't say
 
