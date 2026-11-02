@@ -88,7 +88,7 @@ Every version is a GitHub release whose notes match its section below.
 - On iPhone Safari, the date fields on Add expense, Edit expense and Chores ran
   past their column, because iOS gives a native date input its own minimum
   width. They now line up with the other fields, with the date on the left.
-  Found on a real iPhone during the cross-viewport check (#66) (#PR).
+  Found on a real iPhone during the cross-viewport check for #66 (#107).
 
 ### Security
 
