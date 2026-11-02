@@ -97,6 +97,12 @@ Every version is a GitHub release whose notes match its section below.
   4.22.3 and Prisma to 7.10.1 and cleared every production advisory,
   including the critical `proxy-addr` one. Express 5 was tried and put off to
   Milestone 3. Four gaps were filed: #99, #100, #101, #102 (#103).
+- One household per user now holds under concurrent requests. Two creations,
+  two invitations accepted together, or a creation racing an acceptance could
+  each leave a user in two households. Every write that adds a membership now
+  takes a per-user advisory lock and re-checks inside it, so exactly one
+  request wins and the other gets `409 ALREADY_IN_HOUSEHOLD`. A concurrent
+  integration test fails without the fix and passes with it (#PR).
 
 ## [0.1.0] - 2026-09-30
 

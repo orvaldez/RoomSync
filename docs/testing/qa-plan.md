@@ -121,10 +121,11 @@ contract, a requirement, or the README.
   belongs, with the reason: a known gap in `docs/product-brief.md` §5, or an
   accepted risk in the threat model. The issue stays open with a note.
 
-For example, #73 is a `bug`: the one-household-per-user check isn't atomic.
+For example, #73 was a `bug`: the one-household-per-user check wasn't atomic.
 It was found in review of #39, accepted for Milestone 1 and recorded in the
-product brief, and its fix comes with a concurrent test against the
-integration database.
+product brief, and its fix came with a concurrent test against the
+integration database that fails without the fix
+([`one-household-race.md`](../security/one-household-race.md)).
 
 ## 6. Related evidence
 

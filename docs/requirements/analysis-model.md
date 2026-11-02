@@ -450,11 +450,19 @@ which ones a malformed request could violate if a service forgot them.
 | A settlement's payer and recipient differ | Service |
 | Both settlement parties belong to the household | Service |
 | Passwords are never stored in plain text | Service (bcrypt, NFR-07) |
-| One active household per user in the MVP | Service, deliberately not a DB constraint |
+| One active household per user in the MVP | Service, under a per-user advisory lock (#73), deliberately not a DB constraint |
 
 The last one is deliberate: a `@@unique` on `Membership.userId` would enforce
 it today but would make the post-MVP multiple-households feature a migration
-rather than a code change.
+rather than a code change. A check in the service alone is not enough, though,
+because two requests for the same user can both pass it before either writes.
+So every write that adds a membership, creating a household or accepting an
+invitation, first takes a transaction-scoped advisory lock keyed on the user
+(`lockMemberships` in `household.repository.ts`, namespace 42, beside the
+ledger lock's 41) and re-checks inside it. Requests for one user then run one
+at a time, other users never wait, and there is no migration. The concurrent
+integration test and its before-and-after output are in
+`docs/security/one-household-race.md`.
 
 ---
 

@@ -1,5 +1,6 @@
 import { getPrisma } from "./prisma";
 import { UniqueConstraintError, isUniqueViolation } from "./errors";
+import { lockMemberships } from "./household.repository";
 
 /**
  * Declared here rather than imported from the generated Prisma client, for the
@@ -87,14 +88,26 @@ export async function markExpired(invitationId: string): Promise<void> {
 }
 
 /**
+ * What `acceptIntoHousehold` did: joined, found the invitation no longer
+ * usable, or found the user already in a different household.
+ */
+export type AcceptOutcome = "JOINED" | "INVITATION_UNAVAILABLE" | "ALREADY_IN_HOUSEHOLD";
+
+/**
  * Claim the invitation and add the user to its household as a MEMBER, in one
  * transaction (UC-04 steps 10-11).
  *
+ * The user's membership lock is taken first and the one-household rule
+ * checked under it, so two invitations accepted at once, or an accept racing
+ * a household creation, cannot leave the user in two households (#73). A
+ * user already elsewhere gets "ALREADY_IN_HOUSEHOLD", and the invitation is
+ * left unused.
+ *
  * The claim is a conditional update — only a PENDING, unexpired invitation
  * changes — so two people accepting the same link at once cannot both get in:
- * the second update matches nothing, and this returns false. It also means a
- * membership is never created without its invitation being marked ACCEPTED,
- * or the other way round.
+ * the second update matches nothing, and this returns
+ * "INVITATION_UNAVAILABLE". It also means a membership is never created
+ * without its invitation being marked ACCEPTED, or the other way round.
  *
  * Throws `UniqueConstraintError` when the user is already a member of this
  * household, having joined between the caller's check and this write.
@@ -103,9 +116,22 @@ export async function acceptIntoHousehold(accept: {
   invitationId: string;
   userId: string;
   householdId: string;
-}): Promise<boolean> {
+}): Promise<AcceptOutcome> {
   try {
     return await getPrisma().$transaction(async (tx) => {
+      await lockMemberships(tx, accept.userId);
+
+      const memberships = await tx.membership.findMany({
+        where: { userId: accept.userId },
+        select: { householdId: true },
+      });
+      if (memberships.some((m) => m.householdId === accept.householdId)) {
+        throw new UniqueConstraintError("membership");
+      }
+      if (memberships.length > 0) {
+        return "ALREADY_IN_HOUSEHOLD";
+      }
+
       const claimed = await tx.invitation.updateMany({
         where: {
           id: accept.invitationId,
@@ -116,7 +142,7 @@ export async function acceptIntoHousehold(accept: {
       });
 
       if (claimed.count === 0) {
-        return false;
+        return "INVITATION_UNAVAILABLE";
       }
 
       await tx.membership.create({
@@ -127,9 +153,12 @@ export async function acceptIntoHousehold(accept: {
         },
       });
 
-      return true;
+      return "JOINED";
     });
   } catch (error) {
+    if (error instanceof UniqueConstraintError) {
+      throw error;
+    }
     if (isUniqueViolation(error)) {
       throw new UniqueConstraintError("membership");
     }

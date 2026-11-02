@@ -85,7 +85,7 @@ beforeEach(() => {
   findByToken.mockResolvedValue(invitation());
   findRole.mockResolvedValue(null);
   hasMembership.mockResolvedValue(false);
-  acceptIntoHousehold.mockResolvedValue(true);
+  acceptIntoHousehold.mockResolvedValue("JOINED");
 });
 
 describe("createInvitation (UC-04 steps 1-3)", () => {
@@ -256,11 +256,20 @@ describe("acceptInvitation (UC-04 steps 9-11)", () => {
   });
 
   it("rejects when someone else claimed the invitation first", async () => {
-    acceptIntoHousehold.mockResolvedValue(false);
+    acceptIntoHousehold.mockResolvedValue("INVITATION_UNAVAILABLE");
 
     await expect(acceptInvitation(RECIPIENT, TOKEN)).rejects.toThrow(
       InvitationInvalidError
     );
+  });
+
+  it("rejects with ALREADY_IN_HOUSEHOLD when they joined elsewhere while this request ran (9a, #73)", async () => {
+    acceptIntoHousehold.mockResolvedValue("ALREADY_IN_HOUSEHOLD");
+
+    const error = await rejectionOf(acceptInvitation(RECIPIENT, TOKEN));
+
+    expect(error).toBeInstanceOf(AlreadyInHouseholdError);
+    expect(error).toMatchObject({ code: "ALREADY_IN_HOUSEHOLD", status: 409 });
   });
 
   it("treats joining this household concurrently as 9b rather than an error", async () => {

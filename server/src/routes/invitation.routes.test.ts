@@ -89,7 +89,7 @@ beforeEach(() => {
   }));
   findByToken.mockResolvedValue(PENDING);
   hasMembership.mockResolvedValue(false);
-  acceptIntoHousehold.mockResolvedValue(true);
+  acceptIntoHousehold.mockResolvedValue("JOINED");
 });
 
 describe("POST /api/households/:householdId/invitations", () => {
