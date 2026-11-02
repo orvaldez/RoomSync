@@ -88,6 +88,13 @@ Every version is a GitHub release whose notes match its section below.
   are required status checks (#82, #86).
 - The backlog and process model plan Milestone 2 (#79).
 
+### Fixed
+
+- On iPhone Safari, the date fields on Add expense, Edit expense and Chores ran
+  past their column, because iOS gives a native date input its own minimum
+  width. They now line up with the other fields, with the date on the left.
+  Found on a real iPhone during the cross-viewport check for #66 (#107).
+
 ### Security
 
 - Login is rate-limited per account email and per IP, counting only wrong

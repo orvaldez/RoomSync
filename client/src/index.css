@@ -175,6 +175,23 @@ code {
   box-sizing: border-box;
 }
 
+/* iOS Safari draws a date input with its native control, which has its own
+   minimum width and centres the date, so the field outgrew its column on an
+   iPhone (#106). Without the native appearance it takes width: 100% like the
+   other fields; the minimum height keeps an empty one (a chore's optional due
+   date) the same height as its neighbours, and the date sits on the left. */
+.field input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  min-height: calc(1lh + 22px); /* one line, the 10px padding and 1px border on each side */
+}
+
+.field input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 .field input:focus-visible,
 button:focus-visible,
 a:focus-visible {
