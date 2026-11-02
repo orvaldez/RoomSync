@@ -70,7 +70,7 @@ flowchart LR
 | A1 | **S:** Guessing a password by trying many, or replaying leaked passwords from other sites | High | High | Login rate limit: 5 wrong passwords per account and 20 per IP per 15 minutes, then `429` (`middleware/rate-limit.ts`, #71). bcrypt at cost 10 (`services/auth.service.ts`). Passwords at least 8 characters (`services/validation.ts`) | A slow, distributed attack stays under both limits. A known account can be locked for 15 minutes by anyone. No breached-password check | **Mitigated** by #71, the implemented control. Lockout accepted: it is short and nothing is permanent |
 | A2 | **I:** Learning which emails have accounts | Medium | Low | Login gives the same code, message and timing for an unknown email and a wrong password (`DUMMY_HASH`, `services/auth.service.ts`). Registration's `409` message is generic, and registration is limited to 10 per IP per 15 minutes (#71) | Registration's `409` status still confirms an address, one at a time (`api-contract.md`, register) | **Accept.** Closing it needs email verification, out of scope. The rate limit stops probing at speed |
 | A3 | **S:** Session fixation: planting a session id before the victim logs in | Low | High | The session id is regenerated on login (`routes/auth.routes.ts`, `regenerateSession`) | None known | **Mitigated** |
-| A4 | **I:** Stealing the session cookie | Low | High | `httpOnly` (no JavaScript access), `SameSite=Lax`, and `Secure` in production (`middleware/session.ts`). No `dangerouslySetInnerHTML` in the client, so React escapes all user text | No Content-Security-Policy as a second layer. A stolen cookie works until it expires: 14 days, with no idle timeout | **Accept** the lifetime for the MVP. Security headers go to #65 |
+| A4 | **I:** Stealing the session cookie | Low | High | `httpOnly` (no JavaScript access), `SameSite=Lax`, and `Secure` in production (`middleware/session.ts`). No `dangerouslySetInnerHTML` in the client, so React escapes all user text. Since #65 the API sends a strict Content-Security-Policy and `nosniff` (`middleware/security-headers.ts`) | The client has no Content-Security-Policy of its own until it is deployed. A stolen cookie works until it expires: 14 days, with no idle timeout | **Accept** the lifetime for the MVP. The client's headers: #102, at deployment |
 | A5 | **T:** Cross-site request forgery: another site posting with the user's cookie | Low | Medium | `SameSite=Lax` keeps the cookie off cross-site POSTs. The API parses only `application/json` bodies (`express.json()`, `app.ts`) and sends no CORS headers, so another origin can't send one without a preflight that fails | A browser that ignores `SameSite` | **Accept.** Every current browser enforces it |
 | A6 | **S:** Forging a session cookie | Low | High | The cookie is signed with `SESSION_SECRET`. The server refuses to start without it, and refuses the example value in production (`middleware/session.ts`) | A leaked secret | **Mitigated.** The secret stays out of Git (`.gitignore` has `.env`) |
 | A7 | **D:** Exhausting the CPU with bcrypt work | Medium | Medium | Failed logins and all registrations are rate-limited per IP (#71). Request bodies are capped at Express's 100 KB default | Many IPs together | **Accept** for the MVP |
@@ -99,7 +99,7 @@ flowchart LR
 |---|---|---|---|---|---|---|
 | M1 | **T:** Amounts that break the arithmetic: fractions of a cent, negative or huge values, shares that don't add up | Medium | High | Money is integer cents only, positive and capped (`validateAmountCents`, `services/validation.ts`). Every split must sum exactly to the total, with no silent adjustment (`services/split.service.ts`, 41 tests). Payer and participants must be members (`services/expense.service.ts`) | None known | **Mitigated** |
 | M2 | **T:** Overpaying a debt to invent a debt the other way, or racing two settlements past the balance check | Medium | Medium | The balance is recomputed inside the write's transaction under a per-household advisory lock, which expense creation also takes (`repositories/ledger.repository.ts`, `lockLedger`). Over the balance is `409 EXCEEDS_BALANCE` | None known | **Mitigated** |
-| M3 | **T:** SQL injection through any field | Low | High | All queries go through Prisma, which sends values as parameters. The one raw statement, the advisory lock, uses Prisma's tagged template, which parameterizes too (`repositories/ledger.repository.ts`) | None known | **Mitigated.** #65 re-checks it under A03 |
+| M3 | **T:** SQL injection through any field | Low | High | All queries go through Prisma, which sends values as parameters. The one raw statement, the advisory lock, uses Prisma's tagged template, which parameterizes too (`repositories/ledger.repository.ts`) | None known | **Mitigated.** Re-checked in #65 (`owasp-review.md`, A05): the advisory lock is still the only raw statement |
 | M4 | **R:** A member denying they entered an expense or a payment | Medium | Medium | Each expense records its payer, and each settlement its two members | Neither records *who entered it* (`prisma/schema.prisma`), so a record entered by one member on another's behalf can't be traced (see H4). There is no audit log | **Mitigate** in #90: store the recording member |
 | M5 | **T:** Editing or deleting records to rewrite history | Low | Medium | There is no edit or delete yet, so records are append-only | US-12 (#60) adds editing and deleting expenses | **Revisit in #60:** only the person who created an expense should change it, and the change should keep a trace |
 
@@ -110,7 +110,7 @@ flowchart LR
 | S1 | **S:** Session ids read from a copy of the database and replayed | Low | High | The `session` table is only reachable through the database, which is not exposed outside the server | The store keeps the raw session id, so a database copy contains live sessions | **Accept**, for the same reason as I3: a database copy already exposes everything |
 | S2 | **D:** Expired sessions piling up | Low | Low | Expired rows are swept hourly (`pruneSessionInterval`, `middleware/session.ts`). Anonymous visitors create no row (`saveUninitialized: false`) | None known | **Mitigated** |
 | S3 | **T:** The session store bypassing the layering rule | Low | Low | The exception is documented (`server/src/repositories/README.md`) and allowed by name in the lint config; `connect-pg-simple` anywhere else fails CI | None known | **Mitigated** |
-| S4 | **I:** Error responses or headers revealing internals | Medium | Low | Unexpected errors return a generic `500 INTERNAL_ERROR`, never the database message (`middleware/error-handler.ts`) | Express's `X-Powered-By` header is still sent, and no security headers are set | **Mitigate** in #65 (security misconfiguration) |
+| S4 | **I:** Error responses or headers revealing internals | Medium | Low | Unexpected errors return a generic `500 INTERNAL_ERROR`, never the database message (`middleware/error-handler.ts`) | None known. Since #65, `X-Powered-By` is off and every response carries security headers (`app.ts`, `middleware/security-headers.ts`, with tests); a body the server can't read is a `413` or `415`, not a logged `500` (`middleware/error-handler.ts`) | **Mitigated** in #65 |
 
 ## The implemented control
 
@@ -128,9 +128,11 @@ document.
 | H4, M4 | Require the requester to be the payer or recipient of a settlement; store who recorded each expense and settlement | #90 (Sprint 4) |
 | I2 | Revoke an invitation; remove a member | #75, #74 (Sprint 4) |
 | M5 | Ownership and a trace for edits and deletes | #60 (Sprint 4) |
-| A4, S4 | Security headers, `X-Powered-By` | #65 |
-| M3 | Re-check injection | #65 |
+| A4, S4 | Security headers, `X-Powered-By` | Done in #65 for the API; the deployed client's headers in #102 |
+| M3 | Re-check injection | Done in #65 |
+| (all) | Log security events: failed logins, rate limits, refused access | #99, from the OWASP review (A09) |
 
 [`dependency-audit.md`](./dependency-audit.md) tracks third-party
 vulnerabilities, including a `proxy-addr` advisory relevant to how `req.ip`
-is resolved. The OWASP Top 10 review (#65) builds on both documents.
+is resolved; #65 fixed that advisory. The [OWASP Top 10 review](./owasp-review.md)
+(#65) builds on both documents.
