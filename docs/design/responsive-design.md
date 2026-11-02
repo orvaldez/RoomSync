@@ -231,7 +231,7 @@ links still in use, and row 18 shows the revoke confirmation open. Rows 13 to
 | Desktop browsers | **Pass** — Chrome, Edge and Firefox, all eighteen screens (§5.1) |
 | Landscape orientation on a phone | **Pass** in emulation — all eighteen screens at 812×375 (§5.1); a real phone is the next row |
 | Text scaled to 200% (WCAG 1.4.4) | **Pass** — all eighteen screens at 200% browser zoom (§5.1) |
-| Real iOS or Android device | **Pass after one fix** — iPhone 15 Pro, Safari; the date fields overflowed and were fixed in #106 (§5.1) |
+| Real iOS or Android device | **Pass**, all eighteen screens on an iPhone 15 Pro in Safari, after one fix (#106); one cosmetic issue filed (#109) (§5.1) |
 
 ### 5.1 Cross-browser, landscape and 200% zoom (#66)
 
@@ -264,7 +264,7 @@ Notes:
   is an iPhone.
 - Firefox draws the headings in a lighter weight of the same system font. That
   is the font's rendering, not a layout difference.
-- The automated setups found no problem. The real phone found one, filed as #106 (below).
+- The automated setups found no problem. The real phone found two, filed as #106 and #109 (below).
 
 #### Real phone
 
@@ -277,6 +277,7 @@ in [`phone/`](screenshots/phone/) are scaled from the phone's 3× to 1×.
 |---|---|---|
 | Log in, Create account | Pass | [01-login](screenshots/phone/01-login.png), [02-register](screenshots/phone/02-register.png) |
 | Set up your household | Pass | [03-create-household](screenshots/phone/03-create-household.png) |
+| Join a household | Pass | [04-join-household](screenshots/phone/04-join-household.png) |
 | Dashboard, owner, with the invitation links | Pass; the header wraps the long name under RoomSync, by design | [05-dashboard-owner](screenshots/phone/05-dashboard-owner.png) |
 | Revoke confirmation | Pass | [18-revoke-invitation](screenshots/phone/18-revoke-invitation.png) |
 | Dashboard, member | Pass | [06-dashboard](screenshots/phone/06-dashboard.png) |
@@ -284,6 +285,7 @@ in [`phone/`](screenshots/phone/) are scaled from the phone's 3× to 1×.
 | Chores | **Due date field overflowed, fixed in #106** | before: [08-chores-before-fix](screenshots/phone/08-chores-before-fix.png), [08-chores-list](screenshots/phone/08-chores-list.png), after: [08-chores-after-fix](screenshots/phone/08-chores-after-fix.png) |
 | Balances, recording a payment | Pass | [09-balances-record-payment](screenshots/phone/09-balances-record-payment.png) |
 | History | Pass | [10-history](screenshots/phone/10-history.png) |
+| Expense not found | Pass; the wrapped heading's lines nearly touch, filed as #109 | [12-expense-not-found](screenshots/phone/12-expense-not-found.png) |
 | Expense detail, percentage split, with Edit and Delete | Pass | [13-expense-detail-actions](screenshots/phone/13-expense-detail-actions.png) |
 | Edit expense | **Date field overflowed, fixed in #106**; the rest passes | before: [14-edit-expense-before-fix](screenshots/phone/14-edit-expense-before-fix.png), [14-edit-expense-shares](screenshots/phone/14-edit-expense-shares.png) |
 | Delete confirmation, deleted expense, History with it | Pass | [15-delete-confirm](screenshots/phone/15-delete-confirm.png), [16-expense-deleted](screenshots/phone/16-expense-deleted.png), [17-history-with-deleted](screenshots/phone/17-history-with-deleted.png) |
@@ -307,9 +309,12 @@ Notes:
   web pages unless a site opts in with Apple's system font styles, so the
   largest setting leaves RoomSync as it was. Safari's own page zoom is the
   setting that applies, and it passes at 200%.
-- **Not captured on the phone:** Join a household (4) and Expense not found
-  (12). Both are single short screens that pass in every automated setup
-  above.
+- **Crowded wrapped headings (#109).** The phone's Expense not found screenshot
+  shows the heading's two lines nearly touching. `h1` and `h2` have no
+  `line-height` of their own, so they inherit the body's fixed 23px line
+  height (26px on desktop) at 36px. It isn't specific to the iPhone: the 375px
+  screenshot in row 12 above shows it too. It's filed for a one-line fix; it
+  doesn't hide anything, and no page scrolls sideways because of it.
 
 To re-check after a layout change, run the seed, open each screen in a
 browser's device toolbar at 375px signed in as a seed account, and compare
