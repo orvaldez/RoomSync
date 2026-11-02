@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { Expense } from "../lib/api";
 import { formatCents } from "../lib/money";
+import { describeDeleted } from "../lib/history";
 
 /**
  * A contract `YYYY-MM-DD` as a short readable date.
@@ -38,13 +39,24 @@ export function ExpenseList({
         const share = expense.shares.find(
           (candidate) => candidate.userId === currentUserId
         );
+        // Only History asks for deleted expenses (US-12); they stay listed,
+        // struck through, so a balance that changed has a visible reason.
+        const deleted = currentUserId ? describeDeleted(expense, currentUserId) : null;
 
         return (
-          <li key={expense.id}>
+          <li key={expense.id} className={deleted ? "expense-deleted-item" : undefined}>
             <div className="expense-main">
-              <Link to={`/expenses/${expense.id}`}>{expense.description}</Link>
-              <span className="amount">{formatCents(expense.totalAmountCents)}</span>
+              <Link
+                to={`/expenses/${expense.id}`}
+                className={deleted ? "expense-deleted" : undefined}
+              >
+                {expense.description}
+              </Link>
+              <span className={deleted ? "amount expense-deleted" : "amount"}>
+                {formatCents(expense.totalAmountCents)}
+              </span>
             </div>
+            {deleted && <div className="expense-meta form-error-text">{deleted}</div>}
 
             <div className="expense-meta muted">
               <span>
@@ -52,7 +64,7 @@ export function ExpenseList({
               </span>
               <span className="amount">
                 {share
-                  ? `your share ${formatCents(share.amountOwedCents)}`
+                  ? `your share${deleted ? " was" : ""} ${formatCents(share.amountOwedCents)}`
                   : "not your split"}
               </span>
             </div>
