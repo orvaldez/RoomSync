@@ -130,9 +130,11 @@ in Sprint 3 (#23).**
 
 Recorded here so they are deliberate rather than discovered:
 
-**No continuous integration.** Per the proposal, CI runs from Milestone 2 and
-blocks merges from Milestone 3. Until then the tests, the layering checks in
-`docs/design/module-structure.md`, and the Definition of Done are run by hand.
+**Continuous integration runs, but nothing deploys yet.** GitHub Actions runs
+lint, typecheck, build, the unit tests with coverage targets, and the
+integration tests on every pull request, and branch protection on `main`
+requires all three jobs to pass (#81, #82, #86). Continuous deployment and a
+public URL are Milestone 3.
 
 **Some screens have no component test.** Component tests (#76) cover login,
 the auth guard, Add expense, Balances, Chores and the dashboard. History,
@@ -163,9 +165,12 @@ already taken, which reveals that the account exists even though the message
 does not. Closing it properly requires email verification, which the MVP does
 not have. Recorded for the Milestone 2 threat model.
 
-**Untested on real devices.** Every screen is verified at 375px and 1280px in a
-headless browser, with screenshots committed, but has not run on a physical
-phone, in landscape, or with text scaled to 200%.
+**Tested on one real phone.** Every screen passes in Chrome, Edge and Firefox,
+in phone landscape and at 200% zoom, and on an iPhone 15 Pro in Safari
+(`docs/design/responsive-design.md` §5.1, #66). An Android phone and Safari on
+a desktop haven't been tried. The iPhone found two layout bugs: the date fields
+overflowing their column, fixed in #106, and crowded wrapped headings, filed as
+#109.
 
 **Review was skipped twice.** #41 and #52 were merged by their author without
 the other member's review. Both were missing acceptance criteria, which were
