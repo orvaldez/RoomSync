@@ -305,6 +305,27 @@ export const api = {
     );
   },
 
+  /**
+   * The links still waiting to be used, newest first (UC-14 steps 1-2).
+   * OWNER only; a member gets 403 NOT_HOUSEHOLD_OWNER.
+   */
+  pendingInvitations(householdId: string) {
+    return request<{ invitations: Invitation[] }>(
+      `/households/${householdId}/invitations`
+    );
+  },
+
+  /**
+   * UC-14 steps 3-6. OWNER only. A link already used, revoked or expired gets
+   * 409 INVITATION_NOT_PENDING.
+   */
+  revokeInvitation(householdId: string, invitationId: string) {
+    return request<{ invitation: Invitation }>(
+      `/households/${householdId}/invitations/${invitationId}/revoke`,
+      { method: "POST" }
+    );
+  },
+
   /** The household name for the confirmation screen (UC-04 step 8). */
   invitation(token: string) {
     return request<{ invitation: InvitationPreview }>(
