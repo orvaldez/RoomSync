@@ -310,8 +310,11 @@ cd client && npm test
 It covers the pure logic in `client/src/lib/`: `money.ts`, which turns what a
 user types into the integer cents the server stores, and the wording of
 balances, chore due dates and dashboard activity, where the direction of a
-sentence ("you owe" or "owes you") is the easiest thing to get backwards. Component
-tests are planned with the Milestone 2 test plan.
+sentence ("you owe" or "owes you") is the easiest thing to get backwards. The
+component tests in `client/src/pages/*.test.tsx` render screens with React
+Testing Library and click through them, with `lib/api.ts` mocked: login and the
+return path after it, Add expense, recording a payment, completing a chore, and
+the dashboard.
 
 #### Coverage
 
