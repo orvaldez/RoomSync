@@ -23,8 +23,8 @@ Milestone 2 (Test) is complete, submitted November 2, 2026. The submitted
 version is the commit tagged `milestone-2`, released as `v0.3.0`
 ([CHANGELOG.md](./CHANGELOG.md)). It adds:
 
-- **New features:** the History screen and expense detail (US-11), and editing
-  and deleting an expense (US-12).
+- **New features:** the History screen and expense detail (US-11), editing
+  and deleting an expense (US-12), and revoking an invitation link (US-14).
 - **Testing:** integration tests for every main flow against PostgreSQL, a
   coverage report with a target per area, and a QA plan.
 - **Security:** a threat model, an OWASP Top 10 review, and rate limiting on
@@ -33,9 +33,9 @@ version is the commit tagged `milestone-2`, released as `v0.3.0`
 - **Process:** CI on every pull request, branch protection on `main` with
   required review and checks, and documented contribution conventions.
 
-Revoking an invitation (US-14) and removing a member (US-13) were planned for
-Milestone 2 but not finished; they move to Milestone 3, with the other open
-items in [BACKLOG.md](./BACKLOG.md#sprint-3-and-sprint-4-plan-milestone-2).
+Removing a member or leaving a household (US-13) was planned for Milestone 2
+but not finished; it moves to Milestone 3, with the other open items in
+[BACKLOG.md](./BACKLOG.md#sprint-3-and-sprint-4-plan-milestone-2).
 
 | Milestone | Goal | Status |
 |---|---|---|
@@ -289,6 +289,14 @@ exercises every layer — React, Express, service, repository, PostgreSQL:
     everyone's balances drop the expense. The dashboard's *Recent expenses* no
     longer shows it, while *History* still lists it, struck through, saying who
     deleted it. Payments already recorded are never changed.
+12. **Revoke an invitation** (US-14). Sign in as `orlando@roomsync.test`
+    again. The dashboard's Members panel lists the *Invitation links* still in
+    use, each with when it was created and when it expires, including the one
+    you made in step 7. Choose *Revoke* on it: it asks first, and *Keep it*
+    changes nothing. Choose *Revoke link*: the link leaves the list, and
+    opening it in a private window now says "This invitation is not valid",
+    the same as a link that was already used. Members see no invitation
+    links, and the API refuses them with `403 NOT_HOUSEHOLD_OWNER`.
 
 To start the walkthrough over, reset and seed again:
 
@@ -343,11 +351,11 @@ All of them also run in CI on every pull request
 
 | Suite | Command | Needs | Expected |
 |---|---|---|---|
-| Server unit | `cd server && npx prisma generate && npm test` | Nothing running | `Tests 460 passed`, 0 failed |
-| Server coverage | `cd server && npm run test:coverage` | Nothing running | The same 460 pass, a coverage table prints, and every target in `vitest.config.ts` is met (the run fails if not) |
-| Server integration | `cd server && npm run test:integration` | `docker compose up -d` | `Tests 27 passed` across 8 files, including the 500-expense timing check |
-| Client unit | `cd client && npm test` | Nothing running | `Tests 130 passed`, 0 failed |
-| Client coverage | `cd client && npm run test:coverage` | Nothing running | The same 130 pass and the `src/lib` targets are met |
+| Server unit | `cd server && npx prisma generate && npm test` | Nothing running | `Tests 481 passed`, 0 failed |
+| Server coverage | `cd server && npm run test:coverage` | Nothing running | The same 481 pass, a coverage table prints, and every target in `vitest.config.ts` is met (the run fails if not) |
+| Server integration | `cd server && npm run test:integration` | `docker compose up -d` | `Tests 30 passed` across 8 files, including the 500-expense timing check |
+| Client unit | `cd client && npm test` | Nothing running | `Tests 135 passed`, 0 failed |
+| Client coverage | `cd client && npm run test:coverage` | Nothing running | The same 135 pass and the `src/lib` targets are met |
 | Lint, types, build | `cd server && npm run lint && npm run typecheck`, `cd client && npm run lint && npm run build` | Nothing running | No errors |
 
 The sections below explain each suite.

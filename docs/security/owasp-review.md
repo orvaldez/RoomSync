@@ -15,7 +15,7 @@ list and asks whether RoomSync has each weakness. Threat ids such as **H1** or
 
 | # | Category | Relevant? | Verdict | Gaps |
 |---|---|---|---|---|
-| A01 | Broken Access Control | Yes, the main risk | **Handled** | H4 (#90), I2 (#75, #74) already filed |
+| A01 | Broken Access Control | Yes, the main risk | **Handled** | H4 (#90) and member removal (#74) filed; revoking links shipped in #105 |
 | A02 | Security Misconfiguration | Yes | **Fixed in #65** | Client headers at deployment: #102 |
 | A03 | Software Supply Chain Failures | Yes | **Fixed in #65**, with an accepted residual | Dev-only Vitest advisories: #101. Automated alerts: #100 |
 | A04 | Cryptographic Failures | Yes | **Handled** | None new |
@@ -58,8 +58,9 @@ multi-tenant app is one tenant reading or changing another's data.
 **Gaps:** both were found by the threat model and are already filed.
 **H4**: any member can record a settlement between two *other* members, so
 the payer-or-recipient restriction lives only in the interface (#90). **I2**:
-a leaked invitation link can't be cancelled, and the wrong person can't be
-removed (#75, #74).
+a leaked invitation link couldn't be cancelled, and the wrong person can't be
+removed. Revoking a link has since shipped in #105 (US-14); removing a member
+is #74, moved to Milestone 3.
 
 ## A02:2025 Security Misconfiguration
 

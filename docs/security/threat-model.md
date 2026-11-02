@@ -89,7 +89,7 @@ flowchart LR
 | ID | Threat | L | I | Existing mitigation | Residual risk | Decision |
 |---|---|---|---|---|---|---|
 | I1 | **S:** Guessing a valid invitation token to join a household | Low | High | 32 bytes from `crypto.randomBytes` (`services/invitation.service.ts`), 256 bits, so guessing is infeasible. Previewing and accepting both need a logged-in account (`routes/invitation.routes.ts`) | None in practice | **Mitigated** |
-| I2 | **I/E:** A leaked link (forwarded chat, screenshot, shared device) used by the wrong person | Medium | High | Each link works once: accepting it is a conditional update, so two people can't both use it (`repositories/invitation.repository.ts`, `acceptIntoHousehold`). Links expire after 7 days (`INVITATION_LIFETIME_MS`). Whoever joins appears in the members list every member sees. Integration-tested for single use and expiry | Until it is used or expires, a leaked link lets anyone with an account join. The owner can't cancel a link yet, or remove the wrong person afterwards | **Mitigate** with #75 (revoke an invitation) and #74 (remove a member) in Sprint 4. Accept the 7-day window until then |
+| I2 | **I/E:** A leaked link (forwarded chat, screenshot, shared device) used by the wrong person | Medium | High | Each link works once: accepting it is a conditional update, so two people can't both use it (`repositories/invitation.repository.ts`, `acceptIntoHousehold`). Links expire after 7 days (`INVITATION_LIFETIME_MS`). Whoever joins appears in the members list every member sees. Integration-tested for single use and expiry | Since #105 the owner can revoke a pending link: a conditional update on `PENDING` and unexpired, so it can't race an accept (`revokeInvitation`, `services/invitation.service.ts`; `revokePending`, `repositories/invitation.repository.ts`), and a revoked link answers `404 INVITATION_INVALID`. Still, a leaked link works until the owner notices, and the wrong person can't be removed afterwards | **Mitigated** for cancelling (#105). Removing a member is #74, moved to Milestone 3 |
 | I3 | **I:** Tokens read from a copy of the database | Low | Medium | Tokens are single-use and short-lived | Tokens are stored as-is (`prisma/schema.prisma`), so a database copy exposes the pending ones | **Accept.** Anyone with a database copy can already read every household's data. Hashing tokens is a cheap later improvement |
 | I4 | **I:** Learning that a household exists from its name on the join screen | Low | Low | The preview shows only the household name and expiry, and only to a logged-in user holding the token (`services/invitation.service.ts`, `previewInvitation`) | The holder of a link learns the household's name, which the link was meant to share | **Accept** by design |
 
@@ -126,7 +126,7 @@ document.
 |---|---|---|
 | H3 | Make one-household-per-user atomic, with a concurrent test | #73 (Sprint 4) |
 | H4, M4 | Require the requester to be the payer or recipient of a settlement; store who recorded each expense and settlement | #90 (Sprint 4) |
-| I2 | Revoke an invitation; remove a member | #75, #74 (Sprint 4) |
+| I2 | Revoke an invitation; remove a member | Revoking done in #105; removing a member is #74 (Milestone 3) |
 | M5 | Ownership and a trace for edits and deletes | #60 (Sprint 4) |
 | A4, S4 | Security headers, `X-Powered-By` | Done in #65 for the API; the deployed client's headers in #102 |
 | M3 | Re-check injection | Done in #65 |

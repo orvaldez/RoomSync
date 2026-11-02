@@ -78,9 +78,9 @@ Every version is a GitHub release whose notes match its section below.
 
 - The README is the Milestone 2 verification guide: the Status section names
   the submitted version, the tech stack separates what is in place from what
-  is planned, the walkthrough adds steps for History and for editing and
-  deleting an expense, and every test suite has its command and expected
-  result (#104).
+  is planned, the walkthrough adds steps for History, editing and deleting
+  an expense, and revoking an invitation, and every test suite has its
+  command and expected result (#104).
 - `main` is protected by a repository ruleset. A change needs a pull request
   with one approval from the other member, approvals are dismissed by new
   commits, pull requests are squash-merged, and the rules apply to the
