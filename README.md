@@ -19,17 +19,29 @@ Milestone 1 (Build) is complete: every P0 user story, US-01 through US-10, is
 built and merged, with its design documentation. The submitted version is the
 commit tagged `milestone-1`.
 
-Milestone 2 (Test) is in progress and due November 2, 2026. It adds history
-(US-11), expense editing and deletion (US-12), and invitation revoking (US-14),
-along with integration tests, a coverage report, a threat model, an OWASP
-review, and rate limiting on login. The plan, owners, and dates are in
+Milestone 2 (Test) is complete, submitted November 2, 2026. The submitted
+version is the commit tagged `milestone-2`, released as `v0.3.0`
+([CHANGELOG.md](./CHANGELOG.md)). It adds:
+
+- **New features:** the History screen and expense detail (US-11), editing
+  and deleting an expense (US-12), and revoking an invitation link (US-14).
+- **Testing:** integration tests for every main flow against PostgreSQL, a
+  coverage report with a target per area, and a QA plan.
+- **Security:** a threat model, an OWASP Top 10 review, and rate limiting on
+  login and registration as the implemented control, with security headers on
+  every API response.
+- **Process:** CI on every pull request, branch protection on `main` with
+  required review and checks, and documented contribution conventions.
+
+Removing a member or leaving a household (US-13) was planned for Milestone 2
+but not finished; it moves to Milestone 3, with the other open items in
 [BACKLOG.md](./BACKLOG.md#sprint-3-and-sprint-4-plan-milestone-2).
 
 | Milestone | Goal | Status |
 |---|---|---|
 | Milestone 0 | Propose | Complete |
-| Milestone 1 | Build the MVP | Complete |
-| Milestone 2 | Test, improve, and secure | In progress |
+| Milestone 1 | Build the MVP | Complete (`milestone-1`, `v0.1.0`) |
+| Milestone 2 | Test, improve, and secure | Complete (`milestone-2`, `v0.3.0`) |
 | Milestone 3 | Deploy | Not started |
 
 ## Team
@@ -41,17 +53,18 @@ review, and rate limiting on login. The plan, owners, and dates are in
 
 ## Tech stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 19 + TypeScript, built with Vite 6 |
-| Backend | Node.js + Express 4 + TypeScript |
-| Database | PostgreSQL 16 |
-| ORM | Prisma 7 |
-| Auth | Session-based auth, bcrypt password hashing |
-| Containerization | Docker Compose |
-| CI/CD | GitHub Actions |
-| Testing | Vitest 2 + Supertest |
-| Deployment | Render |
+| Layer | Technology | Status |
+|---|---|---|
+| Frontend | React 19 + TypeScript, built with Vite 6 | In place |
+| Backend | Node.js 20 + Express 4 + TypeScript | In place |
+| Database | PostgreSQL 16 | In place |
+| ORM | Prisma 7 | In place |
+| Auth | Session-based auth stored in PostgreSQL, bcrypt password hashing, rate-limited login | In place |
+| Containerization | Docker Compose, for the database in development | In place |
+| CI | GitHub Actions: lint, typecheck, build, unit tests with coverage, integration tests | In place; required to merge |
+| Testing | Vitest 2 + Supertest; `@vitest/coverage-v8`; integration tests against PostgreSQL | In place |
+| Component tests | React Testing Library, in jsdom | In place (#76) |
+| Deployment | Render | Planned for Milestone 3 |
 
 Version pins worth knowing: Vite 6 rather than 8, and Vitest 2 rather than 4,
 because the newer majors depend on Rolldown, whose native binding is blocked
@@ -237,8 +250,10 @@ exercises every layer — React, Express, service, repository, PostgreSQL:
 4. **Add an expense.** Use *Add expense*, type a description and an amount, and
    look at the preview: every member is included and split equally by default.
    Try *By amount* with amounts that do not add up to the total; it is
-   rejected rather than silently adjusted. Save an equal split and the
-   dashboard confirms it, with your balance updated.
+   rejected rather than silently adjusted. Set *Paid by* to Priya Shah, save
+   an equal split, and the dashboard confirms it, with your balance updated.
+   (An expense Priya paid only changes what each person owes her, so the
+   $4.88 between you and Orlando stays as it is for step 5.)
 5. **Record a payment.** Open *Balances*, choose *Record payment* next to
    Orlando, and save the suggested $4.88. That pair now reads "settled up".
    Try paying more than you owe and it is refused.
@@ -249,6 +264,42 @@ exercises every layer — React, Express, service, repository, PostgreSQL:
    choose *Invite a roommate*. Opening the link in a private window asks you to
    sign in or create an account first, then offers to join. Members do not see
    the invite button, and the server refuses them anyway.
+
+**The Milestone 2 features.** Carry on from step 7, signed in as Orlando:
+
+8. **History** (US-11). On the dashboard choose *History*. Three lists, newest
+   first: every expense, including the one you added in step 4; every payment,
+   including Agustin's $4.88 from step 5, which stays listed even though that
+   pair is now settled up; and the completed chores, each saying who it was
+   assigned to and when it was done, including "Take out the trash" from
+   step 6. The links at the top jump to each list.
+9. **Expense detail** (US-11). Open *Internet*. It says it was paid by Agustin,
+   split by percentage between 4 people, with each share: you and Agustin 30%,
+   $21.00 each; Marcus and Priya 20%, $14.00 each. Orlando owns the household,
+   so *Edit* and *Delete* are offered. Sign in as `marcus@roomsync.test` and
+   open the same expense: he neither paid it nor owns the household, so
+   neither button appears, and the API refuses him with
+   `403 NOT_EXPENSE_EDITOR` if he tries anyway.
+10. **Edit an expense** (US-12). Sign in as `agustin@roomsync.test`, who paid
+    it, open *Internet* and choose *Edit*. The form opens filled in with what
+    was saved: $70.00 and 30 / 30 / 20 / 20. Change the amount to 80.00 and
+    choose *Save changes*. The shares become $24.00, $24.00, $16.00 and
+    $16.00, and on *Balances* what Marcus owes you rises by exactly $2.00.
+11. **Delete an expense** (US-12). On *Internet* choose *Delete*. It explains
+    what deleting does and asks first; *Keep it* changes nothing. Choose
+    *Delete expense*: the page now says "Deleted by you", with no buttons, and
+    everyone's balances drop the expense. The dashboard's *Recent expenses* no
+    longer shows it, while *History* still lists it, struck through, saying who
+    deleted it. Payments already recorded are never changed.
+12. **Revoke an invitation** (US-14). Sign in as `orlando@roomsync.test`
+    again. The dashboard's Members panel lists the *Invitation links* still in
+    use, each with when it was created and when it expires, including the one
+    you made in step 7. Choose *Revoke* on it: it asks first, and *Keep it*
+    changes nothing. Choose *Revoke link*: the link leaves the list, and
+    opening it in a private window, after signing in there as in step 7, now
+    says "This invitation is not valid", the same as a link that was already
+    used. Members see no invitation
+    links, and the API refuses them with `403 NOT_HOUSEHOLD_OWNER`.
 
 To start the walkthrough over, reset and seed again:
 
@@ -268,6 +319,16 @@ The 404 is deliberate: a household you are not a member of answers exactly
 like one that does not exist, so the API cannot be used to discover other
 households.
 
+Every API response also carries security headers, and none says which
+framework serves it ([OWASP review](./docs/security/owasp-review.md), A02):
+
+```bash
+curl -sI http://localhost:4000/api/health
+# -> Content-Security-Policy: default-src 'none'; frame-ancestors 'none'
+#    X-Content-Type-Options: nosniff, X-Frame-Options: DENY,
+#    Referrer-Policy: no-referrer, Cache-Control: no-store, and no X-Powered-By
+```
+
 #### The rate limit on login
 
 Login and registration are rate-limited, so passwords can't be guessed at
@@ -280,12 +341,27 @@ cd server && node scripts/login-burst.mjs 20
 Attempts 1 to 5 answer `401 INVALID_CREDENTIALS`, and the rest
 `429 RATE_LIMITED` with a `Retry-After` header. In the browser,
 `agustin@roomsync.test` now shows "Too many failed login attempts. Try again
-in 15 minutes." even with the right password, while `marcus@roomsync.test`
+in …" with the time left, up to 15 minutes, even with the right password, while `marcus@roomsync.test`
 still signs in. Restarting the server resets the counters. The limits, the
 before-and-after evidence and the trade-offs are in
 [`docs/security/rate-limiting.md`](./docs/security/rate-limiting.md).
 
 ### Tests
+
+Every suite, and what a passing run looks like at the `milestone-2` commit.
+All of them also run in CI on every pull request
+([Continuous integration](#continuous-integration)).
+
+| Suite | Command | Needs | Expected |
+|---|---|---|---|
+| Server unit | `cd server && npx prisma generate && npm test` | Nothing running | `Tests 483 passed`, 0 failed |
+| Server coverage | `cd server && npm run test:coverage` | Nothing running | The same 483 pass, a coverage table prints, and every target in `vitest.config.ts` is met (the run fails if not) |
+| Server integration | `cd server && npm run test:integration` | `docker compose up -d` | `Tests 33 passed` across 9 files, including the 500-expense timing check and the concurrent one-household-per-user check |
+| Client unit | `cd client && npm test` | Nothing running | `Tests 157 passed`, 0 failed, 12 files: the `lib` tests and the component tests |
+| Client coverage | `cd client && npm run test:coverage` | Nothing running | The same 157 pass and every target in `vitest.config.ts` is met |
+| Lint, types, build | `cd server && npm run lint && npm run typecheck`, `cd client && npm run lint && npm run build` | Nothing running | No errors |
+
+The sections below explain each suite.
 
 ```bash
 cd server && npm test
@@ -310,11 +386,14 @@ cd client && npm test
 It covers the pure logic in `client/src/lib/`: `money.ts`, which turns what a
 user types into the integer cents the server stores, and the wording of
 balances, chore due dates and dashboard activity, where the direction of a
-sentence ("you owe" or "owes you") is the easiest thing to get backwards. The
-component tests in `client/src/pages/*.test.tsx` render screens with React
-Testing Library and click through them, with `lib/api.ts` mocked: login and the
-return path after it, Add expense, recording a payment, completing a chore, and
-the dashboard.
+sentence ("you owe" or "owes you") is the easiest thing to get backwards. It also
+covers the History and expense-editing wording, and turning a saved expense
+back into the edit form. The component tests in `client/src/pages/*.test.tsx`
+render screens with React Testing Library and click through them, with
+`lib/api.ts` mocked: login and the return path after it, Add expense,
+recording a payment, completing a chore, and the dashboard. The screens are
+also checked by hand at 375px and 1280px
+([responsive-design.md](./docs/design/responsive-design.md)).
 
 #### Coverage
 
