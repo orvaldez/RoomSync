@@ -1,7 +1,14 @@
 import { describe, it, expect } from "vitest";
 import type { Expense } from "./api";
 import { parseDollarsToCents, parsePercentToBasisPoints } from "./money";
-import { basisPointsToInput, centsToInput, formValuesFromExpense } from "./expenseForm";
+import {
+  basisPointsToInput,
+  centsToInput,
+  formCopy,
+  formValuesFromExpense,
+  initialFormValues,
+  previewKeyFor,
+} from "./expenseForm";
 
 const ALEX = "user-alex";
 const SAM = "user-sam";
@@ -108,5 +115,74 @@ describe("formValuesFromExpense", () => {
 
   it("selects only participants who are still members", () => {
     expect(formValuesFromExpense(expense(), [SAM]).selected).toEqual([SAM]);
+  });
+});
+
+describe("initialFormValues", () => {
+  const MEMBERS = [ALEX, SAM, MAYA];
+
+  it("starts a new expense with the reader as payer, everyone in, split equally, dated today", () => {
+    expect(initialFormValues(undefined, MEMBERS, SAM, "2026-11-03")).toEqual({
+      description: "",
+      amount: "",
+      expenseDate: "2026-11-03",
+      paidByUserId: SAM,
+      selected: [ALEX, SAM, MAYA],
+      splitMethod: "EQUAL",
+      customAmounts: {},
+      percents: {},
+    });
+  });
+
+  it("falls back to the first member when the reader isn't one", () => {
+    expect(initialFormValues(undefined, MEMBERS, "someone-else", "2026-11-03").paidByUserId).toBe(ALEX);
+    expect(initialFormValues(undefined, MEMBERS, null, "2026-11-03").paidByUserId).toBe(ALEX);
+  });
+
+  it("has no payer in a household with no members to choose from", () => {
+    expect(initialFormValues(undefined, [], null, "2026-11-03").paidByUserId).toBe("");
+  });
+
+  it("starts an edit from what was saved, ignoring today and the reader", () => {
+    expect(initialFormValues(expense(), MEMBERS, MAYA, "2026-11-03")).toEqual(
+      formValuesFromExpense(expense(), MEMBERS)
+    );
+  });
+});
+
+describe("formCopy", () => {
+  it("words the form for adding", () => {
+    expect(formCopy(undefined)).toEqual({ heading: "Add an expense", saveLabel: "Save expense", cancelTo: "/" });
+  });
+
+  it("words the form for editing, cancelling back to the expense", () => {
+    expect(formCopy({ id: "expense-1" })).toEqual({
+      heading: "Edit expense",
+      saveLabel: "Save changes",
+      cancelTo: "/expenses/expense-1",
+    });
+  });
+});
+
+describe("previewKeyFor", () => {
+  const split = { totalAmountCents: 1000, splitMethod: "EQUAL" };
+
+  it("is null until the split is complete enough to ask", () => {
+    expect(previewKeyFor(null, "Groceries", "2026-11-03", "2026-11-03")).toBeNull();
+  });
+
+  it("carries the split, the trimmed description and the date", () => {
+    expect(JSON.parse(previewKeyFor(split, "  Groceries ", "2026-11-01", "2026-11-03") as string)).toEqual({
+      ...split,
+      description: "Groceries",
+      expenseDate: "2026-11-01",
+    });
+  });
+
+  it("stands in a placeholder description and today's date when they're empty", () => {
+    expect(JSON.parse(previewKeyFor(split, "   ", "", "2026-11-03") as string)).toMatchObject({
+      description: "Preview",
+      expenseDate: "2026-11-03",
+    });
   });
 });
