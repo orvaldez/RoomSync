@@ -16,8 +16,9 @@ described in the proposal. Status values are **Not started**, **In progress**,
 Definition of Done at the bottom of this file.
 
 Sprint 1 closed on September 16, 2026, and Sprint 2 on September 30, 2026,
-with Milestone 1. Sprint 3 runs to October 14 and Sprint 4 to November 2, with
-Milestone 2. This file was last updated on October 5, 2026.
+with Milestone 1. Sprint 3 closed on October 14 and Sprint 4 on November 2,
+with Milestone 2. Sprint 5 runs to November 16 and Sprint 6 to November 30,
+with Milestone 3. This file was last updated on November 3, 2026.
 
 ## Milestone 1 — MVP (done)
 
@@ -43,10 +44,10 @@ was P1 in Milestone 1 and is P0 here.
 
 | # | Story | Area | Priority | Owner | Sprint | Issue | Status |
 |---|---|---|---|---|---|---|---|
-| US-11 | As a household member, I want to view past expenses, settlements, and chores so that I can check what a charge was for, confirm a debt was paid, or confirm a task was completed. | History | P0 | Orlando | Sprint 3 | #23 | In review |
-| US-12 | As a household member, I want to correct or delete an expense that was entered wrong, so that balances reflect what was actually spent. | Expense | P0 | Orlando | Sprint 4 | #60 | In review |
-| US-14 | As a household owner, I want to revoke an invitation link I no longer want used, so that a link shared by mistake can't add someone to my household. | Household | P0 | Agustin | Sprint 4 | #75 | In review |
-| US-13 | As a household owner, I want to remove a roommate who has moved out, and as a member, I want to leave a household, so that the member list reflects who actually lives there. | Household | P1 | Agustin | Sprint 4 | #74 | Not started |
+| US-11 | As a household member, I want to view past expenses, settlements, and chores so that I can check what a charge was for, confirm a debt was paid, or confirm a task was completed. | History | P0 | Orlando | Sprint 3 | #23 | Done |
+| US-12 | As a household member, I want to correct or delete an expense that was entered wrong, so that balances reflect what was actually spent. | Expense | P0 | Orlando | Sprint 4 | #60 | Done |
+| US-14 | As a household owner, I want to revoke an invitation link I no longer want used, so that a link shared by mistake can't add someone to my household. | Household | P0 | Agustin | Sprint 4 | #75 | Done |
+| US-13 | As a household owner, I want to remove a roommate who has moved out, and as a member, I want to leave a household, so that the member list reflects who actually lives there. | Household | P1 | Agustin | Sprint 6 | #74 | Not started; moved to Milestone 3 |
 
 ## Sprint 1 outcome
 
@@ -133,6 +134,95 @@ links mark the issues that cannot close until another one does.
   resolution is almost always to keep both sides.
 - **P1 work not done by October 31** moves to Milestone 3 rather than holding
   up the submission.
+
+## Milestone 2 outcome
+
+All three P0 stories, US-11, US-12 and US-14, are Done, along with every P0
+supporting issue: integration tests, coverage, the QA plan, CI and branch
+protection, the threat model, rate limiting, the OWASP review, CONTRIBUTING,
+the changelog and three releases. Two P1 items, the one-household race (#73)
+and component tests (#76), also made it. US-13 (#74) and the settlement
+permissions fix (#90) did not, and move to Milestone 3. The submitted version
+is `milestone-2` / `v0.3.0` at `bf38f4e`.
+
+The plan's dates held for the work but not for merging it: nothing merged
+between October 15 and November 1, and 14 pull requests merged on November 2,
+the due date. `docs/process-model.md` §8 records what that cost and what
+changes for Milestone 3.
+
+## Sprint 5 and Sprint 6 plan (Milestone 3)
+
+Milestone 3 is due **November 30, 2026**. The rubric asks for the final
+working product: containerized services, CI that blocks merges (in place since
+Milestone 2), a CD pipeline, a live application at a public URL, a metrics
+report, one feature built with a disclosed AI-assisted workflow and its record,
+a risk register and maintenance plan, a `v1.0` release, a polished README, a
+live demonstration and a semester retrospective. Ownership follows the
+proposal's §10: Agustin owns deployment and containerization; Orlando owns
+testing and quality reporting and the README.
+
+| Issue | Work | Owner | Priority | Sprint | Target |
+|---|---|---|---|---|---|
+| #116 | Containerize the server and client; Compose runs all three | Agustin | P0 | Sprint 5 | Nov 7 |
+| #117 | Deploy to Render with managed PostgreSQL, at a public URL | Agustin | P0 | Sprint 5 | Nov 10 |
+| #118 | CD pipeline: deploy `main` after CI passes | Agustin | P0 | Sprint 5 | Nov 12 |
+| #90 | Only the payer or recipient records a settlement; record who entered each record (the AI-assisted feature) | Orlando | P0 | Sprint 5 | Nov 14 |
+| #119 | Record of the AI-assisted workflow used for #90 | Orlando | P0 | Sprint 5 | Nov 14 |
+| #120 | Risk register and maintenance and support plan | Orlando | P0 | Sprint 6 | Nov 21 |
+| #121 | Metrics report: coverage trends, code quality, deployment frequency | Orlando | P0 | Sprint 6 | Nov 25 |
+| #123 | Semester retrospective | Both | P0 | Sprint 6 | Nov 26 |
+| #122 | Final README and verification guide for `v1.0` | Orlando | P0 | Sprint 6 | Nov 27 |
+| #124 | Live demonstration script and rehearsal | Both | P0 | Sprint 6 | Nov 28 |
+| #125 | Submission: final report, `v1.0`, `milestone-3` | Both | P0 | Sprint 6 | Nov 29 |
+| #74 | US-13: remove a member or leave a household | Agustin | P1 | Sprint 6 | Nov 23 |
+| #102 | Security headers and a CSP for the deployed client | Agustin | P1 | Sprint 6 | Nov 21 |
+| #100 | Dependabot, and GitHub Actions pinned to commit SHAs | Agustin | P1 | Sprint 6 | Nov 21 |
+| #109 | Crowded wrapped headings on phones | Agustin | P1 | Sprint 6 | Nov 23 |
+| #99 | Log security events | Orlando | P1 | Sprint 6 | Nov 23 |
+| #101 | Move off Vitest 2 | Unassigned | P1 | Sprint 6 | If time allows |
+
+US-15 (#93, recurring chores) has no milestone: it is a new feature beyond the
+proposal's scope, so it stays in the future-features list unless both members
+agree to take it on.
+
+The first live deploy is deliberately early, on November 10. The proposal's
+risk table says to deploy a basic version well before the final milestone, and
+three weeks leaves time to fix what only shows up on the free tier: cold
+starts, database limits, cookies over HTTPS.
+
+### Where one member waits on the other
+
+| Waiting | Waits on | What actually waits | So that nobody is blocked |
+|---|---|---|---|
+| #121 (Orlando) | #118 (Agustin) | Only deployment frequency | Coverage and code quality start now; CD lands by Nov 12, leaving two weeks of deploys to count |
+| #120 (Orlando) | #117 (Agustin) | The backup and hosting sections | The risk register starts now; the maintenance plan's hosting part follows the first deploy |
+| #122, #124 (Orlando, both) | #117, #118 (Agustin) | The public URL and the live walkthrough | Live by Nov 10; the README's local half is already done |
+| #102 (Agustin) | #117 (Agustin) | Needs whatever serves the built client | Same owner, after the deploy |
+| #117 (Agustin) | #90 (Orlando) | Nothing, unless both migrations land the same day | #90's migration is announced before it is generated (working rules) |
+
+### Working rules for Sprints 5 and 6
+
+These keep Milestone 2's rules and add what its last week taught.
+
+- **Review within one working day.** A pull request waiting more than a day
+  gets a message, not just a GitHub notification. Merge as soon as it is
+  approved, rather than batching merges for the end.
+- **Check the base before merging a stacked pull request.** A PR built on
+  another targets that branch; after the first merges, retarget the second to
+  `main` before approving it. #108 merged into a branch, not `main`, and had
+  to be re-applied as #113.
+- **Feature freeze on November 23.** After it, only fixes, tests and
+  documentation merge, so the last week goes to the README, the demo, the
+  report and the release.
+- **Migrations:** only #90 (`created_by_user_id`) is planned. Tell the other
+  member before generating any migration.
+- **The release commit:** cut `[1.0.0]` in `CHANGELOG.md` in its own pull
+  request and tag **that** merge commit `v1.0.0` and `milestone-3`.
+  `milestone-2` landed one commit before its changelog cut.
+- **Production secrets** live only in Render and GitHub secrets, never in the
+  repository or in a pull request.
+- **P1 work not done by November 27** is listed under Known limitations in the
+  README rather than holding up the submission.
 
 ## Supporting work not tracked as user stories
 
