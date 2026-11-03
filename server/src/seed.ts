@@ -116,6 +116,9 @@ async function main(): Promise<void> {
           expenseDate: new Date(`${calendarDate(now, -expense.daysAgo)}T00:00:00.000Z`),
           createdAt: instantDaysAgo(now, expense.daysAgo),
           paidByUserId: ids[expense.paidBy],
+          // Fictional data, so each record is entered by the member who paid,
+          // and History has a "recorded by" to show (#90).
+          createdByUserId: ids[expense.paidBy],
           splitMethod: expense.splitMethod,
           shares: {
             create: shares.map((share) => ({
@@ -136,6 +139,7 @@ async function main(): Promise<void> {
           toUserId: ids[settlement.to],
           amountCents: settlement.amountCents,
           note: settlement.note,
+          createdByUserId: ids[settlement.from],
           settledAt: instantDaysAgo(now, settlement.daysAgo, 12 + index),
         },
       });

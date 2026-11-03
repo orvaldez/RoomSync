@@ -495,8 +495,9 @@ asked to settle:
    themselves the payer to gain the right (`canChangeExpense` in
    `server/src/services/expense.service.ts`). The client only shows the
    buttons to those two; the server decides.
-   When #90 adds `createdByUserId`, whoever entered the expense is a natural
-   third: they may have entered a bill someone else paid.
+   #90 added `createdByUserId`, but who entered an expense was deliberately **not**
+   made a third editor: that would change this rule's docs and tests, outside
+   #90's scope (`docs/process/ai-assisted-workflow.md`, entry 5).
 2. **Soft delete.** `deletedAt` and `deletedByUserId` on Expense. Balances,
    the dashboard and the expense list skip deleted expenses; History can still
    show them, struck through, with who deleted them and when. A hard delete

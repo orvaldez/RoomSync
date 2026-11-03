@@ -15,12 +15,12 @@ list and asks whether RoomSync has each weakness. Threat ids such as **H1** or
 
 | # | Category | Relevant? | Verdict | Gaps |
 |---|---|---|---|---|
-| A01 | Broken Access Control | Yes, the main risk | **Handled** | H4 (#90) and member removal (#74) filed; revoking links shipped in #105 |
+| A01 | Broken Access Control | Yes, the main risk | **Handled** | H4 fixed in #90; revoking links shipped in #105; member removal (#74) filed |
 | A02 | Security Misconfiguration | Yes | **Fixed in #65** | Client headers at deployment: #102 |
 | A03 | Software Supply Chain Failures | Yes | **Fixed in #65**, with an accepted residual | Dev-only Vitest advisories: #101. Automated alerts: #100 |
 | A04 | Cryptographic Failures | Yes | **Handled** | None new |
 | A05 | Injection | Yes | **Handled** (re-checked, as the threat model asked under M3) | None |
-| A06 | Insecure Design | Yes | **Handled, with known items filed** | H3 fixed (#73); H4 and M4 (#90) |
+| A06 | Insecure Design | Yes | **Handled** | H3 fixed (#73); H4 and M4 fixed (#90) |
 | A07 | Authentication Failures | Yes | **Handled** | Accepted: A2 enumeration, 14-day sessions |
 | A08 | Software or Data Integrity Failures | Partly | **Handled** | Actions pinned by tag, not SHA: #100 |
 | A09 | Security Logging and Alerting Failures | Yes | **Gap** | No security events are logged: #99 |
@@ -56,8 +56,9 @@ multi-tenant app is one tenant reading or changing another's data.
   The server never fetches a URL supplied by a user.
 
 **Gaps:** both were found by the threat model and are already filed.
-**H4**: any member can record a settlement between two *other* members, so
-the payer-or-recipient restriction lives only in the interface (#90). **I2**:
+**H4**: any member could record a settlement between two *other* members, so
+the payer-or-recipient restriction lived only in the interface. Fixed in #90:
+the server now refuses it with `403 NOT_PARTY_TO_SETTLEMENT`. **I2**:
 a leaked invitation link couldn't be cancelled, and the wrong person can't be
 removed. Revoking a link has since shipped in #105 (US-14); removing a member
 is #74, moved to Milestone 3.
@@ -196,9 +197,9 @@ catch.
 - **Threat-modelled.** The threat model (#70) drove three design issues.
 
 **Known items:** the one-household-per-user check wasn't atomic (**H3**); it
-now runs under a per-user advisory lock, with a concurrent test (#73). Still
-filed: a member can record a settlement between two others, and nothing
-records who entered a record (**H4**, **M4**, #90). Editing and deleting
+now runs under a per-user advisory lock, with a concurrent test (#73). A member
+recording a settlement between two others, and nothing recording who entered a
+record (**H4**, **M4**), are both fixed in #90. Editing and deleting
 expenses (#60, in review in #98) settles who may change a record: the payer or
 the owner. A delete is soft and records who did it (threat model M5).
 

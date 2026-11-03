@@ -105,6 +105,8 @@ export type Expense = {
   updatedAt: string;
   /** Null unless the expense was deleted (US-12). */
   deleted: { at: string; by: { userId: string; name: string } } | null;
+  /** Who entered it (#90); null for expenses recorded before that was kept. */
+  createdBy: { userId: string; name: string } | null;
 };
 
 /**
@@ -156,6 +158,8 @@ export type Settlement = {
   amountCents: number;
   note: string | null;
   settledAt: string;
+  /** Who entered it (#90); null for settlements recorded before that was kept. */
+  createdBy: { userId: string; name: string } | null;
 };
 
 /** One entry in the dashboard's recent activity, tagged by what happened. */

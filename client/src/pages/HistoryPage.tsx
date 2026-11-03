@@ -10,7 +10,7 @@ import {
 } from "../lib/api";
 import { describeSettlement } from "../lib/balances";
 import { formatActivityDate } from "../lib/activity";
-import { describeCompletedChore } from "../lib/history";
+import { describeCompletedChore, describeRecordedBy } from "../lib/history";
 import { useAuth } from "../auth/useAuth";
 import { ExpenseList } from "../components/ExpenseList";
 
@@ -145,6 +145,8 @@ export function HistoryPage() {
                 <span className="muted">
                   {formatActivityDate(settlement.settledAt)}
                   {settlement.note && ` · ${settlement.note}`}
+                  {describeRecordedBy(settlement, user.id) &&
+                    ` · ${describeRecordedBy(settlement, user.id)}`}
                 </span>
               </li>
             ))}

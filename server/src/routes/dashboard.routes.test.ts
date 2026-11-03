@@ -133,6 +133,7 @@ beforeEach(() => {
       createdAt: new Date("2026-09-28T15:00:00Z"),
       updatedAt: new Date("2026-09-28T15:00:00Z"),
       deleted: null,
+      createdBy: null,
     },
   ]);
   listSettlements.mockResolvedValue([
@@ -144,6 +145,7 @@ beforeEach(() => {
       amountCents: 1000,
       note: null,
       settledAt: new Date("2026-09-29T09:00:00Z"),
+      createdBy: null,
     },
   ]);
   listCompleted.mockResolvedValue([]);

@@ -6,6 +6,7 @@ import {
   canChangeExpense,
   describeDeleted,
   describePayment,
+  describeRecordedBy,
   describeSplit,
   shareRows,
 } from "../lib/history";
@@ -151,6 +152,10 @@ export function ExpenseDetailPage() {
       </div>
       <p className="muted">{describePayment(expense, user.id)}</p>
       <p className="muted">{describeSplit(expense)}</p>
+      {/* Who entered it, which can differ from who paid (#90, threat model M4). */}
+      {describeRecordedBy(expense, user.id) && (
+        <p className="muted">{describeRecordedBy(expense, user.id)}</p>
+      )}
 
       {canChangeExpense(expense, user.id, household.role) && (
         <ExpenseActions
