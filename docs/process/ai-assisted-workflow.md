@@ -173,9 +173,10 @@ Each entry is one request made of the AI, or one decision point it raised.
 - Server: lint and typecheck clean; **490** unit tests (7 new) pass with the
   coverage targets met.
 - Client: lint and build clean; **160** tests (3 new) pass.
-- The integration test (`recorded-by.integration.test.ts`, 5 tests, with the
-  migration) runs in CI's `integration` job; Docker wasn't running locally
-  when this was written.
+- Integration, against PostgreSQL with the new migration applied: **38** tests
+  in 10 files pass, including the 5 new ones in
+  `recorded-by.integration.test.ts`. The migration matches the schema, with no
+  drift (`prisma migrate diff --exit-code`).
 
 ## Still to record
 
