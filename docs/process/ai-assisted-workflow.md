@@ -179,5 +179,5 @@ Each entry is one request made of the AI, or one decision point it raised.
 
 ## Still to record
 
-- What review of the pull request changes, if anything, and the final
+- What review of the pull request (#127) changes, if anything, and the final
   decision on merging. To be added as further entries.

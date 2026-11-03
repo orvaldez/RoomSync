@@ -30,7 +30,7 @@ Every version is a GitHub release whose notes match its section below.
   History and the expense detail show "Recorded by". A migration adds
   `created_by_user_id` to `expenses` and `settlements`; older records have no
   value, rather than a guessed one. Built with a disclosed AI-assisted
-  workflow, recorded in `docs/process/ai-assisted-workflow.md` (#PR).
+  workflow, recorded in `docs/process/ai-assisted-workflow.md` (#127).
 
 ## [0.3.0] - 2026-11-02
 
