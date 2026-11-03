@@ -15,11 +15,19 @@ goes up with each release, and the API may still change between releases.
 |---|---|---|
 | `v0.1.0` | Milestone 1: the MVP | `1eca04e`, tagged `milestone-1` |
 | `v0.2.0` | The end of Sprint 3 (October 14, 2026) | `d1aff59` |
-| `v0.3.0` | Milestone 2 | The commit tagged `milestone-2` |
+| `v0.3.0` | Milestone 2 (November 2, 2026) | The commit tagged `milestone-2` |
 
 Every version is a GitHub release whose notes match its section below.
 
 ## [Unreleased]
+
+## [0.3.0] - 2026-11-02
+
+Milestone 2: History and expense detail (US-11), editing and deleting an
+expense (US-12) and revoking an invitation (US-14); integration tests for every
+main flow, component tests and coverage targets; an OWASP Top 10 review,
+security headers and a fix for the one-household race; and a QA plan. The
+commit tagged `milestone-2`.
 
 ### Added
 
@@ -58,6 +66,14 @@ Every version is a GitHub release whose notes match its section below.
   testing checks, who runs it and when, entry and exit criteria for a
   milestone, a pre-release checklist on a clean clone, and how a defect is
   handled. A pull request template carries its per-PR checklist (#97).
+
+### Changed
+
+- The README is the Milestone 2 verification guide: the Status section names
+  the submitted version, the tech stack separates what is in place from what
+  is planned, the walkthrough adds steps for History, editing and deleting
+  an expense, and revoking an invitation, and every test suite has its
+  command and expected result (#104).
 
 ### Fixed
 
@@ -120,11 +136,6 @@ contribution conventions, and rate limiting on login and registration.
 
 ### Changed
 
-- The README is the Milestone 2 verification guide: the Status section names
-  the submitted version, the tech stack separates what is in place from what
-  is planned, the walkthrough adds steps for History, editing and deleting
-  an expense, and revoking an invitation, and every test suite has its
-  command and expected result (#104).
 - `main` is protected by a repository ruleset. A change needs a pull request
   with one approval from the other member, approvals are dismissed by new
   commits, pull requests are squash-merged, and the rules apply to the
@@ -192,6 +203,7 @@ React through Express and Prisma to PostgreSQL.
   doesn't exist, so the API can't be used to discover other households (#40).
 - Invitation tokens are 32 random bytes (#51).
 
-[Unreleased]: https://github.com/orvaldez/RoomSync/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/orvaldez/RoomSync/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/orvaldez/RoomSync/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/orvaldez/RoomSync/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/orvaldez/RoomSync/releases/tag/v0.1.0
