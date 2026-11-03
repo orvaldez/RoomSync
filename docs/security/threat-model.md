@@ -130,7 +130,7 @@ document.
 | M5 | Ownership and a trace for edits and deletes | #60 (Sprint 4) |
 | A4, S4 | Security headers, `X-Powered-By` | Done in #65 for the API; the deployed client's headers in #102 |
 | M3 | Re-check injection | Done in #65 |
-| (all) | Log security events: failed logins, rate limits, refused access | #99, from the OWASP review (A09) |
+| (all) | Log security events: failed logins, rate limits, refused access | Done in #99 (`middleware/security-log.ts`); alerting depends on the host (#117) |
 
 [`dependency-audit.md`](./dependency-audit.md) tracks third-party
 vulnerabilities, including a `proxy-addr` advisory relevant to how `req.ip`

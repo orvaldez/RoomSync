@@ -136,6 +136,7 @@ the client needs no environment variables.
 | `LOGIN_MAX_FAILURES_PER_EMAIL` | unset (5) | Optional. Wrong passwords allowed per account email per window, then `429 RATE_LIMITED` |
 | `LOGIN_MAX_FAILURES_PER_IP` | unset (20) | Optional. Wrong passwords allowed per IP address per window, across all accounts |
 | `REGISTER_MAX_PER_IP` | unset (10) | Optional. Registration attempts allowed per IP address per window |
+| `SECURITY_LOG` | unset | Optional. Security events (failed logins, rate limits, 403s, household 404s) are written to stdout as JSON lines, on by default and off under the test runners. `on` or `off` overrides that (`server/src/middleware/security-log.ts`, #99) |
 | `TEST_DATABASE_URL` | `postgresql://roomsync:roomsync@localhost:5432/roomsync_test?schema=public` | Optional. The database `npm run test:integration` uses; the example value is also the default. Its name must end in `_test`, because every integration test empties it |
 
 `server/.env` is ignored by Git. Never commit a real secret.
