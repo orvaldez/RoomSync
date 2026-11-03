@@ -21,6 +21,14 @@ Every version is a GitHub release whose notes match its section below.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-02
+
+Milestone 2: History and the expense detail, editing and deleting an
+expense, and revoking an invitation (US-11, US-12, US-14); integration tests
+for every main flow; component tests; cross-browser and real-iPhone testing;
+an OWASP Top 10 review with security headers; and one household per user
+under concurrent requests.
+
 ### Added
 
 - **Revoke an invitation** (US-14): the owner sees the household's invitation
@@ -58,6 +66,18 @@ Every version is a GitHub release whose notes match its section below.
   testing checks, who runs it and when, entry and exit criteria for a
   milestone, a pre-release checklist on a clean clone, and how a defect is
   handled. A pull request template carries its per-PR checklist (#97).
+- Cross-viewport testing evidence: all eighteen screens in Chrome, Edge and
+  Firefox, in phone landscape and at 200% zoom, and on an iPhone 15 Pro in
+  Safari, with screenshots, in `docs/design/responsive-design.md` §5.1. The
+  iPhone found the date-field bug fixed in #107 and filed #109 (#113).
+
+### Changed
+
+- The README is the Milestone 2 verification guide: the Status section names
+  the submitted version, the tech stack separates what is in place from what
+  is planned, the walkthrough adds steps for History, editing and deleting
+  an expense, and revoking an invitation, and every test suite has its
+  command and expected result (#104).
 
 ### Fixed
 
@@ -120,11 +140,6 @@ contribution conventions, and rate limiting on login and registration.
 
 ### Changed
 
-- The README is the Milestone 2 verification guide: the Status section names
-  the submitted version, the tech stack separates what is in place from what
-  is planned, the walkthrough adds steps for History, editing and deleting
-  an expense, and revoking an invitation, and every test suite has its
-  command and expected result (#104).
 - `main` is protected by a repository ruleset. A change needs a pull request
   with one approval from the other member, approvals are dismissed by new
   commits, pull requests are squash-merged, and the rules apply to the
@@ -192,6 +207,7 @@ React through Express and Prisma to PostgreSQL.
   doesn't exist, so the API can't be used to discover other households (#40).
 - Invitation tokens are 32 random bytes (#51).
 
-[Unreleased]: https://github.com/orvaldez/RoomSync/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/orvaldez/RoomSync/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/orvaldez/RoomSync/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/orvaldez/RoomSync/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/orvaldez/RoomSync/releases/tag/v0.1.0
