@@ -42,7 +42,7 @@ but not finished; it moves to Milestone 3, with the other open items in
 | Milestone 0 | Propose | Complete |
 | Milestone 1 | Build the MVP | Complete (`milestone-1`, `v0.1.0`) |
 | Milestone 2 | Test, improve, and secure | Complete (`milestone-2`, `v0.3.0`) |
-| Milestone 3 | Deploy | Not started |
+| Milestone 3 | Deploy | In progress, due November 30, 2026 ([plan](./BACKLOG.md#sprint-5-and-sprint-6-plan-milestone-3)) |
 
 ## Team
 

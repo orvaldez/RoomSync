@@ -229,7 +229,7 @@ deliverables. Stories changed hands mid-sprint (balances, settlements and the da
 moved to Agustin) so that neither member sat blocked waiting on the other, which is the
 kind of adjustment the sprint boundary exists for, made inside the sprint instead.
 
-**What the process did poorly.** The risk named in Section 8 materialized. Under time
+**What the process did poorly.** The risk named in Section 9 materialized. Under time
 pressure, two pull requests (#41 and #52) were merged by their author without the other
 member's review. Both turned out to be missing acceptance criteria, which were found
 afterwards and completed in #58 before submission. Every other pull request was approved
@@ -264,7 +264,50 @@ explicit rather than discovered:
 Sprint 4 runs from October 15 to November 2, a few days longer than two weeks, so that
 it ends on the Milestone 2 due date.
 
-## 8. Limits of this model, honestly stated
+## 8. Evidence from Sprints 3 and 4
+
+Milestone 2 shipped everything it was graded on: all three P0 stories (US-11, US-12,
+US-14), integration and component tests, coverage targets, CI with required checks,
+branch protection, a threat model, an OWASP review, the rate limit as the implemented
+control, and three tagged releases. Two P1 items made it too. US-13 and one security fix
+(#90) moved to Milestone 3.
+
+**What the process did well.** Making dependencies explicit worked: no one waited on the
+other for the work itself, and the "Dependencies and target" section on every issue
+kept handovers small. The Definition of Done and the pull request template caught real
+defects before submission. A fresh-clone check of the README found a walkthrough step
+that couldn't be followed after the step before it (#104). Testing on a real iPhone
+found two layout bugs that headless browsers didn't (#107, #109). Branch protection held:
+nothing reached `main` without the other member's approval and the three checks.
+
+**What the process did poorly.** The work kept to its dates, but merging it did not. No
+pull request merged between October 15 and November 1, and 14 merged on November 2,
+the due date. The October 28 feature freeze passed with nothing merged. Merging everything
+at once had concrete costs:
+
+- **Rebasing to catch up dismissed an approval.** #96 was approved on October 15, then
+  had to be rebased onto `main` and approved again, because the ruleset (rightly)
+  dismisses an approval on new commits. It merged on November 2.
+- **A stacked pull request merged into the wrong branch.** #108 targeted #105's branch
+  and was merged after #105, so its changes never reached `main`; they were re-applied
+  as #113.
+- **Changelog entries landed in the wrong release** twice, because several pull requests
+  edited `CHANGELOG.md` at once and Git placed one entry under an older heading.
+- **The release tag missed its changelog cut at first.** `milestone-2` and `v0.3.0` were
+  first tagged on #104's merge (`bf38f4e`), the commit before #115 cut the `[0.3.0]`
+  section, so the changelog at the tag still said "Unreleased". Both tags were moved to
+  #115's merge (`596bd35`) that evening, before submission (see #77).
+
+**Changes for Sprints 5 and 6.** Recorded as working rules in `BACKLOG.md`:
+
+1. Review within one working day, and merge as soon as a pull request is approved.
+2. Retarget a stacked pull request to `main` before merging it.
+3. The feature freeze moves to a full week before the due date (November 23), and the
+   first live deployment to the start of Sprint 5 (November 10), so the riskiest part of
+   Milestone 3 is not left for its last days.
+4. The release is tagged on the merge commit of its own changelog pull request.
+
+## 9. Limits of this model, honestly stated
 
 Two-week sprints on a six-sprint project mean only five retrospectives, so process
 corrections land slowly — a mistake made in Sprint 1 is corrected in Sprint 2 at the
