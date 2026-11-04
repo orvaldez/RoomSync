@@ -139,17 +139,19 @@ export function HistoryPage() {
           // Kept after a balance reaches zero (FR-12): this is the record that
           // a debt was paid, not a list of what is still owed.
           <ul className="settlement-list">
-            {settlements.map((settlement) => (
-              <li key={settlement.id}>
-                <span>{describeSettlement(settlement, user.id)}</span>
-                <span className="muted">
-                  {formatActivityDate(settlement.settledAt)}
-                  {settlement.note && ` · ${settlement.note}`}
-                  {describeRecordedBy(settlement, user.id) &&
-                    ` · ${describeRecordedBy(settlement, user.id)}`}
-                </span>
-              </li>
-            ))}
+            {settlements.map((settlement) => {
+              const recordedBy = describeRecordedBy(settlement, user.id);
+              return (
+                <li key={settlement.id}>
+                  <span>{describeSettlement(settlement, user.id)}</span>
+                  <span className="muted">
+                    {formatActivityDate(settlement.settledAt)}
+                    {settlement.note && ` · ${settlement.note}`}
+                    {recordedBy && ` · ${recordedBy}`}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

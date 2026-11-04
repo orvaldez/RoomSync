@@ -58,7 +58,9 @@ multi-tenant app is one tenant reading or changing another's data.
 **Gaps:** both were found by the threat model and are already filed.
 **H4**: any member could record a settlement between two *other* members, so
 the payer-or-recipient restriction lived only in the interface. Fixed in #90:
-the server now refuses it with `403 NOT_PARTY_TO_SETTLEMENT`. **I2**:
+the server now refuses it with `403 NOT_PARTY_TO_SETTLEMENT`. A payer can
+still record a payment they never made; it shows as "Recorded by" them in
+History, and recipient confirmation is accepted as out of scope. **I2**:
 a leaked invitation link couldn't be cancelled, and the wrong person can't be
 removed. Revoking a link has since shipped in #105 (US-14); removing a member
 is #74, moved to Milestone 3.

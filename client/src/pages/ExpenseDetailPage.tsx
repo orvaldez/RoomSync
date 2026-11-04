@@ -125,6 +125,8 @@ export function ExpenseDetailPage() {
 
   const { household, expense } = state;
   const deletedText = describeDeleted(expense, user.id);
+  // Who entered it, which can differ from who paid (#90, threat model M4).
+  const recordedBy = describeRecordedBy(expense, user.id);
 
   return (
     <main className="page">
@@ -152,10 +154,7 @@ export function ExpenseDetailPage() {
       </div>
       <p className="muted">{describePayment(expense, user.id)}</p>
       <p className="muted">{describeSplit(expense)}</p>
-      {/* Who entered it, which can differ from who paid (#90, threat model M4). */}
-      {describeRecordedBy(expense, user.id) && (
-        <p className="muted">{describeRecordedBy(expense, user.id)}</p>
-      )}
+      {recordedBy && <p className="muted">{recordedBy}</p>}
 
       {canChangeExpense(expense, user.id, household.role) && (
         <ExpenseActions

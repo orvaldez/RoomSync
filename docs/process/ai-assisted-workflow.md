@@ -37,8 +37,10 @@ Each entry is one request made of the AI, or one decision point it raised.
 
 - **Asked:** what the human asked, in their words where short.
 - **AI output:** what the AI proposed or produced.
-- **Decision:** **Accepted**, **Edited** (what was changed and why), or
-  **Rejected** (and why). Where the AI found and corrected its own mistake
+- **Decision:** **Accepted**, **Edited** (a human changed what the AI produced:
+  what and why), or **Rejected** (and why). Where the AI offered several
+  options, the ones turned down are listed as **Rejected** next to the one
+  accepted. Where the AI found and corrected its own mistake
   before a human saw it, that is recorded too, as **AI self-correction**, so the
   record shows what review was needed rather than only the clean result.
 
@@ -61,18 +63,27 @@ Each entry is one request made of the AI, or one decision point it raised.
   threat model's H4 ask for, with anyone else refused `403
   NOT_PARTY_TO_SETTLEMENT`. The alternative offered was to also allow the
   household owner.
-- **Decision:** **Accepted** the recommendation. Letting the owner record a
-  payment between two other members would leave H4 half open: the owner could
-  still wipe out a debt owed to someone else.
+- **Decision:**
+  - **Accepted:** payer or recipient only.
+  - **Rejected:** also allowing the owner. Letting the owner record a payment
+    between two other members would leave H4 half open: the owner could still
+    wipe out a debt owed to someone else.
+- **Not offered:** "recipient only" and "payer records, recipient confirms".
+  These are the options that would stop a payer recording a payment they
+  never made. The AI didn't raise them and neither did Orlando; Agustin's
+  review did (entry 11).
 
 ### 3. What existing rows get for "created by"
 
 - **AI output:** recommended a **nullable** `created_by_user_id`, left empty on
   rows that existed before the migration, rather than a backfill that guesses
   from the payer.
-- **Decision:** **Accepted.** A guess would be wrong for every expense someone
-  entered on another member's behalf, and a wrong trace is worse than an
-  honest gap. New rows always get the value from the session.
+- **Decision:**
+  - **Accepted:** nullable, left empty on existing rows. New rows always get
+    the value from the session.
+  - **Rejected:** backfilling from the payer. A guess would be wrong for every
+    expense someone entered on another member's behalf, and a wrong trace is
+    worse than an honest gap.
 
 ### 4. Whether the app shows who entered a record
 
@@ -80,18 +91,24 @@ Each entry is one request made of the AI, or one decision point it raised.
   settlement responses, and a short "recorded by" line on History and the
   expense detail page. The alternatives were API only, or storing it without
   returning it.
-- **Decision:** **Accepted.** Threat model M4 is about members being able to
-  see who entered something; storing it where nobody can see it would not
-  address that.
+- **Decision:**
+  - **Accepted:** the API and a line on History and the expense detail page.
+  - **Rejected:** API only, and storing it without returning it. Threat model
+    M4 is about members being able to see who entered something; storing it
+    where nobody can see it, or where only someone calling the API can, would
+    not address that.
 
 ### 5. Whether the person who entered an expense may also edit it
 
 - **AI output:** recommended **keeping #60's rule** (the payer or the owner)
   unchanged, even though its design note had suggested adding the creator once
   this data existed.
-- **Decision:** **Accepted.** Changing who may edit is a separate decision with
-  its own docs and tests; folding it into #90 would widen a security fix into a
-  permissions redesign.
+- **Decision:**
+  - **Accepted:** keep #60's rule.
+  - **Rejected:** making the person who entered an expense an editor as well.
+    Changing who may edit is a separate decision with its own docs and tests;
+    folding it into #90 would widen a security fix into a permissions
+    redesign.
 
 ### 6. The server change
 
@@ -123,9 +140,13 @@ Each entry is one request made of the AI, or one decision point it raised.
   written for. The AI did not loosen the new rule to make the old test pass.
   It changed the test to record the payment as its payer, which still tests
   what UC-08 4d is about, and added a comment saying why.
-- **Decision:** **Edited** (the test, not the rule). Recorded here because
-  changing a test to fit new code is exactly where review matters: had the
-  rule been weakened instead, the test would have passed and H4 stayed open.
+- **Decision:** **Accepted.** The AI changed the test, not the rule, and
+  Orlando kept its change. Agustin checked it in review: recording as the
+  payer still tests UC-08 4d for an outside recipient, and the outside-payer
+  and missing-payer cases still return `MEMBER_NOT_IN_HOUSEHOLD`. Recorded
+  here because changing a test to fit new code is exactly where review
+  matters: had the rule been weakened instead, the test would have passed and
+  H4 stayed open.
 
 ### 8. A mistake the test run caught
 
@@ -166,7 +187,30 @@ Each entry is one request made of the AI, or one decision point it raised.
     model's note on #60's rule, the threat model (H4 and M4 now
     **Mitigated**), the OWASP review's A01 and A06, the CHANGELOG, and a
     README link to this file
-- **Decision:** **Accepted**, pending review in the pull request.
+- **Decision:** **Accepted** by Orlando, then reviewed in the pull request
+  (entry 11).
+
+### 11. Review: the threat model overstated the fix
+
+- **Reviewer:** Agustin, in #127 (November 4, 2026).
+- **Found:** the AI had written H4's residual risk as "None known". But the
+  new rule lets the *payer* record a payment, so Sam can still record "I paid
+  Maya $30" when he didn't and wipe out his own debt to her. That is the same
+  harm H4 describes, done by one of the two parties instead of a third member.
+  #90 makes it traceable (Maya sees "Recorded by Sam" in History), but nothing
+  stops it or asks Maya to confirm. He also pointed out that entry 2 never
+  offered the options that close this gap (see there), and that entry 7 was
+  mislabelled.
+- **Decision:** **Edited** by a human. H4's residual now reads, in Agustin's
+  wording: a payer can still record a payment they never made; since #90 it
+  shows as "Recorded by <payer>" in History, so the recipient can see it, but
+  there is no confirmation step. Orlando **accepted** that residual rather
+  than build recipient confirmation: it would add a pending state to every
+  payment and change how balances are worked out, which is beyond the course's
+  scope. The OWASP review's A01 notes it too. The labels in entries 2–5 and 7
+  were corrected in the same change.
+- **Also from review:** `describeRecordedBy` was called twice in each place it
+  is shown; it is now worked out once into a `recordedBy` constant.
 
 ## Checks at the end of the build
 
@@ -180,5 +224,4 @@ Each entry is one request made of the AI, or one decision point it raised.
 
 ## Still to record
 
-- What review of the pull request (#127) changes, if anything, and the final
-  decision on merging. To be added as further entries.
+- The final decision on merging #127.
