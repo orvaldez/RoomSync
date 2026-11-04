@@ -3,6 +3,53 @@
 Findings from `npm audit --omit=dev` in `server/`, with triage and decisions.
 Re-run and update this file at each milestone.
 
+## 2026-11-04 (two new production advisories, before the deployment)
+
+Two advisories published since the October 21 review reached the server's
+production dependencies, both found while reviewing #131 (containers). Fixed
+before #117 deploys anything, by updating only the two packages within the
+ranges their parents already accept. No `package.json` change.
+
+| Package | Advisory | Severity | Through | Before | After |
+|---|---|---|---|---|---|
+| `body-parser` | GHSA-27r3-jxmh-p828: denial of service through trailing bytes after a compressed request body | High | `express` 4.22.3 | 1.20.8 | **1.20.9** |
+| `ip-address` | GHSA-rxp7-6hxx-x8q5: a long IPv6 zone identifier takes quadratic time | Moderate | `express-rate-limit` 8.7.0 | 10.7.3 | **10.7.4** |
+
+| Workspace | Scope | Before | After |
+|---|---|---|---|
+| `server/` | production (`--omit=dev`) | 2 (1 high, 1 moderate) | **0** |
+| `server/` | all, dev included | 21 (3 critical, 2 high, 16 moderate) | 19 (3 critical, 1 high, 15 moderate) |
+| `client/` | production | 0 | 0 |
+
+**Why these versions.** The project takes the newest version that is at least
+two weeks old.
+- **`ip-address` 10.7.4** (October 11) is the first release with the fix.
+  10.7.5 and 10.7.6 are newer than two weeks.
+- **`body-parser` 1.20.9** (October 22) is the only fixed release on the 1.x
+  line Express 4 uses. It was 13 days old on this date and reaches two weeks
+  before this change can merge.
+
+`npm audit fix` was tried first, but it also raised ESLint and
+typescript-eslint, which have nothing to do with either advisory, so the two
+packages were updated on their own instead.
+
+**Does it apply here?**
+- **`body-parser`: yes.** `express.json()` (`app.ts`) runs with its defaults,
+  which decompress gzip and deflate request bodies, so any client could reach
+  the vulnerable path. An encoding it can't read is already refused with `415`
+  (#103), but gzip and deflate are ones it reads.
+- **`ip-address`: probably not.** `express-rate-limit` uses it for IPv6
+  addresses in the per-IP limits (#71). Those addresses come from `req.ip`,
+  not from text the client chooses, so a long zone identifier is unlikely to
+  reach it. It is fixed anyway, since the fix is a patch release.
+
+**What remains:** the 19 are all development-only, through Vitest 2 and its
+tooling (#101). They run only against our own tests, on our machines and in
+CI, and never ship with the app. Accepted, as before.
+
+All 503 server unit tests pass, and typecheck and lint are clean, on the new
+versions.
+
 ## 2026-10-21 (Milestone 2 review, issue #65)
 
 The re-run this file asks for at each milestone, done with the OWASP review

@@ -21,7 +21,29 @@ Every version is a GitHub release whose notes match its section below.
 
 ## [Unreleased]
 
+### Added
+
+- Milestone 3 planning: the Sprint 5 and Sprint 6 plan in `BACKLOG.md`, with
+  owners, due dates and dependencies, and the process model's evidence from
+  Sprints 3 and 4 with the working rules it led to (#126).
+- A risk register (`docs/process/risk-register.md`) revisiting the proposal's
+  risks against what happened, with the risks found since, and a maintenance
+  and support plan (`docs/process/maintenance-plan.md`) (#128).
+- A metrics report (`docs/process/metrics.md`): tests and coverage,
+  complexity, and pull-request flow per milestone, with the scripts that
+  re-measure each in `scripts/metrics/` (#129).
+
 ### Security
+
+- Security events are logged: one JSON line on standard output for each
+  failed login, rate limit reached, refused request (`403`), and unknown
+  household asked for by a signed-in user, with the route, the IP and the
+  email as an HMAC rather than as typed. Off in tests; `SECURITY_LOG=on` or
+  `off` overrides (#130).
+- `body-parser` 1.20.8 → 1.20.9 (high, through Express) and `ip-address`
+  10.7.3 → 10.7.4 (moderate, through `express-rate-limit`). The server has no
+  production advisories again; `docs/security/dependency-audit.md` has the
+  entry (#132).
 
 - Only the payer or the recipient can record a settlement. Before, any member
   could record that two others had settled, wiping out a debt owed to someone
