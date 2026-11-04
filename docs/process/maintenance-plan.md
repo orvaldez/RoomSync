@@ -6,10 +6,10 @@ who does what, how often, and what to do when something goes wrong. Tracked in
 security controls it maintains are in the [threat model](../security/threat-model.md)
 and the [OWASP review](../security/owasp-review.md), which it doesn't repeat.
 
-**Status, November 3, 2026.** The application is not deployed yet (#117, due
-November 10). Sections that depend on the host say **To complete in #117** and
-list what to record there. Everything else describes how the project already
-works.
+**Status, November 4, 2026.** Deployed (#117): the client and API on Render,
+the database on Neon, at https://roomsync-ykvd.onrender.com. Every setting is
+in [`deployment.md`](./deployment.md). What still depends on CD says
+**To complete in #118**.
 
 ## 1. Who supports it
 
@@ -71,15 +71,18 @@ public issue; send those to the other member directly.
 
 ## 5. Deploying
 
-**To complete in #117 and #118.** Record:
-
-- where it runs: the Render services, the region, the plan (free or paid), and
-  the public URL
-- how a deployment happens: CD deploys `main` after the three CI jobs pass
-  (#118), and how to trigger one by hand
-- how to **roll back**: redeploying the previous version on Render, and when
-  rolling back isn't enough (below)
-- the health check, `GET /api/health`, and what watches it
+- **Where it runs:** a Render Static Site (the client) and a Render web
+  service (the API), both on the free plan, and a free Neon database, all in
+  Ohio. The settings, URLs and measured limits are in
+  [`deployment.md`](./deployment.md) §1–§4.
+- **How a deployment happens:** today by hand, with **Manual Deploy** on each
+  Render service (`deployment.md` §3). Auto-deploy is off on both. **To
+  complete in #118:** CD deploys `main` after the three CI jobs pass.
+- **Rolling back:** redeploy the last good commit on Render
+  (`deployment.md` §3). When that isn't enough is below.
+- **Health:** `GET /api/health` is the API service's health check in Render.
+  #118 adds a check of the public URL after each deploy, so a broken deploy
+  fails the CD run visibly.
 
 **Migrations** run on deploy with `prisma migrate deploy`, and are forward-only.
 To undo a migration, write a new one that reverses it, never edit one that has
@@ -108,23 +111,25 @@ secrets, newest first. `express-session` supports this, but
 `server/src/middleware/session.ts` passes one secret today, so it would be a code
 change.
 
-**Rotating the database password or the deploy hook:** change it at its source
-(Render), update the matching secret, and redeploy. **To complete in #117 and
-#118** with the exact steps.
+**Rotating the database password:** in Neon, reset the role's password (the
+project's **Roles** page), copy the new **direct** connection string, set it as
+`DATABASE_URL` on `roomsync-api` in Render, and save, which redeploys it. The
+API can't reach the database between the reset and the redeploy, so it takes
+about a minute of downtime. **The deploy hook:** to complete in #118.
 
 ## 7. Backups and restoring data
 
-**To complete in #117.** Record what the host provides for the managed
-PostgreSQL on the chosen plan (automatic backups, how long they are kept,
-point-in-time recovery or not), and test a restore once:
+**What Neon's free plan keeps:** a 6-hour restore window, so the database can
+be put back to any moment in the last 6 hours, and 1 manual snapshot
+(`deployment.md` §4). There is no longer-term backup, so:
 
-1. Take or choose a backup.
-2. Restore it into a **separate** database, never over production.
-3. Point a local server at it, and check the seed accounts and a balance.
-4. Write down how long it took.
-
-If the plan has no backups, take a manual `pg_dump` before every migration and
-before the live demo, and keep it outside the host.
+- **Before every migration and before the live demo,** take a `pg_dump` from a
+  laptop, against the direct connection string, and keep it outside Neon:
+  `pg_dump "<connection string>" > roomsync-YYYY-MM-DD.sql`.
+- **Test a restore once** before the demo: restore that dump into a
+  **separate** database (a local one, or a Neon branch), never over production.
+  Point a local server at it, check the seed accounts and a balance, and write
+  down how long it took. **Not done yet.**
 
 **Last resort:** `npm run db:seed` rebuilds the demonstration household from
 `server/src/seed-data.ts`. The seed refuses to run when `NODE_ENV` is
@@ -141,9 +146,13 @@ anyone's real data.
   with the email as an HMAC keyed with `SESSION_SECRET`. A client over the rate
   limit writes one line per refused request. Turned off with
   `SECURITY_LOG=off` (risk register, 22).
-- **To complete in #117:** where the host's logs are read, and how long they
-  are kept. The security lines hold IP addresses, which are personal data, so
-  keep them only as long as they are useful.
+- **Where logs are read:** `roomsync-api` → **Logs** in Render, searchable by
+  text (for example `login_failed`). Render keeps them **7 days** on the free
+  plan, then deletes them. The security lines hold IP addresses, which are
+  personal data, so nothing longer is set up. Neon keeps its monitoring for
+  1 day.
+- **Known gap:** until `TRUST_PROXY_HOPS` is measured (`deployment.md` §5), the
+  logged IP is Render's internal proxy, not the visitor.
 
 ## 9. After the semester
 
@@ -176,4 +185,8 @@ README's Known limitations section (#122):
 - **Development-only advisories** remain through Vitest 2 (#101).
 - **Tested on** Chrome, Edge, Firefox and an iPhone. Not tested on an Android
   phone or desktop Safari (`docs/design/responsive-design.md` §5).
-- **Hosting:** free-tier limits such as cold starts. **To complete in #117.**
+- **Hosting, on free plans** (`deployment.md` §4):
+  - the API sleeps after 15 minutes without traffic, so the first request
+    after that takes about 30 seconds
+  - Neon has 100 compute hours a month, 1 GB of storage and a 6-hour restore
+    window

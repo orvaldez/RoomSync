@@ -27,6 +27,13 @@ Every version is a GitHub release whose notes match its section below.
   them with PostgreSQL: `docker compose up --build` serves the whole app at
   http://localhost:8080 with nothing else installed. The server applies
   pending migrations on start; the client's nginx proxies `/api` to it (#116, #131).
+- RoomSync is live at https://roomsync-ykvd.onrender.com: the client as a
+  Render Static Site, the API as a Render web service from the server image,
+  and the database on Neon. Every setting and the measured free-tier limits
+  are in `docs/process/deployment.md` (#117).
+- `TRUST_PROXY_HOPS`: how many proxies in front of the server to trust for the
+  visitor's IP in production, default 1. On Render, 1 makes every visitor look
+  like the same proxy to the per-IP rate limits (#117).
 
 ### Changed
 

@@ -7,7 +7,11 @@ import expenseRoutes from "./routes/expense.routes";
 import choreRoutes from "./routes/chore.routes";
 import balanceRoutes from "./routes/balance.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
-import { buildSessionMiddleware, isBehindTlsProxy } from "./middleware/session";
+import {
+  buildSessionMiddleware,
+  isBehindTlsProxy,
+  trustedProxyHops,
+} from "./middleware/session";
 import { errorHandler } from "./middleware/error-handler";
 import { securityHeaders } from "./middleware/security-headers";
 
@@ -22,8 +26,11 @@ app.disable("x-powered-by");
 //
 // Deliberately not enabled outside production: trusting a proxy that isn't
 // there lets any client spoof its address through X-Forwarded-For.
+//
+// The number of hops is TRUST_PROXY_HOPS (default 1), because it depends on
+// the host's proxy chain; see trustedProxyHops and docs/process/deployment.md.
 if (isBehindTlsProxy()) {
-  app.set("trust proxy", 1);
+  app.set("trust proxy", trustedProxyHops());
 }
 
 // First, so every response carries them, errors and 404s included.
