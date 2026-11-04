@@ -474,6 +474,8 @@ docker compose down           # data persists in a named volume
 - [Contributing: branches, commits, reviews and issues](./CONTRIBUTING.md)
 - [Software process model](./docs/process-model.md), with
   [branch protection on `main`](./docs/process/branch-protection.md)
+- [Risk register](./docs/process/risk-register.md) and
+  [maintenance and support plan](./docs/process/maintenance-plan.md)
 - [ADR-001: Architecture](./docs/architecture/adr-001-modular-monolith.md), with
   [its layering enforced by lint](./docs/architecture/layering-lint.md)
 - [Use case specifications](./docs/requirements/use-cases.md)
