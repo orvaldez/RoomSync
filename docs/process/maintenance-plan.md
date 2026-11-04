@@ -66,7 +66,7 @@ public issue; send those to the other member directly.
 - **Cutting a release:** move `[Unreleased]` to a new version section in its own
   pull request, then tag **that pull request's merge commit** and publish the
   GitHub release with the section as its notes. `milestone-2` landed one commit
-  early, so this order matters (risk register, 17).
+  early and was moved, so this order matters (risk register, 17).
 - After `v1.0.0`: `1.0.x` for fixes, `1.x.0` for features.
 
 ## 5. Deploying
@@ -99,7 +99,8 @@ Environment variables table, with `NODE_ENV=production`.
 1. Generate a long random value, and set it as `SESSION_SECRET` on the host.
 2. Redeploy. Every existing session cookie is signed with the old secret, so
    **every user is signed out** and must log in again. That's the intended
-   effect after a leak.
+   effect after a leak. It also changes every `account` value in the security
+   log (§8), so attempts from before and after a rotation won't group together.
 3. Record the date and reason (not the value) in the deployment log (§5).
 
 Rotating without signing everyone out would need the server to accept a list of
@@ -135,10 +136,14 @@ anyone's real data.
 - **Today:** `GET /api/health` answers `{"status":"ok"}`, and CD will check it
   after every deploy (#118). The server logs unexpected errors (`500`), never a
   stack trace or a database message in the response.
-- **Not yet:** security events (failed logins, rate limits reached, refused
-  requests) aren't logged. That's #99 (risk register, 22).
+- **Security events** (#99): one JSON line on standard output for each failed
+  login, rate limit reached, refused request (`403`) and unknown household,
+  with the email as an HMAC keyed with `SESSION_SECRET`. A client over the rate
+  limit writes one line per refused request. Turned off with
+  `SECURITY_LOG=off` (risk register, 22).
 - **To complete in #117:** where the host's logs are read, and how long they
-  are kept.
+  are kept. The security lines hold IP addresses, which are personal data, so
+  keep them only as long as they are useful.
 
 ## 9. After the semester
 
@@ -163,7 +168,8 @@ README's Known limitations section (#122):
 - **One household per user.** The schema allows more; the service refuses it
   (analysis model §7).
 - **Expenses can be edited and soft-deleted; settlements can't.** A payment
-  recorded by mistake can't be corrected in the app.
+  recorded by mistake can't be corrected in the app, including one a payer
+  records but never made (risk register, 9).
 - **Who entered a record** is known only for records created after #90.
 - **No email:** invitation links are shared by hand, and there's no password reset.
 - **Rate limits** are counted in memory, on one instance (risk register, 21).

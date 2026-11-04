@@ -35,10 +35,10 @@ shared.
 | 6 | Incorrect balances from rounding | Data | Medium | High | Orlando | **Mitigated** |
 | 7 | Concurrent actions produce inconsistent data | Data | Low | Medium | Both | **Occurred** once, fixed |
 | 8 | Merge conflicts | Technical | Medium → **High** | Medium → Low | Both | **Occurred**, managed |
-| 9 | Authentication or authorization vulnerabilities | Security | Medium | High | Both | **Mitigated**, two fixes |
+| 9 | Authentication or authorization vulnerabilities | Security | Medium | High | Both | **Mitigated**, two fixes; one residual accepted |
 | 10 | Application defects | Technical | Medium | Medium | Both | **Occurred**, caught before release |
 | 11 | Deployment problems | Deployment | Medium | High | Agustin | **Open** |
-| 12 | Free hosting tier limitations | Deployment | Medium | Low | Agustin | **Open** |
+| 12 | Free hosting tier limitations | Deployment | Medium | Medium | Agustin | **Open** |
 | 13 | GitHub or Render unavailable near a deadline | Deployment | Low | Medium | Agustin | **Occurred** once, mitigated |
 | 14 | Data loss | Data | Low | High | Agustin | **Open** (production) |
 | 15 | Requirements change significantly | Scheduling | Low | Medium | Both | **Mitigated** |
@@ -48,7 +48,7 @@ shared.
 | 19 | AI-generated changes merged without being understood | Process | Medium | High | Both | **Mitigated** |
 | 20 | A production secret leaks | Security | Low | High | Agustin | **Open** |
 | 21 | Rate limits reset or split when the server restarts or scales | Security | Medium | Low | Agustin | **Accepted** |
-| 22 | Security events go unnoticed | Security | Medium | Medium | Orlando | **Open** (#99) |
+| 22 | Security events go unnoticed | Security | Medium | Medium | Orlando | **Mitigated** (#99) |
 
 ## The proposal's risks, revisited
 
@@ -100,7 +100,7 @@ shared.
 - **Mitigation (proposal):** track contributions through issues and pull
   requests, and rebalance at the next sprint boundary.
 - **What happened:** balanced. `git shortlog -sn` counts 15 commits for Agustin
-  and 11 for Orlando from `milestone-0` to `milestone-1`, and 14 and 13 from
+  and 11 for Orlando from `milestone-0` to `milestone-1`, and 15 and 13 from
   `milestone-1` to `milestone-2`. Ownership moved when it needed to: the
   balances and dashboard stories moved to Agustin in Sprint 2, and #113
   re-applied Agustin's evidence after a merge went to the wrong branch.
@@ -169,11 +169,17 @@ shared.
   PostgreSQL (`server/src/integration/isolation.integration.test.ts`). The threat
   model (#70) found two real weaknesses, both since fixed: unlimited login
   attempts (rate limiting, #71) and any member being able to record a payment
-  between two others (#90). The OWASP review (#65) fixed missing security
+  between two others (#90, fixed in #127). The OWASP review (#65) fixed missing security
   headers and requests answered with 500 instead of 4xx.
-- **Status:** **Mitigated.** The detail and residual risks are in the
-  [threat model](../security/threat-model.md); risks 20 to 22 below cover what
-  is still open.
+- **Residual, accepted:** since #127 a member can only record a payment they
+  are part of, but the *payer* can still record one they never made and wipe
+  out their own debt. It shows as "Recorded by" them in History, so the
+  recipient can see it, but nothing asks the recipient to confirm, and a
+  settlement can't be edited or deleted to correct it (maintenance plan §10).
+  Recipient confirmation is beyond the course's scope (threat model H4).
+- **Status:** **Mitigated**, with that residual accepted. The detail and
+  residual risks are in the [threat model](../security/threat-model.md); risks
+  20 to 22 below cover the rest.
 
 ### 10. Application defects
 
@@ -209,7 +215,11 @@ shared.
   low-cost paid tier if the free database tier is too small.
 - **What happened:** not yet deployed. #117 records the free tier's actual
   limits once the service exists, and the demo script (#124) includes warming
-  the site up.
+  the site up. Impact raised from Low to Medium: Render's free PostgreSQL
+  databases are believed to expire about 30 days after they are created, so
+  one created on November 10 would expire around December 10, possibly before
+  grading is finished. #117 confirms the terms and either budgets for a paid
+  tier for December or plans a re-create.
 - **Status:** **Open.**
 
 ### 13. GitHub or Render unavailable near a deadline
@@ -265,12 +275,13 @@ shared.
   - #108 targeted another pull request's branch and was merged after that pull
     request had already merged, so its changes reached that branch and never
     `main`. They were re-applied as #113.
-  - `milestone-2` and `v0.3.0` were tagged on `bf38f4e`, one commit before #115
-    cut the `[0.3.0]` changelog section, so the changelog at the tag still says
-    "Unreleased". The release notes on GitHub are correct.
+  - `milestone-2` and `v0.3.0` were first tagged on `bf38f4e`, one commit before
+    #115 cut the `[0.3.0]` changelog section, so the changelog at the tag still
+    said "Unreleased". It was caught the same night: both tags were moved to
+    #115's merge (`596bd35`) on November 2, before submission.
 - **Mitigation:** retarget a stacked pull request to `main` before merging it,
   and tag a release on the merge commit of its own changelog pull request
-  (`BACKLOG.md`, working rules; #125). The tags were left as submitted.
+  (`BACKLOG.md`, working rules; #125).
 - **Status:** **Occurred** twice; the rules are in place.
 
 ### 18. The test toolchain can't be upgraded on one machine
@@ -321,6 +332,13 @@ shared.
 
 ### 22. Security events go unnoticed
 
-- **Cause:** the server logs only unexpected errors. Nothing records a failed
-  login, a rate limit reached, or a refused request (OWASP review, A09).
-- **Status:** **Open:** #99, Sprint 6, once there is a host to collect logs.
+- **Cause:** the server logged only unexpected errors. Nothing recorded a
+  failed login, a rate limit reached, or a refused request (OWASP review, A09).
+- **What happened:** #99 (#130) writes one JSON line to standard output for
+  each failed login, rate limit reached, `403`, and unknown household asked
+  for by a signed-in user. The email is stored as an HMAC keyed with
+  `SESSION_SECRET`, never as typed.
+- **Still open:** nobody reads the lines yet. Where the host's logs are read,
+  and how long they are kept, is #117 (maintenance plan §8). The lines hold IP
+  addresses, which are personal data, so that retention matters.
+- **Status:** **Mitigated:** the events are recorded.
