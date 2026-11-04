@@ -46,6 +46,10 @@ Every version is a GitHub release whose notes match its section below.
 
 - `prisma` (the CLI) is now a production dependency of the server, because
   the container runs `prisma migrate deploy` when it starts (#131).
+- The expense form's starting values, wording and preview key moved out of
+  the component into tested helpers, and its preview into its own component.
+  `ExpenseForm`'s cyclomatic complexity falls from 33 to 9, and the metrics
+  report records it. No change to what the form does (#134).
 
 ### Security
 

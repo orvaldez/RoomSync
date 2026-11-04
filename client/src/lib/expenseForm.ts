@@ -67,3 +67,62 @@ export function formValuesFromExpense(
         : {},
   };
 }
+
+/**
+ * The form's starting values: what was saved when editing (US-12), otherwise
+ * the defaults NFR-01 relies on: today's date, the member recording it as the
+ * payer (UC-05 step 3), everyone included, split equally.
+ */
+export function initialFormValues(
+  existing: Expense | undefined,
+  memberIds: readonly string[],
+  currentUserId: string | null,
+  today: string
+): ExpenseFormValues {
+  if (existing) return formValuesFromExpense(existing, memberIds);
+
+  const payer = currentUserId && memberIds.includes(currentUserId) ? currentUserId : memberIds[0] ?? "";
+  return {
+    description: "",
+    amount: "",
+    expenseDate: today,
+    paidByUserId: payer,
+    selected: [...memberIds],
+    splitMethod: "EQUAL",
+    customAmounts: {},
+    percents: {},
+  };
+}
+
+/** The words and destinations that differ between adding and editing. */
+export type FormCopy = {
+  heading: string;
+  saveLabel: string;
+  cancelTo: string;
+};
+
+export function formCopy(existing: Pick<Expense, "id"> | undefined): FormCopy {
+  return existing
+    ? { heading: "Edit expense", saveLabel: "Save changes", cancelTo: `/expenses/${existing.id}` }
+    : { heading: "Add an expense", saveLabel: "Save expense", cancelTo: "/" };
+}
+
+/**
+ * The preview request for the split as it stands, as a string so a stale
+ * answer can be recognised, or null when the split isn't complete enough to
+ * ask. The server validates the whole body, so a placeholder stands in for a
+ * description not typed yet, and today for a cleared date.
+ */
+export function previewKeyFor(
+  split: object | null,
+  description: string,
+  expenseDate: string,
+  today: string
+): string | null {
+  if (!split) return null;
+  return JSON.stringify({
+    ...split,
+    description: description.trim() || "Preview",
+    expenseDate: expenseDate || today,
+  });
+}
