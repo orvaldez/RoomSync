@@ -101,9 +101,11 @@ ExpensePublic    { id, description, totalAmountCents, expenseDate,
                    paidBy: { userId, name }, splitMethod: "EQUAL" | "CUSTOM" | "PERCENTAGE",
                    shares: SharePublic[], createdAt,
                    updatedAt,                                   // US-12: equals createdAt until edited
-                   deleted: { at, by: { userId, name } } | null } // US-12: null unless deleted
+                   deleted: { at, by: { userId, name } } | null, // US-12: null unless deleted
+                   createdBy: { userId, name } | null }       // #90: who entered it
 SettlementPublic { id, from: { userId, name }, to: { userId, name },
-                   amountCents, note: string | null, settledAt }
+                   amountCents, note: string | null, settledAt,
+                   createdBy: { userId, name } | null }       // #90: who entered it
 ChorePublic      { id, title, description: string | null,
                    assignee: { userId, name } | null, dueDate: string | null,
                    isComplete, completedAt: string | null, createdAt }
@@ -438,7 +440,14 @@ Errors:
   400 VALIDATION_FAILED        - "Validation failed" (fields: amountCents, note)         UC-08 4b
   400 SAME_MEMBER              - "A member cannot settle with themselves."               UC-08 4c
   400 MEMBER_NOT_IN_HOUSEHOLD  - "Both members must belong to this household."           UC-08 4d
+  403 NOT_PARTY_TO_SETTLEMENT  - "You can only record a payment you made or received."   UC-08 4f, #90
   409 EXCEEDS_BALANCE          - "That is more than is currently owed."                  UC-08 4a, 4e
+
+The requester must be `from` or `to` (#90): a member records a payment they
+made or received, never one between two other members. The requester is stored
+as `createdBy`, from the session; a `createdByUserId` in the body is ignored.
+Expenses record `createdBy` the same way, which can differ from `paidBy`.
+Records created before #90 have `createdBy: null`.
 
 The outstanding balance is recomputed at write time, inside the same
 transaction, not taken from what the client displayed (UC-08 4e). If `from`
@@ -543,6 +552,7 @@ guidance (UC-10 3a-6a).
 | `INVALID_CREDENTIALS` | 401 | login |
 | `NOT_HOUSEHOLD_OWNER` | 403 | invitations create, list, revoke |
 | `CHORE_NOT_ASSIGNED_TO_YOU` | 403 | chore complete |
+| `NOT_PARTY_TO_SETTLEMENT` | 403 | settlements create |
 | `NOT_EXPENSE_EDITOR` | 403 | expense edit, delete |
 | `HOUSEHOLD_NOT_FOUND` | 404 | every household-scoped endpoint |
 | `INVITATION_INVALID` | 404 | invitation lookup, accept |

@@ -16,6 +16,7 @@ function expenseItem(paidBy: { userId: string; name: string }): ActivityItem {
     createdAt: "2026-09-24T18:00:00.000Z",
     updatedAt: "2026-09-24T18:00:00.000Z",
     deleted: null,
+    createdBy: null,
   };
   return { type: "EXPENSE", at: expense.createdAt, expense };
 }
@@ -29,6 +30,7 @@ function settlementItem(from: string, to: string): ActivityItem {
     amountCents: 1833,
     note: null,
     settledAt: "2026-09-25T18:00:00.000Z",
+    createdBy: null,
   };
   return { type: "SETTLEMENT", at: settlement.settledAt, settlement };
 }

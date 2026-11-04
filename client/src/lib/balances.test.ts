@@ -59,6 +59,7 @@ describe("describeSettlement", () => {
     amountCents: 1833,
     note: null,
     settledAt: "2026-09-30T18:00:00.000Z",
+    createdBy: null,
   });
 
   it.each([

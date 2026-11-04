@@ -382,6 +382,21 @@ export class ChoreNotAssignedToYouError extends AppError {
 }
 
 /**
+ * 403 — the member recording a settlement is neither its payer nor its
+ * recipient (#90, threat model H4). Otherwise any member could record that
+ * two others settled, wiping out a debt owed to someone else.
+ */
+export class NotPartyToSettlementError extends AppError {
+  readonly code = "NOT_PARTY_TO_SETTLEMENT";
+  readonly status = 403;
+
+  constructor() {
+    super("You can only record a payment you made or received.");
+    this.name = "NotPartyToSettlementError";
+  }
+}
+
+/**
  * 409 — the settlement is more than the payer currently owes the recipient
  * (UC-08 4a, 4e). Recording it would invert the balance and invent a debt that
  * does not exist. Checked against the balance at the moment of writing, not

@@ -70,6 +70,7 @@ function expense(id: string, createdAt: string): PublicExpense {
     createdAt: at(createdAt),
     updatedAt: at(createdAt),
     deleted: null,
+    createdBy: null,
   };
 }
 
@@ -81,6 +82,7 @@ function settlement(id: string, settledAt: string): PublicSettlement {
     amountCents: 500,
     note: null,
     settledAt: at(settledAt),
+    createdBy: null,
   };
 }
 

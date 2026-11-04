@@ -88,6 +88,7 @@ function stored(
     createdAt: new Date("2026-09-29T17:30:00.000Z"),
     updatedAt: new Date("2026-09-29T17:30:00.000Z"),
     deleted: null,
+    createdBy: null,
     ...overrides,
   };
 }
@@ -110,7 +111,7 @@ beforeEach(() => {
 
 describe("createExpense — main success scenario (UC-05)", () => {
   it("stores the expense with its calculated shares", async () => {
-    await createExpense(HOUSEHOLD_ID, groceries());
+    await createExpense(HOUSEHOLD_ID, AGUSTIN, groceries());
 
     expect(createWithShares).toHaveBeenCalledWith({
       householdId: HOUSEHOLD_ID,
@@ -124,11 +125,11 @@ describe("createExpense — main success scenario (UC-05)", () => {
         { userId: ORLANDO, amountOwedCents: 3333, percentBasisPoints: null },
         { userId: MAYA, amountOwedCents: 3333, percentBasisPoints: null },
       ],
-    });
+    }, AGUSTIN);
   });
 
   it("returns the expense in the contract's ExpensePublic shape", async () => {
-    const expense = await createExpense(HOUSEHOLD_ID, groceries());
+    const expense = await createExpense(HOUSEHOLD_ID, AGUSTIN, groceries());
 
     expect(expense).toEqual({
       id: "clxEXPENSE00000000000000",
@@ -145,28 +146,32 @@ describe("createExpense — main success scenario (UC-05)", () => {
       createdAt: new Date("2026-09-29T17:30:00.000Z"),
       updatedAt: new Date("2026-09-29T17:30:00.000Z"),
       deleted: null,
+      createdBy: null,
     });
   });
 
   it("trims the description before storing it", async () => {
-    await createExpense(HOUSEHOLD_ID, groceries({ description: "  Groceries  " }));
+    await createExpense(HOUSEHOLD_ID, AGUSTIN, groceries({ description: "  Groceries  " }));
 
     expect(createWithShares).toHaveBeenCalledWith(
-      expect.objectContaining({ description: "Groceries" })
+      expect.objectContaining({ description: "Groceries" }),
+      AGUSTIN
     );
   });
 
   it("lets any member be the payer, not only the requester", async () => {
-    await createExpense(HOUSEHOLD_ID, groceries({ paidByUserId: MAYA }));
+    await createExpense(HOUSEHOLD_ID, AGUSTIN, groceries({ paidByUserId: MAYA }));
 
     expect(createWithShares).toHaveBeenCalledWith(
-      expect.objectContaining({ paidByUserId: MAYA })
+      expect.objectContaining({ paidByUserId: MAYA }),
+      AGUSTIN
     );
   });
 
   it("lets the payer be left out of the split", async () => {
     await createExpense(
       HOUSEHOLD_ID,
+      AGUSTIN,
       groceries({ participants: [{ userId: ORLANDO }, { userId: MAYA }] })
     );
 
@@ -177,6 +182,7 @@ describe("createExpense — main success scenario (UC-05)", () => {
   it("stores custom amounts as given", async () => {
     await createExpense(
       HOUSEHOLD_ID,
+      AGUSTIN,
       groceries({
         splitMethod: "CUSTOM",
         participants: [
@@ -194,6 +200,7 @@ describe("createExpense — main success scenario (UC-05)", () => {
   it("stores percentages alongside the amounts they produced", async () => {
     await createExpense(
       HOUSEHOLD_ID,
+      AGUSTIN,
       groceries({
         splitMethod: "PERCENTAGE",
         participants: [
@@ -219,7 +226,7 @@ describe("createExpense — invalid fields (UC-05 2a-2c)", () => {
     ["missing", undefined],
   ])("rejects an amount that is %s", async (_label, totalAmountCents) => {
     const error = await rejectionOf(
-      createExpense(HOUSEHOLD_ID, groceries({ totalAmountCents }))
+      createExpense(HOUSEHOLD_ID, AGUSTIN, groceries({ totalAmountCents }))
     );
 
     expect(error).toBeInstanceOf(ValidationError);
@@ -232,7 +239,7 @@ describe("createExpense — invalid fields (UC-05 2a-2c)", () => {
     ["over 200 characters", "x".repeat(201)],
   ])("rejects a description that is %s", async (_label, description) => {
     const error = await rejectionOf(
-      createExpense(HOUSEHOLD_ID, groceries({ description }))
+      createExpense(HOUSEHOLD_ID, AGUSTIN, groceries({ description }))
     );
 
     expect((error as ValidationError).fields).toHaveProperty("description");
@@ -244,7 +251,7 @@ describe("createExpense — invalid fields (UC-05 2a-2c)", () => {
     ["not a real day", "2026-02-30"],
   ])("rejects a date that is %s", async (_label, expenseDate) => {
     const error = await rejectionOf(
-      createExpense(HOUSEHOLD_ID, groceries({ expenseDate }))
+      createExpense(HOUSEHOLD_ID, AGUSTIN, groceries({ expenseDate }))
     );
 
     expect((error as ValidationError).fields).toHaveProperty("expenseDate");
@@ -252,7 +259,7 @@ describe("createExpense — invalid fields (UC-05 2a-2c)", () => {
 
   it("rejects an unknown split method", async () => {
     const error = await rejectionOf(
-      createExpense(HOUSEHOLD_ID, groceries({ splitMethod: "WHOEVER" }))
+      createExpense(HOUSEHOLD_ID, AGUSTIN, groceries({ splitMethod: "WHOEVER" }))
     );
 
     expect((error as ValidationError).fields).toHaveProperty("splitMethod");
@@ -260,7 +267,7 @@ describe("createExpense — invalid fields (UC-05 2a-2c)", () => {
 
   it("reports every invalid field in one error", async () => {
     const error = await rejectionOf(
-      createExpense(HOUSEHOLD_ID, {
+      createExpense(HOUSEHOLD_ID, AGUSTIN, {
         description: "",
         totalAmountCents: -1,
         expenseDate: "yesterday",
@@ -279,7 +286,7 @@ describe("createExpense — invalid fields (UC-05 2a-2c)", () => {
   });
 
   it("does not look up members when a field is invalid", async () => {
-    await rejectionOf(createExpense(HOUSEHOLD_ID, groceries({ totalAmountCents: 0 })));
+    await rejectionOf(createExpense(HOUSEHOLD_ID, AGUSTIN, groceries({ totalAmountCents: 0 })));
 
     expect(listMembers).not.toHaveBeenCalled();
   });
@@ -288,13 +295,13 @@ describe("createExpense — invalid fields (UC-05 2a-2c)", () => {
 describe("createExpense — membership (UC-05 3a)", () => {
   it("rejects a payer from outside the household", async () => {
     await expect(
-      createExpense(HOUSEHOLD_ID, groceries({ paidByUserId: OUTSIDER }))
+      createExpense(HOUSEHOLD_ID, AGUSTIN, groceries({ paidByUserId: OUTSIDER }))
     ).rejects.toThrow(PayerNotMemberError);
   });
 
   it("rejects a missing payer as not a member", async () => {
     await expect(
-      createExpense(HOUSEHOLD_ID, groceries({ paidByUserId: undefined }))
+      createExpense(HOUSEHOLD_ID, AGUSTIN, groceries({ paidByUserId: undefined }))
     ).rejects.toThrow(PayerNotMemberError);
   });
 
@@ -302,13 +309,14 @@ describe("createExpense — membership (UC-05 3a)", () => {
     await expect(
       createExpense(
         HOUSEHOLD_ID,
+        AGUSTIN,
         groceries({ participants: [{ userId: AGUSTIN }, { userId: OUTSIDER }] })
       )
     ).rejects.toThrow(ParticipantNotMemberError);
   });
 
   it("checks membership against the household it was given", async () => {
-    await createExpense(HOUSEHOLD_ID, groceries());
+    await createExpense(HOUSEHOLD_ID, AGUSTIN, groceries());
 
     expect(listMembers).toHaveBeenCalledWith(HOUSEHOLD_ID);
   });
@@ -361,7 +369,7 @@ describe("createExpense — invalid splits are never saved (UC-05 9a)", () => {
       ParticipantNotMemberError,
     ],
   ])("rejects %s and writes nothing", async (_label, input, errorClass) => {
-    await expect(createExpense(HOUSEHOLD_ID, input)).rejects.toThrow(errorClass);
+    await expect(createExpense(HOUSEHOLD_ID, AGUSTIN, input)).rejects.toThrow(errorClass);
 
     expect(createWithShares).not.toHaveBeenCalled();
   });

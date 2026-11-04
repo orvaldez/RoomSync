@@ -43,6 +43,8 @@ model User {
   memberships         Membership[]
   expensesPaid        Expense[]      @relation("ExpensePaidBy")
   expensesDeleted     Expense[]      @relation("ExpenseDeletedBy")
+  expensesCreated     Expense[]      @relation("ExpenseCreatedBy")
+  settlementsCreated  Settlement[]   @relation("SettlementCreatedBy")
   expenseShares       ExpenseShare[]
   settlementsSent     Settlement[]   @relation("SettlementFrom")
   settlementsReceived Settlement[]   @relation("SettlementTo")
@@ -109,10 +111,14 @@ model Expense {
   // longer counts toward balances (analysis-model.md §8.1).
   deletedAt        DateTime?   @map("deleted_at")
   deletedByUserId  String?     @map("deleted_by_user_id")
+  // #90: who entered it, from the session. Null for rows recorded before the
+  // column existed, since that can't be known (ai-assisted-workflow.md, 3).
+  createdByUserId  String?     @map("created_by_user_id")
 
   household Household      @relation(fields: [householdId], references: [id], onDelete: Cascade)
   paidBy    User           @relation("ExpensePaidBy", fields: [paidByUserId], references: [id], onDelete: Restrict)
   deletedBy User?          @relation("ExpenseDeletedBy", fields: [deletedByUserId], references: [id], onDelete: Restrict)
+  createdBy User?          @relation("ExpenseCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
   shares    ExpenseShare[]
 
   @@index([householdId, expenseDate])
@@ -136,17 +142,20 @@ model ExpenseShare {
 }
 
 model Settlement {
-  id          String   @id @default(cuid()) @map("settlement_id")
-  householdId String   @map("household_id")
-  fromUserId  String   @map("from_user_id")
-  toUserId    String   @map("to_user_id")
-  amountCents Int      @map("amount_cents")
-  settledAt   DateTime @default(now()) @map("settled_at")
-  note        String?
+  id              String   @id @default(cuid()) @map("settlement_id")
+  householdId     String   @map("household_id")
+  fromUserId      String   @map("from_user_id")
+  toUserId        String   @map("to_user_id")
+  amountCents     Int      @map("amount_cents")
+  settledAt       DateTime @default(now()) @map("settled_at")
+  note            String?
+  // #90: who entered it, from the session; null for rows recorded before.
+  createdByUserId String?  @map("created_by_user_id")
 
   household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
   fromUser  User      @relation("SettlementFrom", fields: [fromUserId], references: [id], onDelete: Restrict)
   toUser    User      @relation("SettlementTo", fields: [toUserId], references: [id], onDelete: Restrict)
+  createdBy User?     @relation("SettlementCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
 
   @@index([householdId, settledAt])
   @@index([fromUserId])

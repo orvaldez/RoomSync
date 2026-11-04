@@ -89,6 +89,7 @@ beforeEach(() => {
       amountCents: settlement.amountCents,
       note: settlement.note,
       settledAt: new Date("2026-09-30T18:00:00.000Z"),
+      createdBy: { userId: settlement.createdByUserId, name: "Agustin" },
     };
   });
   listSettlements.mockResolvedValue([]);
@@ -132,7 +133,39 @@ describe("POST /api/households/:householdId/settlements", () => {
       amountCents: 4201,
       note: "cash",
       settledAt: "2026-09-30T18:00:00.000Z",
+      createdBy: { userId: USER.id, name: "Agustin" },
     });
+  });
+
+  it("records the signed-in member as who entered it, ignoring the body (#90)", async () => {
+    const agent = await signedInAgent();
+
+    await agent.post(`${BASE}/settlements`).send({
+      fromUserId: ORLANDO,
+      toUserId: USER.id,
+      amountCents: 100,
+      createdByUserId: ORLANDO,
+    });
+
+    expect(createSettlementChecked).toHaveBeenCalledWith(
+      expect.objectContaining({ createdByUserId: USER.id }),
+      expect.any(Function)
+    );
+  });
+
+  it("returns 403 NOT_PARTY_TO_SETTLEMENT for a payment between two other members (#90)", async () => {
+    const agent = await signedInAgent();
+
+    const res = await agent
+      .post(`${BASE}/settlements`)
+      .send({ fromUserId: ORLANDO, toUserId: "clxMAYA000000000000000000", amountCents: 100 });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toEqual({
+      code: "NOT_PARTY_TO_SETTLEMENT",
+      message: "You can only record a payment you made or received.",
+    });
+    expect(createSettlementChecked).not.toHaveBeenCalled();
   });
 
   it.each([

@@ -21,6 +21,29 @@ Every version is a GitHub release whose notes match its section below.
 
 ## [Unreleased]
 
+### Added
+
+- Docker images for the server and the client, and Docker Compose running
+  them with PostgreSQL: `docker compose up --build` serves the whole app at
+  http://localhost:8080 with nothing else installed. The server applies
+  pending migrations on start; the client's nginx proxies `/api` to it (#116, #131).
+
+### Changed
+
+- `prisma` (the CLI) is now a production dependency of the server, because
+  the container runs `prisma migrate deploy` when it starts (#131).
+
+### Security
+
+- Only the payer or the recipient can record a settlement. Before, any member
+  could record that two others had settled, wiping out a debt owed to someone
+  else; now the server refuses it with `403 NOT_PARTY_TO_SETTLEMENT`. Every
+  new expense and settlement also stores who entered it, from the session, and
+  History and the expense detail show "Recorded by". A migration adds
+  `created_by_user_id` to `expenses` and `settlements`; older records have no
+  value, rather than a guessed one. Built with a disclosed AI-assisted
+  workflow, recorded in `docs/process/ai-assisted-workflow.md` (#127).
+
 ## [0.3.0] - 2026-11-02
 
 Milestone 2: History and the expense detail, editing and deleting an

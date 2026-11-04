@@ -4,6 +4,7 @@ import { netOwed } from "./balance.service";
 import {
   ExceedsBalanceError,
   MemberNotInHouseholdError,
+  NotPartyToSettlementError,
   SameMemberError,
   ValidationError,
 } from "./errors";
@@ -31,6 +32,8 @@ export type PublicSettlement = {
   amountCents: number;
   note: string | null;
   settledAt: Date;
+  /** Who entered it (#90); null for settlements recorded before that was kept. */
+  createdBy: { userId: string; name: string } | null;
 };
 
 /**
@@ -39,9 +42,15 @@ export type PublicSettlement = {
  * `from` is the member who paid off a debt and `to` the member who was owed.
  * The amount may not exceed what `from` owes `to` at the moment of writing
  * (4a, 4e); if `from` owes `to` nothing, every amount is refused.
+ *
+ * `recordedByUserId` is the signed-in member, from the session. They must be
+ * `from` or `to` (#90): a member can record a payment they made or received,
+ * never one between two others (threat model H4). It is stored as who entered
+ * the settlement (M4).
  */
 export async function createSettlement(
   householdId: string,
+  recordedByUserId: string,
   input: SettlementInput
 ): Promise<PublicSettlement> {
   const fields: Record<string, string> = {};
@@ -69,6 +78,12 @@ export async function createSettlement(
     throw new SameMemberError();
   }
 
+  // Before any lookup, so a member learns nothing about other members by
+  // trying to record payments between them.
+  if (recordedByUserId !== fromUserId && recordedByUserId !== toUserId) {
+    throw new NotPartyToSettlementError();
+  }
+
   const [fromRole, toRole] = await Promise.all([
     householdRepository.findRole(fromUserId, householdId),
     householdRepository.findRole(toUserId, householdId),
@@ -84,6 +99,7 @@ export async function createSettlement(
       toUserId,
       amountCents,
       note: toNote(input.note),
+      createdByUserId: recordedByUserId,
     },
     // Runs inside the write's transaction, against the ledger as it is then.
     (entries) => {
@@ -122,5 +138,6 @@ function toPublicSettlement(settlement: ledgerRepository.SettlementRecord): Publ
     amountCents: settlement.amountCents,
     note: settlement.note,
     settledAt: settlement.settledAt,
+    createdBy: settlement.createdBy,
   };
 }

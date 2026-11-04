@@ -10,7 +10,7 @@ import {
 } from "../lib/api";
 import { describeSettlement } from "../lib/balances";
 import { formatActivityDate } from "../lib/activity";
-import { describeCompletedChore } from "../lib/history";
+import { describeCompletedChore, describeRecordedBy } from "../lib/history";
 import { useAuth } from "../auth/useAuth";
 import { ExpenseList } from "../components/ExpenseList";
 
@@ -139,15 +139,19 @@ export function HistoryPage() {
           // Kept after a balance reaches zero (FR-12): this is the record that
           // a debt was paid, not a list of what is still owed.
           <ul className="settlement-list">
-            {settlements.map((settlement) => (
-              <li key={settlement.id}>
-                <span>{describeSettlement(settlement, user.id)}</span>
-                <span className="muted">
-                  {formatActivityDate(settlement.settledAt)}
-                  {settlement.note && ` · ${settlement.note}`}
-                </span>
-              </li>
-            ))}
+            {settlements.map((settlement) => {
+              const recordedBy = describeRecordedBy(settlement, user.id);
+              return (
+                <li key={settlement.id}>
+                  <span>{describeSettlement(settlement, user.id)}</span>
+                  <span className="muted">
+                    {formatActivityDate(settlement.settledAt)}
+                    {settlement.note && ` · ${settlement.note}`}
+                    {recordedBy && ` · ${recordedBy}`}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

@@ -111,3 +111,16 @@ export function describeDeleted(
   const who = expense.deleted.by.userId === currentUserId ? "you" : expense.deleted.by.name;
   return `Deleted by ${who} on ${formatActivityDate(expense.deleted.at)}`;
 }
+
+/**
+ * "Recorded by Sam" or "Recorded by you" (#90, threat model M4), or null when
+ * it isn't known: records entered before the app kept this have no value, and
+ * saying nothing is more honest than guessing.
+ */
+export function describeRecordedBy(
+  record: { createdBy: { userId: string; name: string } | null },
+  currentUserId: string
+): string | null {
+  if (!record.createdBy) return null;
+  return `Recorded by ${record.createdBy.userId === currentUserId ? "you" : record.createdBy.name}`;
+}
