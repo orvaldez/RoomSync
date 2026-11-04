@@ -19,12 +19,13 @@ export default mergeConfig(
         exclude: ["src/**/*.test.{ts,tsx}", "src/test/**"],
         reporter: ["text", "html", "json-summary"],
         thresholds: {
-          // A floor just under the level the component tests (#76) brought
-          // it to, so it can only go up. Several screens still have no test.
-          statements: 50,
-          branches: 75,
-          functions: 55,
-          lines: 50,
+          // A floor just under the level the component tests (#76, then
+          // History, the expense detail and editing) brought it to, so it can
+          // only go up. Several screens still have no test.
+          statements: 65,
+          branches: 78,
+          functions: 60,
+          lines: 65,
           // The logic a wrong answer costs money in: turning what a user
           // types into cents, and the direction of "you owe" / "owes you".
           // api.ts is the fetch wrapper, exercised by component tests.
