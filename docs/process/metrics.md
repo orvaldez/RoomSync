@@ -104,6 +104,13 @@ project. Splitting the starting values out of the component is the obvious
 refactor. The other client functions over 10 are `buildDraft` (22), the same
 form's validation, unchanged, and five more between 11 and 14.
 
+**The refactor, measured (#134):** `ExpenseForm` went from **33 to 9**. Its
+starting values, wording and preview key moved to tested helpers in
+`lib/expenseForm.ts` (`initialFormValues` 5, `formCopy` 1, `previewKeyFor`
+4), and the preview to its own `SplitPreview` component (9). The client's
+maximum is now `buildDraft` (22), and 6 functions are over 10 instead of 7.
+The mean fell from 2.74 to 2.68 across the same 249 functions.
+
 ### Enforced checks
 
 These are pass-or-fail in CI rather than trends, so they read the same at
@@ -215,8 +222,10 @@ Everything above can be re-measured from the repository. The scripts are in
   database running. Instrumentation slows the 500-expense check past the
   default 5-second timeout.
 - **Size and complexity:** copy each tag's `src/` into `server/cx/<label>/`
-  without test files, then run `complexity.config.mjs`,
+  without test files, copy `complexity.config.mjs` into `server/` too (Node
+  looks for `typescript-eslint` next to the config file), then run it,
   `complexity-summary.js` and `complexity-top.js` as their headers describe.
+  Delete `server/cx/` and the copied config afterwards.
 - **Pull requests:** `gh pr list --state merged --json …` (the fields are in
   `pr-flow.js`'s header), then `pr-flow.js` and `merges-per-week.js`. A pull
   request belongs to the milestone whose tag commit it merged on or before.
@@ -240,7 +249,7 @@ Everything above can be re-measured from the repository. The scripts are in
   in one and 92% in the other. Neither number alone describes the project.
 - **The biggest quality risk we can measure is one function.** `ExpenseForm`'s
   complexity rose by 13 in a single feature. A metric made that visible; a
-  review of the diff alone hadn't.
+  review of the diff alone hadn't. Once measured, it was fixed (33 to 9, #134).
 - **The process metric moved the most.** Self-merges went from 4 to 0, and
   approval from 65% to 100%, once branch protection made review mandatory.
   The remaining problem is timing, not coverage of review: work waited, then

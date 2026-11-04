@@ -18,7 +18,7 @@ import {
   parsePercentToBasisPoints,
   todayAsCalendarDate,
 } from "../lib/money";
-import { formValuesFromExpense } from "../lib/expenseForm";
+import { formCopy, initialFormValues, previewKeyFor } from "../lib/expenseForm";
 import { canChangeExpense } from "../lib/history";
 import { useAuth } from "../auth/useAuth";
 import { Field } from "../components/Field";
@@ -240,42 +240,28 @@ function ExpenseForm({
   const payerId = useId();
   const participantsErrorId = useId();
 
-  // Editing starts from what was saved; recording a new one from the
-  // defaults NFR-01 relies on.
+  // What was saved when editing, otherwise the defaults NFR-01 relies on
+  // (lib/expenseForm.ts). Worked out once, on the first render.
   const [initial] = useState(() =>
-    existing
-      ? formValuesFromExpense(
-          existing,
-          members.map((m) => m.userId)
-        )
-      : null
+    initialFormValues(
+      existing,
+      members.map((m) => m.userId),
+      currentUserId,
+      todayAsCalendarDate()
+    )
   );
+  const copy = formCopy(existing);
 
-  const [description, setDescription] = useState(initial?.description ?? "");
-  const [amount, setAmount] = useState(initial?.amount ?? "");
-  const [expenseDate, setExpenseDate] = useState(
-    () => initial?.expenseDate ?? todayAsCalendarDate()
-  );
-  // UC-05 step 3: the payer defaults to the member recording the expense.
-  const [paidByUserId, setPaidByUserId] = useState(() =>
-    initial
-      ? initial.paidByUserId
-      : members.some((m) => m.userId === currentUserId)
-        ? (currentUserId as string)
-        : members[0]?.userId ?? ""
-  );
-  const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(initial ? initial.selected : members.map((m) => m.userId))
-  );
-  const [splitMethod, setSplitMethod] = useState<SplitMethod>(
-    initial?.splitMethod ?? "EQUAL"
-  );
+  const [description, setDescription] = useState(initial.description);
+  const [amount, setAmount] = useState(initial.amount);
+  const [expenseDate, setExpenseDate] = useState(initial.expenseDate);
+  const [paidByUserId, setPaidByUserId] = useState(initial.paidByUserId);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(initial.selected));
+  const [splitMethod, setSplitMethod] = useState<SplitMethod>(initial.splitMethod);
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>(
-    initial?.customAmounts ?? {}
+    initial.customAmounts
   );
-  const [percents, setPercents] = useState<Record<string, string>>(
-    initial?.percents ?? {}
-  );
+  const [percents, setPercents] = useState<Record<string, string>>(initial.percents);
 
   // Client-side errors are only shown once the member has tried to save, so
   // an empty form is not covered in red before anything has been typed.
@@ -293,15 +279,8 @@ function ExpenseForm({
   const errors = { ...serverErrors, ...(attempted ? draft.errors : {}) };
 
   // The preview only needs the split, not the description, so it runs as soon
-  // as the amount and shares are usable. The server validates the whole body,
-  // though, so a placeholder stands in for a description not yet typed.
-  const previewKey = draft.split
-    ? JSON.stringify({
-        ...draft.split,
-        description: description.trim() || "Preview",
-        expenseDate: expenseDate || todayAsCalendarDate(),
-      })
-    : null;
+  // as the amount and shares are usable (lib/expenseForm.ts, previewKeyFor).
+  const previewKey = previewKeyFor(draft.split, description, expenseDate, todayAsCalendarDate());
 
   useEffect(() => {
     if (!previewKey) return;
@@ -478,7 +457,7 @@ function ExpenseForm({
 
   return (
     <main className="page">
-      <h1>{existing ? "Edit expense" : "Add an expense"}</h1>
+      <h1>{copy.heading}</h1>
       <p className="muted">{household.name}</p>
 
       <form className="auth-form expense-form" onSubmit={handleSubmit} noValidate>
@@ -614,30 +593,50 @@ function ExpenseForm({
           split={draft.split}
         />
 
-        <section className="panel split-preview" aria-live="polite">
-          <h2>Each person's share</h2>
-          {!previewKey && (
-            <p className="muted">
-              Enter the amount and choose who is splitting it to see each share.
-            </p>
-          )}
-          {previewKey && !currentPreview && <p className="muted">Calculating…</p>}
-          {currentPreview?.error && (
-            <p className="field-error">{currentPreview.error}</p>
-          )}
-          {currentPreview?.shares && (
-            <ShareList shares={currentPreview.shares} totalCents={totalCents ?? 0} />
-          )}
-        </section>
+        <SplitPreview
+          waitingForSplit={!previewKey}
+          preview={currentPreview}
+          totalCents={totalCents}
+        />
 
         <div className="form-actions">
           <button type="submit" disabled={submitting}>
-            {submitting ? "Saving…" : existing ? "Save changes" : "Save expense"}
+            {submitting ? "Saving…" : copy.saveLabel}
           </button>
-          <Link to={existing ? `/expenses/${existing.id}` : "/"}>Cancel</Link>
+          <Link to={copy.cancelTo}>Cancel</Link>
         </div>
       </form>
     </main>
+  );
+}
+
+/**
+ * The server's calculation of each share (UC-05 step 7), or what it is waiting
+ * for. A separate component so the form's own branching stays about the form.
+ */
+function SplitPreview({
+  waitingForSplit,
+  preview,
+  totalCents,
+}: {
+  /** True until the amount and the people splitting it are usable. */
+  waitingForSplit: boolean;
+  /** The answer for the current inputs, or null while it is on its way. */
+  preview: Preview | null;
+  totalCents: number | null;
+}) {
+  return (
+    <section className="panel split-preview" aria-live="polite">
+      <h2>Each person's share</h2>
+      {waitingForSplit && (
+        <p className="muted">
+          Enter the amount and choose who is splitting it to see each share.
+        </p>
+      )}
+      {!waitingForSplit && !preview && <p className="muted">Calculating…</p>}
+      {preview?.error && <p className="field-error">{preview.error}</p>}
+      {preview?.shares && <ShareList shares={preview.shares} totalCents={totalCents ?? 0} />}
+    </section>
   );
 }
 
