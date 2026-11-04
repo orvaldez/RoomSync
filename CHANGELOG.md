@@ -32,6 +32,8 @@ Every version is a GitHub release whose notes match its section below.
 
 - `prisma` (the CLI) is now a production dependency of the server, because
   the container runs `prisma migrate deploy` when it starts (#131).
+- Compose publishes PostgreSQL on `127.0.0.1` only, so the local database
+  and its example login aren't reachable from the local network (#117).
 
 ### Security
 

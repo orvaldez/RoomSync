@@ -137,7 +137,8 @@ Then open **http://localhost:8080** and sign in as any account in
   `RoomSync API listening on port 4000`.
 - **Start over with an empty database:** `docker compose down -v`, then both
   commands above again.
-- **Ports:** only 8080 (the app) and 5432 (PostgreSQL) are published. The API
+- **Ports:** only 8080 (the app) and 5432 (PostgreSQL) are published, and
+  5432 only on this machine (`127.0.0.1`), not to the local network. The API
   is reached through the app's `/api`, so port 4000 stays free for
   development. If 8080 is taken, set `ROOMSYNC_PORT` (for example
   `ROOMSYNC_PORT=8081 docker compose up --build -d` in Git Bash, or
@@ -361,7 +362,7 @@ cd server && npx prisma migrate reset && npm run db:seed
 With the Docker-only quick start, start over with an empty database instead:
 
 ```bash
-docker compose down -v && docker compose up -d && docker compose exec server node dist/seed.js
+docker compose down -v && docker compose up --build -d && docker compose exec server node dist/seed.js
 ```
 
 To confirm authorization is enforced server-side rather than only in the
