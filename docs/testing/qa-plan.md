@@ -79,7 +79,8 @@ a README section, and if a step fails, the README or the code is wrong.
 
 1. `git clone` the repository into a new folder and check out the commit
    being released.
-2. **Getting started:** prerequisites, `docker compose up -d`,
+2. **Getting started:** the Docker-only quick start (`docker compose up --build`,
+   then the seed command), then the development setup: `docker compose up -d db`,
    `cp server/.env.example server/.env`, `npm install` in both workspaces,
    `npx prisma generate`, and the migrations, exactly as written.
 3. **Seed data:** `npm run db:seed`, then run it again to confirm it stops

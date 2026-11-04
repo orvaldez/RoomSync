@@ -1,0 +1,12 @@
+# Kept out of the image (#116): installed and built inside it instead, or
+# local-only and possibly secret.
+node_modules
+dist
+coverage
+cx
+.env
+.env.*
+!.env.example
+*.log
+Dockerfile
+.dockerignore

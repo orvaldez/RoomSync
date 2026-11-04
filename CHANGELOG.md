@@ -21,6 +21,18 @@ Every version is a GitHub release whose notes match its section below.
 
 ## [Unreleased]
 
+### Added
+
+- Docker images for the server and the client, and Docker Compose running
+  them with PostgreSQL: `docker compose up --build` serves the whole app at
+  http://localhost:8080 with nothing else installed. The server applies
+  pending migrations on start; the client's nginx proxies `/api` to it (#116).
+
+### Changed
+
+- `prisma` (the CLI) is now a production dependency of the server, because
+  the container runs `prisma migrate deploy` when it starts (#116).
+
 ## [0.3.0] - 2026-11-02
 
 Milestone 2: History and the expense detail, editing and deleting an
