@@ -30,6 +30,8 @@ export type ExpenseRecord = {
   updatedAt: Date;
   /** Null unless the expense was deleted (US-12). */
   deleted: { at: Date; by: { userId: string; name: string } } | null;
+  /** Who entered it (#90); null for expenses recorded before that was kept. */
+  createdBy: { userId: string; name: string } | null;
 };
 
 export type NewExpense = {
@@ -57,6 +59,7 @@ export type NewExpense = {
 const EXPENSE_INCLUDE = {
   paidBy: { select: { name: true } },
   deletedBy: { select: { name: true } },
+  createdBy: { select: { name: true } },
   shares: {
     orderBy: { id: "asc" },
     select: {
@@ -94,6 +97,10 @@ function toExpenseRecord(row: ExpenseRow): ExpenseRecord {
             by: { userId: row.deletedByUserId, name: row.deletedBy.name },
           }
         : null,
+    createdBy:
+      row.createdByUserId && row.createdBy
+        ? { userId: row.createdByUserId, name: row.createdBy.name }
+        : null,
   };
 }
 
@@ -109,7 +116,9 @@ function toExpenseRecord(row: ExpenseRow): ExpenseRecord {
  * expense or finish before it (UC-08 4e). See `lockLedger`.
  */
 export async function createWithShares(
-  expense: NewExpense
+  expense: NewExpense,
+  /** The signed-in member entering it (#90), from the session, never the body. */
+  createdByUserId: string
 ): Promise<ExpenseRecord> {
   return getPrisma().$transaction(async (tx) => {
     await lockLedger(tx, expense.householdId);
@@ -122,6 +131,7 @@ export async function createWithShares(
         expenseDate: expense.expenseDate,
         paidByUserId: expense.paidByUserId,
         splitMethod: expense.splitMethod,
+        createdByUserId,
         shares: { create: expense.shares },
       },
       include: EXPENSE_INCLUDE,

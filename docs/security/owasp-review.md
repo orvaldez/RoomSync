@@ -15,15 +15,15 @@ list and asks whether RoomSync has each weakness. Threat ids such as **H1** or
 
 | # | Category | Relevant? | Verdict | Gaps |
 |---|---|---|---|---|
-| A01 | Broken Access Control | Yes, the main risk | **Handled** | H4 (#90) and member removal (#74) filed; revoking links shipped in #105 |
+| A01 | Broken Access Control | Yes, the main risk | **Handled** | H4 fixed in #90; revoking links shipped in #105; member removal (#74) filed |
 | A02 | Security Misconfiguration | Yes | **Fixed in #65** | Client headers at deployment: #102 |
 | A03 | Software Supply Chain Failures | Yes | **Fixed in #65**, with an accepted residual | Dev-only Vitest advisories: #101. Automated alerts: #100 |
 | A04 | Cryptographic Failures | Yes | **Handled** | None new |
 | A05 | Injection | Yes | **Handled** (re-checked, as the threat model asked under M3) | None |
-| A06 | Insecure Design | Yes | **Handled, with known items filed** | H3 fixed (#73); H4 and M4 (#90) |
+| A06 | Insecure Design | Yes | **Handled** | H3 fixed (#73); H4 and M4 fixed (#90) |
 | A07 | Authentication Failures | Yes | **Handled** | Accepted: A2 enumeration, 14-day sessions |
 | A08 | Software or Data Integrity Failures | Partly | **Handled** | Actions pinned by tag, not SHA: #100 |
-| A09 | Security Logging and Alerting Failures | Yes | **Gap** | No security events are logged: #99 |
+| A09 | Security Logging and Alerting Failures | Yes | **Handled** for logging (#99); alerting is up to the host | None for logging |
 | A10 | Mishandling of Exceptional Conditions | Yes | **Fixed in #65** | None left |
 
 ## A01:2025 Broken Access Control
@@ -56,8 +56,11 @@ multi-tenant app is one tenant reading or changing another's data.
   The server never fetches a URL supplied by a user.
 
 **Gaps:** both were found by the threat model and are already filed.
-**H4**: any member can record a settlement between two *other* members, so
-the payer-or-recipient restriction lives only in the interface (#90). **I2**:
+**H4**: any member could record a settlement between two *other* members, so
+the payer-or-recipient restriction lived only in the interface. Fixed in #90:
+the server now refuses it with `403 NOT_PARTY_TO_SETTLEMENT`. A payer can
+still record a payment they never made; it shows as "Recorded by" them in
+History, and recipient confirmation is accepted as out of scope. **I2**:
 a leaked invitation link couldn't be cancelled, and the wrong person can't be
 removed. Revoking a link has since shipped in #105 (US-14); removing a member
 is #74, moved to Milestone 3.
@@ -196,9 +199,9 @@ catch.
 - **Threat-modelled.** The threat model (#70) drove three design issues.
 
 **Known items:** the one-household-per-user check wasn't atomic (**H3**); it
-now runs under a per-user advisory lock, with a concurrent test (#73). Still
-filed: a member can record a settlement between two others, and nothing
-records who entered a record (**H4**, **M4**, #90). Editing and deleting
+now runs under a per-user advisory lock, with a concurrent test (#73). A member
+recording a settlement between two others, and nothing recording who entered a
+record (**H4**, **M4**), are both fixed in #90. Editing and deleting
 expenses (#60, in review in #98) settles who may change a record: the payer or
 the owner. A delete is soft and records who did it (threat model M5).
 
@@ -239,17 +242,35 @@ tag can be moved. Pinning to commit SHAs is part of #100.
 
 ## A09:2025 Security Logging and Alerting Failures
 
-**Relevant, and a gap.**
+**Relevant.** It was a gap at the time of this review; #99 closed the logging
+half.
 
-The server logs one thing: unexpected errors, with `console.error` in
-`server/src/middleware/error-handler.ts`. Nothing records a failed login, a
-rate limit being reached, a refused `403`, or a `404` from another household.
-A password-guessing run, or a member probing the API with other households'
-ids, leaves no trace and could trigger no alert.
+**Found on `main` at the review:** the server logged one thing, unexpected
+errors (`console.error` in `server/src/middleware/error-handler.ts`). A
+password-guessing run, or a member probing the API with other households' ids,
+left no trace.
 
-**Filed as #99:** a small structured logger for those security events. It
-must never log a password, a session id, a cookie or an invitation token. Its
-target is Milestone 3, when there is a host to collect the logs.
+**Fixed in #99:** `server/src/middleware/security-log.ts` writes one JSON line to
+stdout for each security event:
+- a failed login (`INVALID_CREDENTIALS`)
+- a rate limit reached (`RATE_LIMITED`)
+- any `403`
+- a `404 HOUSEHOLD_NOT_FOUND` for a signed-in member
+
+Each line records the event, code, status, method, route, IP, and the
+signed-in member's id. All of these already pass through the error handler,
+which is where they're logged, so no service changed.
+
+**What is never logged:** passwords, session ids, cookies, request bodies,
+query strings and invitation tokens. The route is logged as declared
+(`/api/invitations/:token/accept`), never as requested. The account a login
+was for is recorded only as an HMAC of its email, keyed with `SESSION_SECRET`.
+`server/src/routes/security-log.routes.test.ts` sends a real failed login
+through the app and checks that the line contains none of these.
+
+**Still open:** alerting. The lines are in a form a host can search and alert
+on, and setting that up depends on the host chosen in #117. Logging is off
+under the test runners, and `SECURITY_LOG=on` or `off` overrides it.
 
 ## A10:2025 Mishandling of Exceptional Conditions
 
@@ -289,7 +310,7 @@ JSON is still `400 INVALID_JSON`.
 
 | Gap | Category | Issue |
 |---|---|---|
-| No security events logged | A09 | #99 |
+| No security events logged | A09 | #99 (done) |
 | No automated dependency alerts; Actions pinned by tag | A03, A08 | #100 |
 | Dev-only advisories through Vitest 2 | A03 | #101 |
 | Security headers and a CSP for the deployed client | A02 | #102 |

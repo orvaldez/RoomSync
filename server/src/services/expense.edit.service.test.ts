@@ -83,6 +83,7 @@ function stored(
     createdAt: new Date("2026-10-01T18:00:00.000Z"),
     updatedAt: new Date("2026-10-01T18:00:00.000Z"),
     deleted: null,
+    createdBy: null,
     ...overrides,
   };
 }

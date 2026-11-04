@@ -1,3 +1,12 @@
+# RoomSync's three services (#116).
+#
+#   docker compose up --build       the whole app at http://localhost:8080
+#   docker compose up -d db         only PostgreSQL, for `npm run dev` on the host
+#
+# The server and client images are the ones the deployment uses (#117). Here
+# they run over plain HTTP on localhost, so the server runs in development
+# mode: production mode would set the session cookie to HTTPS only, and the
+# browser would never send it back (server/src/middleware/session.ts).
 services:
   db:
     image: postgres:16
@@ -7,9 +16,50 @@ services:
       POSTGRES_USER: roomsync
       POSTGRES_PASSWORD: roomsync
       POSTGRES_DB: roomsync
+    # Published for the host workflow (`npm run dev`, Prisma Studio, the
+    # integration tests). The containers reach it as `db:5432`.
     ports:
       - "5432:5432"
     volumes:
       - roomsync-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U roomsync -d roomsync"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  server:
+    build: ./server
+    container_name: roomsync-server
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://roomsync:roomsync@db:5432/roomsync?schema=public
+      # Overrides the image's production default; see the note at the top.
+      NODE_ENV: development
+      PORT: "4000"
+      # A local-only value. Set SESSION_SECRET in your shell to use another.
+      # The real one lives only in the host's settings (#117).
+      SESSION_SECRET: ${SESSION_SECRET:-local-compose-secret-not-for-deployment}
+    # Not published: the browser reaches the API through the client's /api
+    # proxy, as in production, and port 4000 stays free for `npm run dev`.
+    expose:
+      - "4000"
+
+  client:
+    build: ./client
+    container_name: roomsync-client
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+    environment:
+      API_UPSTREAM: http://server:4000
+    # ROOMSYNC_PORT=8081 docker compose up, if 8080 is already taken.
+    ports:
+      - "${ROOMSYNC_PORT:-8080}:8080"
+
 volumes:
   roomsync-pgdata:

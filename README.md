@@ -42,7 +42,7 @@ but not finished; it moves to Milestone 3, with the other open items in
 | Milestone 0 | Propose | Complete |
 | Milestone 1 | Build the MVP | Complete (`milestone-1`, `v0.1.0`) |
 | Milestone 2 | Test, improve, and secure | Complete (`milestone-2`, `v0.3.0`) |
-| Milestone 3 | Deploy | Not started |
+| Milestone 3 | Deploy | In progress, due November 30, 2026 ([plan](./BACKLOG.md#sprint-5-and-sprint-6-plan-milestone-3)) |
 
 ## Team
 
@@ -60,7 +60,7 @@ but not finished; it moves to Milestone 3, with the other open items in
 | Database | PostgreSQL 16 | In place |
 | ORM | Prisma 7 | In place |
 | Auth | Session-based auth stored in PostgreSQL, bcrypt password hashing, rate-limited login | In place |
-| Containerization | Docker Compose, for the database in development | In place |
+| Containerization | Docker: images for the server and the client (nginx), and Docker Compose running them with PostgreSQL | In place (#116) |
 | CI | GitHub Actions: lint, typecheck, build, unit tests with coverage, integration tests | In place; required to merge |
 | Testing | Vitest 2 + Supertest; `@vitest/coverage-v8`; integration tests against PostgreSQL | In place |
 | Component tests | React Testing Library, in jsdom | In place (#76) |
@@ -80,8 +80,11 @@ these choices.
 ```
 roomsync/
 ├── client/ # React frontend
+│ ├── Dockerfile # Build, then nginx serving it and proxying /api
+│ ├── nginx/ # nginx's site config template
 │ └── src/
 ├── server/ # Node/Express API
+│   ├── Dockerfile # Build, then a non-root runtime that migrates and starts
 │   ├── .env.example
 │   ├── .env
 │ ├── prisma/ # Database schema and migrations
@@ -101,20 +104,63 @@ a higher one. See `server/src/repositories/README.md`.
 
 ## Getting started
 
-### Prerequisites
+There are two ways to run RoomSync locally. **Docker only** runs the whole app
+in containers with nothing else installed, and is the quickest way to try it.
+**Development** runs the server and client on your machine with live reload,
+which is how we work on it. Both use the same PostgreSQL container.
 
-- Node.js 20 or newer
-- Docker Desktop, running
+### Quick start: Docker only
 
-### Setup
+Needs only Docker Desktop, running. No Node.js, no `.env` file.
+
+```bash
+git clone https://github.com/orvaldez/RoomSync.git
+cd RoomSync
+docker compose up --build -d                     # builds and starts db, server and client
+docker compose exec server node dist/seed.js     # loads the demo household (below)
+```
+
+Then open **http://localhost:8080** and sign in as any account in
+[Seed data](#seed-data), password `roomsync123`.
+
+- **The first build takes a few minutes;** later starts take seconds.
+- **The services:**
+  - `db` is PostgreSQL 16.
+  - `server` is the API. It applies any pending migrations with
+    `prisma migrate deploy` every time it starts, before it listens.
+  - `client` is nginx. It serves the built client and passes `/api` to the
+    server, so the browser sees one address, as it does in development.
+
+  Compose starts each service only once the one before it is healthy.
+- **Check it's up:** `docker compose ps` shows all three as running, with `db`
+  and `server` healthy. `docker compose logs server` shows the migrations and
+  `RoomSync API listening on port 4000`.
+- **Start over with an empty database:** `docker compose down -v`, then both
+  commands above again.
+- **Ports:** only 8080 (the app) and 5432 (PostgreSQL) are published. The API
+  is reached through the app's `/api`, so port 4000 stays free for
+  development. If 8080 is taken, set `ROOMSYNC_PORT` (for example
+  `ROOMSYNC_PORT=8081 docker compose up --build -d` in Git Bash, or
+  `$env:ROOMSYNC_PORT=8081` first in PowerShell), then use that port instead.
+- **Here the server runs in development mode.** The images themselves default
+  to production, which is how the deployment runs them (#117). Over plain
+  HTTP on localhost, production's HTTPS-only session cookie would never be
+  sent back, so `docker-compose.yml` sets `NODE_ENV: development` and a
+  local-only `SESSION_SECRET`.
+
+### Development setup
+
+Needs Node.js 20 or newer, and Docker Desktop running. Docker here runs only
+the database; the server and client run on your machine. The sections below,
+from Environment variables to Tests, all describe this setup.
 
 ```bash
 git clone https://github.com/orvaldez/RoomSync.git
 cd RoomSync
 cp server/.env.example server/.env
 
-docker compose up -d          # starts PostgreSQL on port 5432
-docker compose ps             # confirm the db container is up
+docker compose up -d db       # starts only PostgreSQL, on port 5432
+docker compose ps             # confirm the db container is up (healthy)
 
 cd server && npm install
 cd ../client && npm install
@@ -136,6 +182,7 @@ the client needs no environment variables.
 | `LOGIN_MAX_FAILURES_PER_EMAIL` | unset (5) | Optional. Wrong passwords allowed per account email per window, then `429 RATE_LIMITED` |
 | `LOGIN_MAX_FAILURES_PER_IP` | unset (20) | Optional. Wrong passwords allowed per IP address per window, across all accounts |
 | `REGISTER_MAX_PER_IP` | unset (10) | Optional. Registration attempts allowed per IP address per window |
+| `SECURITY_LOG` | unset | Optional. Security events (failed logins, rate limits, 403s, household 404s) are written to stdout as JSON lines, on by default and off under the test runners. `on` or `off` overrides that (`server/src/middleware/security-log.ts`, #99) |
 | `TEST_DATABASE_URL` | `postgresql://roomsync:roomsync@localhost:5432/roomsync_test?schema=public` | Optional. The database `npm run test:integration` uses; the example value is also the default. Its name must end in `_test`, because every integration test empties it |
 
 `server/.env` is ignored by Git. Never commit a real secret.
@@ -235,6 +282,10 @@ curl http://localhost:4000/api/health
 # -> {"status":"ok","service":"roomsync-api"}
 ```
 
+With the Docker-only quick start, the same check goes through the client's
+proxy instead: `curl http://localhost:8080/api/health`. Then use
+http://localhost:8080 wherever this guide says http://localhost:5173.
+
 Then open http://localhost:5173. With the seed data loaded, this walkthrough
 exercises every layer — React, Express, service, repository, PostgreSQL:
 
@@ -307,6 +358,12 @@ To start the walkthrough over, reset and seed again:
 cd server && npx prisma migrate reset && npm run db:seed
 ```
 
+With the Docker-only quick start, start over with an empty database instead:
+
+```bash
+docker compose down -v && docker compose up -d && docker compose exec server node dist/seed.js
+```
+
 To confirm authorization is enforced server-side rather than only in the
 interface, ask for a household you do not belong to:
 
@@ -356,7 +413,7 @@ All of them also run in CI on every pull request
 |---|---|---|---|
 | Server unit | `cd server && npx prisma generate && npm test` | Nothing running | `Tests 483 passed`, 0 failed |
 | Server coverage | `cd server && npm run test:coverage` | Nothing running | The same 483 pass, a coverage table prints, and every target in `vitest.config.ts` is met (the run fails if not) |
-| Server integration | `cd server && npm run test:integration` | `docker compose up -d` | `Tests 33 passed` across 9 files, including the 500-expense timing check and the concurrent one-household-per-user check |
+| Server integration | `cd server && npm run test:integration` | `docker compose up -d db` | `Tests 33 passed` across 9 files, including the 500-expense timing check and the concurrent one-household-per-user check |
 | Client unit | `cd client && npm test` | Nothing running | `Tests 157 passed`, 0 failed, 12 files: the `lib` tests and the component tests |
 | Client coverage | `cd client && npm run test:coverage` | Nothing running | The same 157 pass and every target in `vitest.config.ts` is met |
 | Lint, types, build | `cd server && npm run lint && npm run typecheck`, `cd client && npm run lint && npm run build` | Nothing running | No errors |
@@ -413,7 +470,7 @@ is are in [docs/testing/coverage.md](./docs/testing/coverage.md).
 The unit tests above mock the repositories, so none of them run real SQL. The
 integration tests run the real app, with nothing mocked, against PostgreSQL and
 its session store, through Supertest with a real session cookie. With the
-Compose database running (`docker compose up -d`):
+Compose database running (`docker compose up -d db`):
 
 ```bash
 cd server && npx prisma generate && npm run test:integration
@@ -455,7 +512,8 @@ is renamed only together with the ruleset.
 ### Stopping
 
 ```bash
-docker compose down           # data persists in a named volume
+docker compose down           # stops every container; data persists in a named volume
+docker compose down -v        # also deletes the database volume, for a clean start
 ```
 
 ## Documentation
@@ -463,6 +521,7 @@ docker compose down           # data persists in a named volume
 - [Project proposal](./docs/proposal.pdf)
 - [Prioritized backlog](./BACKLOG.md)
 - [Quality-assurance plan](./docs/testing/qa-plan.md): test levels, who runs what and when, milestone entry and exit criteria, the pre-release checklist, and defect handling
+- [Metrics report: coverage trend, code quality, how work flowed](./docs/process/metrics.md)
 - [Changelog and versioning](./CHANGELOG.md)
 - [Threat model](./docs/security/threat-model.md),
   [rate limiting on login and registration](./docs/security/rate-limiting.md), and
@@ -473,12 +532,15 @@ docker compose down           # data persists in a named volume
 - [Contributing: branches, commits, reviews and issues](./CONTRIBUTING.md)
 - [Software process model](./docs/process-model.md), with
   [branch protection on `main`](./docs/process/branch-protection.md)
+- [Risk register](./docs/process/risk-register.md) and
+  [maintenance and support plan](./docs/process/maintenance-plan.md)
 - [ADR-001: Architecture](./docs/architecture/adr-001-modular-monolith.md), with
   [its layering enforced by lint](./docs/architecture/layering-lint.md)
 - [Use case specifications](./docs/requirements/use-cases.md)
 - [Analysis model](./docs/requirements/analysis-model.md)
 - [Design patterns](./docs/design/design-patterns.md)
 - [Test coverage: baseline and targets](./docs/testing/coverage.md)
+- [AI-assisted workflow: the record for #90](./docs/process/ai-assisted-workflow.md)
 - [Responsive design considerations](./docs/design/responsive-design.md), with
   [screenshots of every screen at 375px and 1280px](./docs/design/screenshots/)
 - [Product brief and MVP scope](./docs/product-brief.md)

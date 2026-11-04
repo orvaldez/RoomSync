@@ -70,7 +70,11 @@ router.post(
   requireHouseholdMember,
   asyncHandler(async (req: Request, res: Response) => {
     const { householdId } = currentMembership(res);
-    const expense = await expenseService.createExpense(householdId, expenseBody(req));
+    const expense = await expenseService.createExpense(
+      householdId,
+      currentUserId(req),
+      expenseBody(req)
+    );
 
     res.status(201).json({ expense });
   })

@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../services/errors";
+import { logSecurityEvent } from "./security-log";
 
 /**
  * The single place that turns an error into an HTTP response body.
@@ -61,7 +62,7 @@ function asClientError(
 
 export function errorHandler(
   error: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ): void {
@@ -88,6 +89,8 @@ export function errorHandler(
   }
 
   if (error instanceof AppError) {
+    // Failed logins, rate limits, 403s and household 404s (#99).
+    logSecurityEvent(error, req);
     res.status(error.status).json({
       error: { code: error.code, message: error.message, ...error.details() },
     });

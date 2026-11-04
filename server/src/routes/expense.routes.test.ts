@@ -80,6 +80,7 @@ const STORED: expenseRepository.ExpenseRecord = {
   createdAt: new Date("2026-09-29T17:30:00.000Z"),
   updatedAt: new Date("2026-09-29T17:30:00.000Z"),
   deleted: null,
+  createdBy: null,
 };
 
 /**
@@ -127,6 +128,7 @@ describe("POST /api/households/:householdId/expenses", () => {
       createdAt: "2026-09-29T17:30:00.000Z",
       updatedAt: "2026-09-29T17:30:00.000Z",
       deleted: null,
+      createdBy: null,
     });
   });
 
@@ -138,7 +140,8 @@ describe("POST /api/households/:householdId/expenses", () => {
       .send({ ...BODY, householdId: "clxSOMEONEELSES000000000" });
 
     expect(createWithShares).toHaveBeenCalledWith(
-      expect.objectContaining({ householdId: HOUSEHOLD_ID })
+      expect.objectContaining({ householdId: HOUSEHOLD_ID }),
+      USER.id
     );
   });
 

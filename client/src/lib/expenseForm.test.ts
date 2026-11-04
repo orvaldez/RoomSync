@@ -29,6 +29,7 @@ function expense(overrides: Partial<Expense> = {}): Expense {
     createdAt: "2026-10-01T18:00:00Z",
     updatedAt: "2026-10-01T18:00:00Z",
     deleted: null,
+    createdBy: null,
     ...overrides,
   };
 }

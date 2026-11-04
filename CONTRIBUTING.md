@@ -166,7 +166,7 @@ cd server && npm run typecheck && npm run lint && npm test
 cd client && npm run lint && npm run build && npm test
 ```
 
-With the database running (`docker compose up -d`), also run the server's
+With the database running (`docker compose up -d db`), also run the server's
 integration tests:
 
 ```bash

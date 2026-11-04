@@ -375,6 +375,9 @@ a remainder of 1. One participant is assigned 3334. The shares sum to 10000, not
 - **4b. The amount is zero or negative.** System rejects it.
 - **4c. The payer and recipient are the same member.** System rejects it.
 - **4d. Either member does not belong to this household.** System rejects it.
+- **4f. The member recording it is neither the payer nor the recipient** (#90). System
+  rejects it with `403 NOT_PARTY_TO_SETTLEMENT` and writes nothing: a member can record a
+  payment they made or received, never one between two others.
 - **4e. The outstanding balance changed between display and submission** — a concurrent
   expense or settlement. The amount is re-validated against the balance at the moment of
   writing, not against the balance the member was shown, so a settlement can never exceed

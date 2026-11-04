@@ -31,7 +31,7 @@ export function getPrisma(): PrismaClient {
   if (!connectionString) {
     throw new Error(
       "DATABASE_URL is not set. Copy server/.env.example to server/.env, " +
-        "and start the database with `docker compose up -d` from the repo root."
+        "and start the database with `docker compose up -d db` from the repo root."
     );
   }
 

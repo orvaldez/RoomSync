@@ -43,6 +43,7 @@ router.get(
  * 400 VALIDATION_FAILED        amountCents or note invalid             UC-08 4b
  * 400 SAME_MEMBER                                                      UC-08 4c
  * 400 MEMBER_NOT_IN_HOUSEHOLD                                          UC-08 4d
+ * 403 NOT_PARTY_TO_SETTLEMENT  the requester is neither from nor to     #90
  * 409 EXCEEDS_BALANCE          more than from owes to, right now       UC-08 4a, 4e
  */
 router.post(
@@ -52,7 +53,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const { householdId } = currentMembership(res);
     const body = req.body ?? {};
-    const settlement = await settlementService.createSettlement(householdId, {
+    const settlement = await settlementService.createSettlement(householdId, currentUserId(req), {
       fromUserId: body.fromUserId,
       toUserId: body.toUserId,
       amountCents: body.amountCents,
