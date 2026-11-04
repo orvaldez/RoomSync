@@ -58,6 +58,8 @@ export type PublicExpense = {
   updatedAt: Date;
   /** Null unless the expense was deleted (US-12). */
   deleted: { at: Date; by: { userId: string; name: string } } | null;
+  /** Who entered it (#90); null for expenses recorded before that was kept. */
+  createdBy: { userId: string; name: string } | null;
 };
 
 /** The member asking to change an expense, as `requireHouseholdMember` verified them. */
@@ -98,10 +100,15 @@ export async function previewExpense(
  */
 export async function createExpense(
   householdId: string,
+  /** The signed-in member entering it (#90), stored as who entered it. */
+  createdByUserId: string,
   input: ExpenseInput
 ): Promise<PublicExpense> {
   const expense = await checkExpense(householdId, input);
-  const record = await expenseRepository.createWithShares(toNewExpense(householdId, expense));
+  const record = await expenseRepository.createWithShares(
+    toNewExpense(householdId, expense),
+    createdByUserId
+  );
   return toPublicExpense(record);
 }
 
@@ -307,5 +314,6 @@ function toPublicExpense(record: expenseRepository.ExpenseRecord): PublicExpense
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     deleted: record.deleted,
+    createdBy: record.createdBy,
   };
 }

@@ -480,6 +480,7 @@ docker compose down           # data persists in a named volume
 - [Analysis model](./docs/requirements/analysis-model.md)
 - [Design patterns](./docs/design/design-patterns.md)
 - [Test coverage: baseline and targets](./docs/testing/coverage.md)
+- [AI-assisted workflow: the record for #90](./docs/process/ai-assisted-workflow.md)
 - [Responsive design considerations](./docs/design/responsive-design.md), with
   [screenshots of every screen at 375px and 1280px](./docs/design/screenshots/)
 - [Product brief and MVP scope](./docs/product-brief.md)

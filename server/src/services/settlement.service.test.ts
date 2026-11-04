@@ -19,6 +19,7 @@ import * as ledgerRepository from "../repositories/ledger.repository";
 import * as householdRepository from "../repositories/household.repository";
 import { createSettlement, listSettlements } from "./settlement.service";
 import {
+  NotPartyToSettlementError,
   ExceedsBalanceError,
   MemberNotInHouseholdError,
   SameMemberError,
@@ -71,13 +72,68 @@ beforeEach(() => {
       amountCents: settlement.amountCents,
       note: settlement.note,
       settledAt: new Date("2026-09-30T18:00:00.000Z"),
+      createdBy: null,
     };
+  });
+});
+
+describe("createSettlement — who may record it (#90, threat model H4)", () => {
+  it("lets the recipient record a payment they received", async () => {
+    await createSettlement(HOUSEHOLD_ID, ME, { fromUserId: MAYA, toUserId: ME, amountCents: 100 });
+    expect(createSettlementChecked).toHaveBeenCalledWith(
+      expect.objectContaining({ createdByUserId: ME }),
+      expect.any(Function)
+    );
+  });
+
+  it("lets the payer record a payment they made", async () => {
+    // Maya owes me, so for Maya to pay me she is the payer and the recorder.
+    await createSettlement(HOUSEHOLD_ID, MAYA, { fromUserId: MAYA, toUserId: ME, amountCents: 100 });
+    expect(createSettlementChecked).toHaveBeenCalledWith(
+      expect.objectContaining({ fromUserId: MAYA, createdByUserId: MAYA }),
+      expect.any(Function)
+    );
+  });
+
+  it("refuses a member recording a payment between two others, before any lookup", async () => {
+    const error = await rejectionOf(
+      createSettlement(HOUSEHOLD_ID, "someone-else", { fromUserId: MAYA, toUserId: ME, amountCents: 100 })
+    );
+
+    expect(error).toBeInstanceOf(NotPartyToSettlementError);
+    expect(error).toMatchObject({ code: "NOT_PARTY_TO_SETTLEMENT", status: 403 });
+    expect(findRole).not.toHaveBeenCalled();
+    expect(createSettlementChecked).not.toHaveBeenCalled();
+  });
+
+  it("still validates the amount first, so a 400 isn't hidden behind the 403", async () => {
+    const error = await rejectionOf(
+      createSettlement(HOUSEHOLD_ID, "someone-else", { fromUserId: MAYA, toUserId: ME, amountCents: 0 })
+    );
+    expect(error).toMatchObject({ code: "VALIDATION_FAILED" });
+  });
+
+  it("returns who entered it", async () => {
+    createSettlementChecked.mockResolvedValueOnce({
+      id: "s1",
+      householdId: HOUSEHOLD_ID,
+      from: { userId: MAYA, name: "Maya" },
+      to: { userId: ME, name: "Me" },
+      amountCents: 100,
+      note: null,
+      settledAt: new Date("2026-11-03T00:00:00Z"),
+      createdBy: { userId: ME, name: "Me" },
+    });
+
+    const settlement = await createSettlement(HOUSEHOLD_ID, ME, { fromUserId: MAYA, toUserId: ME, amountCents: 100 });
+
+    expect(settlement.createdBy).toEqual({ userId: ME, name: "Me" });
   });
 });
 
 describe("createSettlement (UC-08)", () => {
   it("records a payment up to the outstanding balance", async () => {
-    const settlement = await createSettlement(HOUSEHOLD_ID, {
+    const settlement = await createSettlement(HOUSEHOLD_ID, ME, {
       fromUserId: MAYA,
       toUserId: ME,
       amountCents: 1833,
@@ -91,6 +147,7 @@ describe("createSettlement (UC-08)", () => {
         toUserId: ME,
         amountCents: 1833,
         note: "venmo",
+        createdByUserId: ME,
       },
       expect.any(Function)
     );
@@ -99,12 +156,12 @@ describe("createSettlement (UC-08)", () => {
 
   it("allows paying part of the balance", async () => {
     await expect(
-      createSettlement(HOUSEHOLD_ID, { fromUserId: MAYA, toUserId: ME, amountCents: 500 })
+      createSettlement(HOUSEHOLD_ID, ME, { fromUserId: MAYA, toUserId: ME, amountCents: 500 })
     ).resolves.toMatchObject({ amountCents: 500 });
   });
 
   it("stores a blank note as none", async () => {
-    await createSettlement(HOUSEHOLD_ID, {
+    await createSettlement(HOUSEHOLD_ID, ME, {
       fromUserId: MAYA,
       toUserId: ME,
       amountCents: 100,
@@ -116,7 +173,7 @@ describe("createSettlement (UC-08)", () => {
 
   it("refuses more than is owed, even by a cent (UC-08 4a)", async () => {
     const error = await rejectionOf(
-      createSettlement(HOUSEHOLD_ID, { fromUserId: MAYA, toUserId: ME, amountCents: 1834 })
+      createSettlement(HOUSEHOLD_ID, ME, { fromUserId: MAYA, toUserId: ME, amountCents: 1834 })
     );
 
     expect(error).toBeInstanceOf(ExceedsBalanceError);
@@ -126,7 +183,7 @@ describe("createSettlement (UC-08)", () => {
   it("refuses any payment toward a debt that runs the other way", async () => {
     // Maya owes me; a payment from me to Maya would invent a debt.
     await expect(
-      createSettlement(HOUSEHOLD_ID, { fromUserId: ME, toUserId: MAYA, amountCents: 1 })
+      createSettlement(HOUSEHOLD_ID, ME, { fromUserId: ME, toUserId: MAYA, amountCents: 1 })
     ).rejects.toThrow(ExceedsBalanceError);
   });
 
@@ -135,10 +192,10 @@ describe("createSettlement (UC-08)", () => {
     ledger.payments = [{ fromUserId: MAYA, toUserId: ME, amountCents: 1000 }];
 
     await expect(
-      createSettlement(HOUSEHOLD_ID, { fromUserId: MAYA, toUserId: ME, amountCents: 1833 })
+      createSettlement(HOUSEHOLD_ID, ME, { fromUserId: MAYA, toUserId: ME, amountCents: 1833 })
     ).rejects.toThrow(ExceedsBalanceError);
     await expect(
-      createSettlement(HOUSEHOLD_ID, { fromUserId: MAYA, toUserId: ME, amountCents: 833 })
+      createSettlement(HOUSEHOLD_ID, ME, { fromUserId: MAYA, toUserId: ME, amountCents: 833 })
     ).resolves.toBeTruthy();
   });
 
@@ -150,7 +207,7 @@ describe("createSettlement (UC-08)", () => {
     ["missing", undefined],
   ])("rejects an amount that is %s (UC-08 4b)", async (_label, amountCents) => {
     const error = await rejectionOf(
-      createSettlement(HOUSEHOLD_ID, { fromUserId: MAYA, toUserId: ME, amountCents })
+      createSettlement(HOUSEHOLD_ID, ME, { fromUserId: MAYA, toUserId: ME, amountCents })
     );
 
     expect(error).toBeInstanceOf(ValidationError);
@@ -160,7 +217,7 @@ describe("createSettlement (UC-08)", () => {
 
   it("rejects a note over 200 characters", async () => {
     const error = await rejectionOf(
-      createSettlement(HOUSEHOLD_ID, {
+      createSettlement(HOUSEHOLD_ID, ME, {
         fromUserId: MAYA,
         toUserId: ME,
         amountCents: 100,
@@ -173,7 +230,7 @@ describe("createSettlement (UC-08)", () => {
 
   it("rejects settling with yourself (UC-08 4c)", async () => {
     const error = await rejectionOf(
-      createSettlement(HOUSEHOLD_ID, { fromUserId: ME, toUserId: ME, amountCents: 100 })
+      createSettlement(HOUSEHOLD_ID, ME, { fromUserId: ME, toUserId: ME, amountCents: 100 })
     );
 
     expect(error).toBeInstanceOf(SameMemberError);
@@ -182,11 +239,13 @@ describe("createSettlement (UC-08)", () => {
 
   it.each([
     ["payer", { fromUserId: OUTSIDER, toUserId: ME }],
-    ["recipient", { fromUserId: MAYA, toUserId: OUTSIDER }],
+    // The requester (ME) is the payer here: since #90 a payment between two
+    // other members is refused first, with 403, before membership is checked.
+    ["recipient", { fromUserId: ME, toUserId: OUTSIDER }],
     ["missing payer", { fromUserId: undefined, toUserId: ME }],
   ])("rejects a %s outside the household (UC-08 4d)", async (_label, parties) => {
     const error = await rejectionOf(
-      createSettlement(HOUSEHOLD_ID, { ...parties, amountCents: 100 })
+      createSettlement(HOUSEHOLD_ID, ME, { ...parties, amountCents: 100 })
     );
 
     expect(error).toBeInstanceOf(MemberNotInHouseholdError);
@@ -195,7 +254,7 @@ describe("createSettlement (UC-08)", () => {
   });
 
   it("checks both parties against the household it was given", async () => {
-    await createSettlement(HOUSEHOLD_ID, { fromUserId: MAYA, toUserId: ME, amountCents: 100 });
+    await createSettlement(HOUSEHOLD_ID, ME, { fromUserId: MAYA, toUserId: ME, amountCents: 100 });
 
     expect(findRole).toHaveBeenCalledWith(MAYA, HOUSEHOLD_ID);
     expect(findRole).toHaveBeenCalledWith(ME, HOUSEHOLD_ID);
@@ -213,6 +272,7 @@ describe("listSettlements", () => {
         amountCents: 1833,
         note: null,
         settledAt: new Date("2026-09-30T18:00:00.000Z"),
+        createdBy: null,
       },
     ]);
 
@@ -226,6 +286,7 @@ describe("listSettlements", () => {
         amountCents: 1833,
         note: null,
         settledAt: new Date("2026-09-30T18:00:00.000Z"),
+        createdBy: null,
       },
     ]);
   });
