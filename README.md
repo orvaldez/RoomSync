@@ -420,11 +420,11 @@ All of them also run in CI on every pull request
 
 | Suite | Command | Needs | Expected |
 |---|---|---|---|
-| Server unit | `cd server && npx prisma generate && npm test` | Nothing running | `Tests 483 passed`, 0 failed |
-| Server coverage | `cd server && npm run test:coverage` | Nothing running | The same 483 pass, a coverage table prints, and every target in `vitest.config.ts` is met (the run fails if not) |
-| Server integration | `cd server && npm run test:integration` | `docker compose up -d db` | `Tests 33 passed` across 9 files, including the 500-expense timing check and the concurrent one-household-per-user check |
-| Client unit | `cd client && npm test` | Nothing running | `Tests 157 passed`, 0 failed, 12 files: the `lib` tests and the component tests |
-| Client coverage | `cd client && npm run test:coverage` | Nothing running | The same 157 pass and every target in `vitest.config.ts` is met |
+| Server unit | `cd server && npx prisma generate && npm test` | Nothing running | `Tests 515 passed`, 0 failed |
+| Server coverage | `cd server && npm run test:coverage` | Nothing running | The same 515 pass, a coverage table prints, and every target in `vitest.config.ts` is met (the run fails if not) |
+| Server integration | `cd server && npm run test:integration` | `docker compose up -d db` | `Tests 38 passed` across 10 files, including the 500-expense timing check and the concurrent one-household-per-user check |
+| Client unit | `cd client && npm test` | Nothing running | `Tests 180 passed`, 0 failed, 15 files: the `lib` tests and the component tests |
+| Client coverage | `cd client && npm run test:coverage` | Nothing running | The same 180 pass and every target in `vitest.config.ts` is met |
 | Lint, types, build | `cd server && npm run lint && npm run typecheck`, `cd client && npm run lint && npm run build` | Nothing running | No errors |
 
 The sections below explain each suite.
