@@ -5,3 +5,8 @@ coverage/
 .env
 *.log
 .DS_Store
+
+# Complexity measurement scratch (scripts/metrics/complexity.config.mjs)
+server/cx/
+server/cx.config.mjs
+server/cx.json

@@ -3,8 +3,11 @@
 // not just the ones over a limit. Not part of the lint that CI runs.
 //
 // Run from server/ (which has typescript-eslint installed), with the source to
-// measure copied, tests removed, into server/cx/<label>/:
-//   npx eslint -c ../scripts/metrics/complexity.config.mjs --format json cx > cx.json
+// measure copied, tests removed, into server/cx/<label>/. Copy this file into
+// server/ first: Node resolves `typescript-eslint` from the config file's own
+// folder, and scripts/ has no node_modules.
+//   cp ../scripts/metrics/complexity.config.mjs cx.config.mjs
+//   npx eslint -c cx.config.mjs --format json cx > cx.json
 //   node ../scripts/metrics/complexity-summary.js cx.json
 //   node ../scripts/metrics/complexity-top.js cx.json
 import tseslint from "typescript-eslint";
