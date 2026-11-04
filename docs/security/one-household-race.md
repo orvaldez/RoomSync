@@ -85,4 +85,4 @@ Each round now has exactly one winner, the other request gets 409, and the
 user has one membership.
 
 To reproduce, run `cd server && npm run test:integration -- one-household` with
-the database running (`docker compose up -d`).
+the database running (`docker compose up -d db`).

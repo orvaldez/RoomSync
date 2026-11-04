@@ -60,7 +60,7 @@ but not finished; it moves to Milestone 3, with the other open items in
 | Database | PostgreSQL 16 | In place |
 | ORM | Prisma 7 | In place |
 | Auth | Session-based auth stored in PostgreSQL, bcrypt password hashing, rate-limited login | In place |
-| Containerization | Docker Compose, for the database in development | In place |
+| Containerization | Docker: images for the server and the client (nginx), and Docker Compose running them with PostgreSQL | In place (#116) |
 | CI | GitHub Actions: lint, typecheck, build, unit tests with coverage, integration tests | In place; required to merge |
 | Testing | Vitest 2 + Supertest; `@vitest/coverage-v8`; integration tests against PostgreSQL | In place |
 | Component tests | React Testing Library, in jsdom | In place (#76) |
@@ -80,8 +80,11 @@ these choices.
 ```
 roomsync/
 ├── client/ # React frontend
+│ ├── Dockerfile # Build, then nginx serving it and proxying /api
+│ ├── nginx/ # nginx's site config template
 │ └── src/
 ├── server/ # Node/Express API
+│   ├── Dockerfile # Build, then a non-root runtime that migrates and starts
 │   ├── .env.example
 │   ├── .env
 │ ├── prisma/ # Database schema and migrations
@@ -101,20 +104,63 @@ a higher one. See `server/src/repositories/README.md`.
 
 ## Getting started
 
-### Prerequisites
+There are two ways to run RoomSync locally. **Docker only** runs the whole app
+in containers with nothing else installed, and is the quickest way to try it.
+**Development** runs the server and client on your machine with live reload,
+which is how we work on it. Both use the same PostgreSQL container.
 
-- Node.js 20 or newer
-- Docker Desktop, running
+### Quick start: Docker only
 
-### Setup
+Needs only Docker Desktop, running. No Node.js, no `.env` file.
+
+```bash
+git clone https://github.com/orvaldez/RoomSync.git
+cd RoomSync
+docker compose up --build -d                     # builds and starts db, server and client
+docker compose exec server node dist/seed.js     # loads the demo household (below)
+```
+
+Then open **http://localhost:8080** and sign in as any account in
+[Seed data](#seed-data), password `roomsync123`.
+
+- **The first build takes a few minutes;** later starts take seconds.
+- **The services:**
+  - `db` is PostgreSQL 16.
+  - `server` is the API. It applies any pending migrations with
+    `prisma migrate deploy` every time it starts, before it listens.
+  - `client` is nginx. It serves the built client and passes `/api` to the
+    server, so the browser sees one address, as it does in development.
+
+  Compose starts each service only once the one before it is healthy.
+- **Check it's up:** `docker compose ps` shows all three as running, with `db`
+  and `server` healthy. `docker compose logs server` shows the migrations and
+  `RoomSync API listening on port 4000`.
+- **Start over with an empty database:** `docker compose down -v`, then both
+  commands above again.
+- **Ports:** only 8080 (the app) and 5432 (PostgreSQL) are published. The API
+  is reached through the app's `/api`, so port 4000 stays free for
+  development. If 8080 is taken, set `ROOMSYNC_PORT` (for example
+  `ROOMSYNC_PORT=8081 docker compose up --build -d` in Git Bash, or
+  `$env:ROOMSYNC_PORT=8081` first in PowerShell), then use that port instead.
+- **Here the server runs in development mode.** The images themselves default
+  to production, which is how the deployment runs them (#117). Over plain
+  HTTP on localhost, production's HTTPS-only session cookie would never be
+  sent back, so `docker-compose.yml` sets `NODE_ENV: development` and a
+  local-only `SESSION_SECRET`.
+
+### Development setup
+
+Needs Node.js 20 or newer, and Docker Desktop running. Docker here runs only
+the database; the server and client run on your machine. The sections below,
+from Environment variables to Tests, all describe this setup.
 
 ```bash
 git clone https://github.com/orvaldez/RoomSync.git
 cd RoomSync
 cp server/.env.example server/.env
 
-docker compose up -d          # starts PostgreSQL on port 5432
-docker compose ps             # confirm the db container is up
+docker compose up -d db       # starts only PostgreSQL, on port 5432
+docker compose ps             # confirm the db container is up (healthy)
 
 cd server && npm install
 cd ../client && npm install
@@ -236,6 +282,10 @@ curl http://localhost:4000/api/health
 # -> {"status":"ok","service":"roomsync-api"}
 ```
 
+With the Docker-only quick start, the same check goes through the client's
+proxy instead: `curl http://localhost:8080/api/health`. Then use
+http://localhost:8080 wherever this guide says http://localhost:5173.
+
 Then open http://localhost:5173. With the seed data loaded, this walkthrough
 exercises every layer — React, Express, service, repository, PostgreSQL:
 
@@ -308,6 +358,12 @@ To start the walkthrough over, reset and seed again:
 cd server && npx prisma migrate reset && npm run db:seed
 ```
 
+With the Docker-only quick start, start over with an empty database instead:
+
+```bash
+docker compose down -v && docker compose up -d && docker compose exec server node dist/seed.js
+```
+
 To confirm authorization is enforced server-side rather than only in the
 interface, ask for a household you do not belong to:
 
@@ -357,7 +413,7 @@ All of them also run in CI on every pull request
 |---|---|---|---|
 | Server unit | `cd server && npx prisma generate && npm test` | Nothing running | `Tests 483 passed`, 0 failed |
 | Server coverage | `cd server && npm run test:coverage` | Nothing running | The same 483 pass, a coverage table prints, and every target in `vitest.config.ts` is met (the run fails if not) |
-| Server integration | `cd server && npm run test:integration` | `docker compose up -d` | `Tests 33 passed` across 9 files, including the 500-expense timing check and the concurrent one-household-per-user check |
+| Server integration | `cd server && npm run test:integration` | `docker compose up -d db` | `Tests 33 passed` across 9 files, including the 500-expense timing check and the concurrent one-household-per-user check |
 | Client unit | `cd client && npm test` | Nothing running | `Tests 157 passed`, 0 failed, 12 files: the `lib` tests and the component tests |
 | Client coverage | `cd client && npm run test:coverage` | Nothing running | The same 157 pass and every target in `vitest.config.ts` is met |
 | Lint, types, build | `cd server && npm run lint && npm run typecheck`, `cd client && npm run lint && npm run build` | Nothing running | No errors |
@@ -414,7 +470,7 @@ is are in [docs/testing/coverage.md](./docs/testing/coverage.md).
 The unit tests above mock the repositories, so none of them run real SQL. The
 integration tests run the real app, with nothing mocked, against PostgreSQL and
 its session store, through Supertest with a real session cookie. With the
-Compose database running (`docker compose up -d`):
+Compose database running (`docker compose up -d db`):
 
 ```bash
 cd server && npx prisma generate && npm run test:integration
@@ -456,7 +512,8 @@ is renamed only together with the ruleset.
 ### Stopping
 
 ```bash
-docker compose down           # data persists in a named volume
+docker compose down           # stops every container; data persists in a named volume
+docker compose down -v        # also deletes the database volume, for a clean start
 ```
 
 ## Documentation
