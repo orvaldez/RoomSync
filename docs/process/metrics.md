@@ -7,7 +7,7 @@ Tracked in #121.
 
 **Data points.** `milestone-1` (`1eca04e`, September 30), the coverage
 baseline (`963dd2e`, October 12, from [`coverage.md`](../testing/coverage.md)),
-and `milestone-2` (`bf38f4e`, November 2). `v1.0.0` is added at the end of
+and `milestone-2` (`596bd35`, November 2). `v1.0.0` is added at the end of
 Milestone 3 (#125).
 
 *Measured November 3, 2026.*
@@ -163,20 +163,20 @@ be deployed: how often did finished work reach `main`?
 
 | | Milestone 1 | Milestone 2 |
 |---|---|---|
-| Pull requests merged | 26 (Agustin 15, Orlando 11) | 27 (Agustin 14, Orlando 13) |
-| Approved by the other member | 17 of 26 | **27 of 27** |
+| Pull requests merged | 26 (Agustin 15, Orlando 11) | 28 (Agustin 15, Orlando 13) |
+| Approved by the other member | 17 of 26 | **28 of 28** |
 | Merged by their own author | 4 (#35, #41, #50, #52) | **0** |
-| Open → first review, median | 1.3 h | 0.6 h |
-| Open → merge, median | 2.3 h | 0.7 h |
+| Open → first review, median | 1.3 h | 0.8 h |
+| Open → merge, median | 2.3 h | 0.8 h |
 | Open → merge, slowest tenth | 9.7 days or more | **20.9 days** or more |
 | Days with at least one merge | 6 | 4 |
-| Merged in the last 3 days before the due date | 22 of 26 (85%) | 13 of 27 (48%), all on the due date |
+| Merged in the last 3 days before the due date | 22 of 26 (85%) | 14 of 28 (50%), all on the due date |
 
 Merged pull requests per week:
 
 ```mermaid
 xychart-beta
-    title "Pull requests merged to main, per week"
+    title "Pull requests merged to main, per week, to milestone-2"
     x-axis ["Sep 14", "Sep 21", "Sep 28", "Oct 5", "Oct 12", "Oct 19", "Oct 26", "Nov 2"]
     y-axis "Merged" 0 --> 25
     bar [1, 3, 22, 13, 1, 0, 0, 14]
