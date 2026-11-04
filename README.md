@@ -139,7 +139,9 @@ Then open **http://localhost:8080** and sign in as any account in
   commands above again.
 - **Ports:** only 8080 (the app) and 5432 (PostgreSQL) are published. The API
   is reached through the app's `/api`, so port 4000 stays free for
-  development.
+  development. If 8080 is taken, set `ROOMSYNC_PORT` (for example
+  `ROOMSYNC_PORT=8081 docker compose up --build -d` in Git Bash, or
+  `$env:ROOMSYNC_PORT=8081` first in PowerShell), then use that port instead.
 - **Here the server runs in development mode.** The images themselves default
   to production, which is how the deployment runs them (#117). Over plain
   HTTP on localhost, production's HTTPS-only session cookie would never be

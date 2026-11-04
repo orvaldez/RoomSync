@@ -15,7 +15,8 @@ RUN npm run build
 
 # ---- runtime ----------------------------------------------------------------
 # nginx's unprivileged image: runs as a non-root user and listens on 8080.
-FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
+# 1.30 is nginx's stable branch, which gets security fixes as 1.30.x.
+FROM nginxinc/nginx-unprivileged:1.30-alpine AS runtime
 
 # Where /api goes. Compose's default is the `server` service; the deployment
 # (#117) sets its own. The official image fills ${...} in templates from the

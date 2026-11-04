@@ -57,8 +57,9 @@ services:
         condition: service_healthy
     environment:
       API_UPSTREAM: http://server:4000
+    # ROOMSYNC_PORT=8081 docker compose up, if 8080 is already taken.
     ports:
-      - "8080:8080"
+      - "${ROOMSYNC_PORT:-8080}:8080"
 
 volumes:
   roomsync-pgdata:
