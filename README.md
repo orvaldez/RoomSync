@@ -42,7 +42,7 @@ but not finished; it moves to Milestone 3, with the other open items in
 | Milestone 0 | Propose | Complete |
 | Milestone 1 | Build the MVP | Complete (`milestone-1`, `v0.1.0`) |
 | Milestone 2 | Test, improve, and secure | Complete (`milestone-2`, `v0.3.0`) |
-| Milestone 3 | Deploy | Not started |
+| Milestone 3 | Deploy | In progress, due November 30, 2026 ([plan](./BACKLOG.md#sprint-5-and-sprint-6-plan-milestone-3)) |
 
 ## Team
 
@@ -521,6 +521,7 @@ docker compose down -v        # also deletes the database volume, for a clean st
 - [Project proposal](./docs/proposal.pdf)
 - [Prioritized backlog](./BACKLOG.md)
 - [Quality-assurance plan](./docs/testing/qa-plan.md): test levels, who runs what and when, milestone entry and exit criteria, the pre-release checklist, and defect handling
+- [Metrics report: coverage trend, code quality, how work flowed](./docs/process/metrics.md)
 - [Changelog and versioning](./CHANGELOG.md)
 - [Threat model](./docs/security/threat-model.md),
   [rate limiting on login and registration](./docs/security/rate-limiting.md), and
@@ -531,12 +532,15 @@ docker compose down -v        # also deletes the database volume, for a clean st
 - [Contributing: branches, commits, reviews and issues](./CONTRIBUTING.md)
 - [Software process model](./docs/process-model.md), with
   [branch protection on `main`](./docs/process/branch-protection.md)
+- [Risk register](./docs/process/risk-register.md) and
+  [maintenance and support plan](./docs/process/maintenance-plan.md)
 - [ADR-001: Architecture](./docs/architecture/adr-001-modular-monolith.md), with
   [its layering enforced by lint](./docs/architecture/layering-lint.md)
 - [Use case specifications](./docs/requirements/use-cases.md)
 - [Analysis model](./docs/requirements/analysis-model.md)
 - [Design patterns](./docs/design/design-patterns.md)
 - [Test coverage: baseline and targets](./docs/testing/coverage.md)
+- [AI-assisted workflow: the record for #90](./docs/process/ai-assisted-workflow.md)
 - [Responsive design considerations](./docs/design/responsive-design.md), with
   [screenshots of every screen at 375px and 1280px](./docs/design/screenshots/)
 - [Product brief and MVP scope](./docs/product-brief.md)

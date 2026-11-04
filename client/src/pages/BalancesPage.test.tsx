@@ -43,6 +43,7 @@ describe("BalancesPage (UC-07, UC-08)", () => {
       amountCents: 488,
       note: null,
       settledAt: "2026-11-02T12:00:00.000Z",
+      createdBy: null,
     };
     mockedApi.createSettlement.mockResolvedValue({ settlement: settled });
     mockedApi.balances.mockResolvedValue({

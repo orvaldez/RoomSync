@@ -37,6 +37,8 @@ export type SettlementRecord = {
   amountCents: number;
   note: string | null;
   settledAt: Date;
+  /** Who entered it (#90); null for settlements recorded before that was kept. */
+  createdBy: { userId: string; name: string } | null;
 };
 
 export type NewSettlement = {
@@ -45,6 +47,8 @@ export type NewSettlement = {
   toUserId: string;
   amountCents: number;
   note: string | null;
+  /** The signed-in member recording it (#90), from the session. */
+  createdByUserId: string;
 };
 
 type Db = Prisma.TransactionClient;
@@ -183,6 +187,7 @@ export async function listSettlements(
 const SETTLEMENT_INCLUDE = {
   fromUser: { select: { name: true } },
   toUser: { select: { name: true } },
+  createdBy: { select: { name: true } },
 } satisfies Prisma.SettlementInclude;
 
 type SettlementRow = Prisma.SettlementGetPayload<{ include: typeof SETTLEMENT_INCLUDE }>;
@@ -196,5 +201,9 @@ function toSettlementRecord(row: SettlementRow): SettlementRecord {
     amountCents: row.amountCents,
     note: row.note,
     settledAt: row.settledAt,
+    createdBy:
+      row.createdByUserId && row.createdBy
+        ? { userId: row.createdByUserId, name: row.createdBy.name }
+        : null,
   };
 }

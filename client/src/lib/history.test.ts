@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import type { Chore, Expense } from "./api";
 import {
   canChangeExpense,
+  describeRecordedBy,
   describeCompletedChore,
   describeDeleted,
   describePayment,
@@ -30,6 +31,7 @@ function expense(overrides: Partial<Expense> = {}): Expense {
     createdAt: "2026-09-30T18:00:00Z",
     updatedAt: "2026-09-30T18:00:00Z",
     deleted: null,
+    createdBy: null,
     ...overrides,
   };
 }
@@ -172,5 +174,23 @@ describe("describeDeleted", () => {
 
   it("is null for an expense that wasn't deleted", () => {
     expect(describeDeleted(expense(), ORLANDO)).toBeNull();
+  });
+});
+
+describe("describeRecordedBy (#90)", () => {
+  it("names who entered it", () => {
+    expect(describeRecordedBy({ createdBy: { userId: MAYA, name: "Maya" } }, ORLANDO)).toBe(
+      "Recorded by Maya"
+    );
+  });
+
+  it("says you when the reader entered it", () => {
+    expect(describeRecordedBy({ createdBy: { userId: MAYA, name: "Maya" } }, MAYA)).toBe(
+      "Recorded by you"
+    );
+  });
+
+  it("says nothing for a record entered before this was kept", () => {
+    expect(describeRecordedBy({ createdBy: null }, ORLANDO)).toBeNull();
   });
 });
