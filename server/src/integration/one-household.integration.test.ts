@@ -15,6 +15,16 @@ const pool = useCleanDatabase();
 /** How many times each race is run; one lost race is enough to fail. */
 const ROUNDS = 5;
 
+/**
+ * Each test runs ROUNDS rounds of real sign-ups (bcrypt on every register and
+ * login), so it takes seconds, not milliseconds: the slowest measured 5.3 s
+ * on a busy laptop, past Vitest's 5 s default. A timed-out test also keeps
+ * running in the background, so its later sign-ups collide with the next
+ * test's users (409 on register) and fail that one too. 30 s is about six
+ * times the slowest run seen, and still catches a real hang.
+ */
+const RACE_TIMEOUT_MS = 30_000;
+
 type Response = { status: number; body: { error?: { code?: string } } };
 
 async function membershipsOf(user: SignedInUser): Promise<number> {
@@ -51,7 +61,7 @@ describe("one household per user, under concurrent requests (#73)", () => {
       expect(results.filter((r) => r.status === 201)).toHaveLength(1);
       expect(await membershipsOf(jo)).toBe(1);
     }
-  });
+  }, RACE_TIMEOUT_MS);
 
   it("lets only one of two invitations accepted at the same moment through", async () => {
     for (let round = 0; round < ROUNDS; round++) {
@@ -77,7 +87,7 @@ describe("one household per user, under concurrent requests (#73)", () => {
       );
       expect(rows.map((r) => r.status).sort()).toEqual(["ACCEPTED", "PENDING"]);
     }
-  });
+  }, RACE_TIMEOUT_MS);
 
   it("lets only one of a creation and an acceptance at the same moment through", async () => {
     for (let round = 0; round < ROUNDS; round++) {
@@ -93,5 +103,5 @@ describe("one household per user, under concurrent requests (#73)", () => {
       expectOneWinner(results);
       expect(await membershipsOf(jo)).toBe(1);
     }
-  });
+  }, RACE_TIMEOUT_MS);
 });

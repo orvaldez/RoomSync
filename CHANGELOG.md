@@ -51,6 +51,13 @@ Every version is a GitHub release whose notes match its section below.
   `ExpenseForm`'s cyclomatic complexity falls from 33 to 9, and the metrics
   report records it. No change to what the form does (#134).
 
+### Fixed
+
+- The one-household concurrency tests (#73) no longer fail at random on a slow
+  machine. Five rounds of real sign-ups took up to 5.3 s, past Vitest's 5 s
+  default, and the timed-out test kept running into the next one. They now
+  allow 30 s (#137).
+
 ### Security
 
 - Security events are logged: one JSON line on standard output for each
