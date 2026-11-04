@@ -32,6 +32,15 @@ Every version is a GitHub release whose notes match its section below.
 - A metrics report (`docs/process/metrics.md`): tests and coverage,
   complexity, and pull-request flow per milestone, with the scripts that
   re-measure each in `scripts/metrics/` (#129).
+- Docker images for the server and the client, and Docker Compose running
+  them with PostgreSQL: `docker compose up --build` serves the whole app at
+  http://localhost:8080 with nothing else installed. The server applies
+  pending migrations on start; the client's nginx proxies `/api` to it (#116, #131).
+
+### Changed
+
+- `prisma` (the CLI) is now a production dependency of the server, because
+  the container runs `prisma migrate deploy` when it starts (#131).
 
 ### Security
 
@@ -44,7 +53,6 @@ Every version is a GitHub release whose notes match its section below.
   10.7.3 → 10.7.4 (moderate, through `express-rate-limit`). The server has no
   production advisories again; `docs/security/dependency-audit.md` has the
   entry (#132).
-
 - Only the payer or the recipient can record a settlement. Before, any member
   could record that two others had settled, wiping out a debt owed to someone
   else; now the server refuses it with `403 NOT_PARTY_TO_SETTLEMENT`. Every
