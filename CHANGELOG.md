@@ -42,6 +42,13 @@ Every version is a GitHub release whose notes match its section below.
 - `prisma` (the CLI) is now a production dependency of the server, because
   the container runs `prisma migrate deploy` when it starts (#131).
 
+### Fixed
+
+- The one-household concurrency tests (#73) no longer fail at random on a slow
+  machine. Five rounds of real sign-ups took up to 5.3 s, past Vitest's 5 s
+  default, and the timed-out test kept running into the next one. They now
+  allow 30 s.
+
 ### Security
 
 - Security events are logged: one JSON line on standard output for each
