@@ -34,6 +34,7 @@ function internet(overrides: Partial<Expense> = {}): Expense {
     createdAt: "2026-10-20T18:00:00.000Z",
     updatedAt: "2026-10-20T18:00:00.000Z",
     deleted: null,
+    createdBy: null,
     ...overrides,
   };
 }
@@ -62,6 +63,20 @@ describe("ExpenseDetailPage (UC-11)", () => {
       `${ORLANDO.name} (paid) · 40%$28.00`,
       "Total$70.00",
     ]);
+  });
+
+  it("says who recorded it, which can differ from who paid (#90)", async () => {
+    setUp(internet({ createdBy: { userId: ME.id, name: ME.name } }));
+
+    expect(await screen.findByText("Recorded by you")).toBeTruthy();
+    expect(screen.getByText(`Paid by ${ORLANDO.name} on Tuesday, October 20`)).toBeTruthy();
+  });
+
+  it("leaves out who recorded an expense from before #90", async () => {
+    setUp(internet());
+
+    await screen.findByRole("heading", { name: "Internet" });
+    expect(screen.queryByText(/^Recorded by/)).toBeNull();
   });
 
   it("says an expense from another household couldn't be found", async () => {

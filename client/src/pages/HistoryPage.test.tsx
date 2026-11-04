@@ -30,6 +30,7 @@ function expense(id: string, description: string, overrides: Partial<Expense> = 
     createdAt: "2026-10-20T18:00:00.000Z",
     updatedAt: "2026-10-20T18:00:00.000Z",
     deleted: null,
+    createdBy: null,
     ...overrides,
   };
 }
@@ -41,6 +42,7 @@ const PAYMENT: Settlement = {
   amountCents: 2000,
   note: "Venmo",
   settledAt: "2026-10-22T12:00:00.000Z",
+  createdBy: { userId: ORLANDO.userId, name: ORLANDO.name },
 };
 
 const DONE: Chore = {
@@ -85,7 +87,10 @@ describe("HistoryPage (UC-11)", () => {
     expect(expenseLinks[0].getAttribute("href")).toBe("/expenses/e2");
 
     expect(within(section("Payments")).getByText(`You paid ${ORLANDO.name} $20.00`)).toBeTruthy();
-    expect(within(section("Payments")).getByText(/· Venmo/)).toBeTruthy();
+    // Orlando recorded the payment I made (#90), so History says who entered it.
+    expect(
+      within(section("Payments")).getByText(new RegExp(`· Venmo · Recorded by ${ORLANDO.name}$`))
+    ).toBeTruthy();
     expect(within(section("Completed chores")).getByText("Take out the trash")).toBeTruthy();
     expect(within(section("Completed chores")).getByText(/^Assigned to you · completed /)).toBeTruthy();
   });
