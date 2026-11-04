@@ -192,7 +192,8 @@ Each entry is one request made of the AI, or one decision point it raised.
 
 ### 11. Review: the threat model overstated the fix
 
-- **Reviewer:** Agustin, in #127 (November 4, 2026).
+- **Reviewer:** Agustin, in #127 (November 4, 2026), written with Claude Code
+  in his own session and checked by him before posting.
 - **Found:** the AI had written H4's residual risk as "None known". But the
   new rule lets the *payer* record a payment, so Sam can still record "I paid
   Maya $30" when he didn't and wipe out his own debt to her. That is the same
@@ -230,16 +231,19 @@ Twelve entries:
 |---|---|---|
 | **Accepted** | 1–7, 10, 12 | including the four design recommendations in 2–5 |
 | **Rejected** | 2, 3, 4, 5 | five options the AI offered and the team turned down, each with a reason |
-| **Edited** by a human | 11 | the threat model's H4 residual, rewritten after review |
+| **Edited** by a human | 11 | the threat model's H4 residual, rewritten after review (Agustin, AI-assisted) |
 | **AI self-correction** | 8, 9 | a misplaced import caught by the tests; a fragile line rewritten before review |
 
 **What review caught that the AI didn't:** the AI wrote H4's residual risk
 as "None known", but the payer can still record a payment they never made.
 The tests couldn't catch that, because the code did what was designed; the
-design question had been framed too narrowly (entry 2). A human reviewer
-reading the threat model against the rule found it. This is the main lesson
-of the record: the AI was reliable at building and testing a decision, and
-less reliable at noticing which options it hadn't offered.
+design question had been framed too narrowly (entry 2). Agustin's review
+found it. He wrote it with Claude Code, in a separate session that was asked
+to read the threat model against the rule, and checked it himself before
+posting it (see "Beyond this one feature"). This is the main lesson of the
+record: the session that built a decision was reliable at building and
+testing it, and less reliable at noticing which options it hadn't offered. A
+second review aimed at the design, not only the code, is what caught it.
 
 ## Checks at the end of the build
 
