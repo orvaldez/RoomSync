@@ -293,9 +293,10 @@ at once had concrete costs:
   as #113.
 - **Changelog entries landed in the wrong release** twice, because several pull requests
   edited `CHANGELOG.md` at once and Git placed one entry under an older heading.
-- **The release tag missed its changelog cut.** `milestone-2` and `v0.3.0` were tagged on
-  the commit before #115, which cut the `[0.3.0]` section. The release notes are right;
-  the file at the tag still says "Unreleased".
+- **The release tag missed its changelog cut at first.** `milestone-2` and `v0.3.0` were
+  first tagged on #104's merge (`bf38f4e`), the commit before #115 cut the `[0.3.0]`
+  section, so the changelog at the tag still said "Unreleased". Both tags were moved to
+  #115's merge (`596bd35`) that evening, before submission (see #77).
 
 **Changes for Sprints 5 and 6.** Recorded as working rules in `BACKLOG.md`:
 

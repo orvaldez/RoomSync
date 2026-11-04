@@ -143,7 +143,7 @@ protection, the threat model, rate limiting, the OWASP review, CONTRIBUTING,
 the changelog and three releases. Two P1 items, the one-household race (#73)
 and component tests (#76), also made it. US-13 (#74) and the settlement
 permissions fix (#90) did not, and move to Milestone 3. The submitted version
-is `milestone-2` / `v0.3.0` at `bf38f4e`.
+is `milestone-2` / `v0.3.0` at `596bd35`.
 
 The plan's dates held for the work but not for merging it: nothing merged
 between October 15 and November 1, and 14 pull requests merged on November 2,
@@ -174,7 +174,7 @@ testing and quality reporting and the README.
 | #122 | Final README and verification guide for `v1.0` | Orlando | P0 | Sprint 6 | Nov 27 |
 | #124 | Live demonstration script and rehearsal | Both | P0 | Sprint 6 | Nov 28 |
 | #125 | Submission: final report, `v1.0`, `milestone-3` | Both | P0 | Sprint 6 | Nov 29 |
-| #74 | US-13: remove a member or leave a household | Agustin | P1 | Sprint 6 | Nov 23 |
+| #74 | US-13: remove a member or leave a household | Agustin | P1 | Sprint 6 | Nov 20 |
 | #102 | Security headers and a CSP for the deployed client | Agustin | P1 | Sprint 6 | Nov 21 |
 | #100 | Dependabot, and GitHub Actions pinned to commit SHAs | Agustin | P1 | Sprint 6 | Nov 21 |
 | #109 | Crowded wrapped headings on phones | Agustin | P1 | Sprint 6 | Nov 23 |
