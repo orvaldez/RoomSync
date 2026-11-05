@@ -48,6 +48,18 @@ describe("securityLogEnabled", () => {
     expect(securityLogEnabled({ NODE_ENV: "test", SECURITY_LOG: "on" })).toBe(true);
     expect(securityLogEnabled({ NODE_ENV: "production", SECURITY_LOG: "off" })).toBe(false);
   });
+
+  it("reads SECURITY_LOG in any capitalization, with spaces ignored", () => {
+    expect(securityLogEnabled({ NODE_ENV: "test", SECURITY_LOG: "On" })).toBe(true);
+    expect(securityLogEnabled({ NODE_ENV: "test", SECURITY_LOG: " ON " })).toBe(true);
+    expect(securityLogEnabled({ NODE_ENV: "production", SECURITY_LOG: "OFF" })).toBe(false);
+    expect(securityLogEnabled({ NODE_ENV: "production", SECURITY_LOG: "Off" })).toBe(false);
+  });
+
+  it("ignores any other SECURITY_LOG value and keeps the default", () => {
+    expect(securityLogEnabled({ NODE_ENV: "production", SECURITY_LOG: "yes" })).toBe(true);
+    expect(securityLogEnabled({ NODE_ENV: "test", SECURITY_LOG: "" })).toBe(false);
+  });
 });
 
 describe("securityLogLine", () => {
