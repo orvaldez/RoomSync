@@ -44,6 +44,13 @@ but not finished; it moves to Milestone 3, with the other open items in
 | Milestone 2 | Test, improve, and secure | Complete (`milestone-2`, `v0.3.0`) |
 | Milestone 3 | Deploy | In progress, due November 30, 2026 ([plan](./BACKLOG.md#sprint-5-and-sprint-6-plan-milestone-3)) |
 
+**Live at https://roomsync-ykvd.onrender.com** (#117). It runs `main` on
+Render's and Neon's free plans. The first request after 15 minutes without
+visitors takes about 30 seconds while the server wakes up; after that it's
+normal. To try it with the demo household, see
+[deployment.md](./docs/process/deployment.md) §7. Everything about how it's
+deployed is in [deployment.md](./docs/process/deployment.md).
+
 ## Team
 
 | Name | Email | Role |
@@ -137,7 +144,8 @@ Then open **http://localhost:8080** and sign in as any account in
   `RoomSync API listening on port 4000`.
 - **Start over with an empty database:** `docker compose down -v`, then both
   commands above again.
-- **Ports:** only 8080 (the app) and 5432 (PostgreSQL) are published. The API
+- **Ports:** only 8080 (the app) and 5432 (PostgreSQL) are published, and
+  5432 only on this machine (`127.0.0.1`), not to the local network. The API
   is reached through the app's `/api`, so port 4000 stays free for
   development. If 8080 is taken, set `ROOMSYNC_PORT` (for example
   `ROOMSYNC_PORT=8081 docker compose up --build -d` in Git Bash, or
@@ -183,6 +191,7 @@ the client needs no environment variables.
 | `LOGIN_MAX_FAILURES_PER_IP` | unset (20) | Optional. Wrong passwords allowed per IP address per window, across all accounts |
 | `REGISTER_MAX_PER_IP` | unset (10) | Optional. Registration attempts allowed per IP address per window |
 | `SECURITY_LOG` | unset | Optional. Security events (failed logins, rate limits, 403s, household 404s) are written to stdout as JSON lines, on by default and off under the test runners. `on` or `off` overrides that (`server/src/middleware/security-log.ts`, #99) |
+| `TRUST_PROXY_HOPS` | unset (1) | Production only. How many proxies in front of the server to trust when reading the visitor's IP from `X-Forwarded-For`, for the per-IP rate limits and the security log. It depends on the host, so it's measured there ([deployment.md](./docs/process/deployment.md) §5). A value other than a whole number from 1 to 5 stops the server from starting |
 | `TEST_DATABASE_URL` | `postgresql://roomsync:roomsync@localhost:5432/roomsync_test?schema=public` | Optional. The database `npm run test:integration` uses; the example value is also the default. Its name must end in `_test`, because every integration test empties it |
 
 `server/.env` is ignored by Git. Never commit a real secret.
@@ -361,7 +370,7 @@ cd server && npx prisma migrate reset && npm run db:seed
 With the Docker-only quick start, start over with an empty database instead:
 
 ```bash
-docker compose down -v && docker compose up -d && docker compose exec server node dist/seed.js
+docker compose down -v && docker compose up --build -d && docker compose exec server node dist/seed.js
 ```
 
 To confirm authorization is enforced server-side rather than only in the
@@ -411,11 +420,11 @@ All of them also run in CI on every pull request
 
 | Suite | Command | Needs | Expected |
 |---|---|---|---|
-| Server unit | `cd server && npx prisma generate && npm test` | Nothing running | `Tests 483 passed`, 0 failed |
-| Server coverage | `cd server && npm run test:coverage` | Nothing running | The same 483 pass, a coverage table prints, and every target in `vitest.config.ts` is met (the run fails if not) |
-| Server integration | `cd server && npm run test:integration` | `docker compose up -d db` | `Tests 33 passed` across 9 files, including the 500-expense timing check and the concurrent one-household-per-user check |
-| Client unit | `cd client && npm test` | Nothing running | `Tests 180 passed`, 0 failed, 15 files: the `lib` tests and the component tests |
-| Client coverage | `cd client && npm run test:coverage` | Nothing running | The same 180 pass and every target in `vitest.config.ts` is met |
+| Server unit | `cd server && npx prisma generate && npm test` | Nothing running | `Tests 515 passed`, 0 failed |
+| Server coverage | `cd server && npm run test:coverage` | Nothing running | The same 515 pass, a coverage table prints, and every target in `vitest.config.ts` is met (the run fails if not) |
+| Server integration | `cd server && npm run test:integration` | `docker compose up -d db` | `Tests 38 passed` across 10 files, including the 500-expense timing check and the concurrent one-household-per-user check |
+| Client unit | `cd client && npm test` | Nothing running | `Tests 189 passed`, 0 failed, 15 files: the `lib` tests and the component tests |
+| Client coverage | `cd client && npm run test:coverage` | Nothing running | The same 189 pass and every target in `vitest.config.ts` is met |
 | Lint, types, build | `cd server && npm run lint && npm run typecheck`, `cd client && npm run lint && npm run build` | Nothing running | No errors |
 
 The sections below explain each suite.
@@ -534,6 +543,7 @@ docker compose down -v        # also deletes the database volume, for a clean st
   [branch protection on `main`](./docs/process/branch-protection.md)
 - [Risk register](./docs/process/risk-register.md) and
   [maintenance and support plan](./docs/process/maintenance-plan.md)
+- [Deployment: Render and Neon, every setting, measured free-tier limits](./docs/process/deployment.md)
 - [ADR-001: Architecture](./docs/architecture/adr-001-modular-monolith.md), with
   [its layering enforced by lint](./docs/architecture/layering-lint.md)
 - [Use case specifications](./docs/requirements/use-cases.md)

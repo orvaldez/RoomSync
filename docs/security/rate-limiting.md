@@ -225,10 +225,16 @@ them, and `npm run dev` restarts on every file save.
   instance behind a load balancer, each would count separately and the real
   limit would multiply. It would then need a shared store, such as a table in
   PostgreSQL, or Redis.
-- **The IP is `req.ip`.** In production Express trusts one proxy hop
-  (`server/src/app.ts`), so `req.ip` is the client's address as that proxy
-  reports it in `X-Forwarded-For`. Outside production no proxy is trusted, so
-  a client can't pick its own address by sending that header.
+- **The IP is `req.ip`.** In production Express trusts `TRUST_PROXY_HOPS`
+  proxy hops (`server/src/app.ts`, default 1), so `req.ip` is the client's
+  address as the outermost trusted proxy reports it in `X-Forwarded-For`.
+  Outside production no proxy is trusted, so a client can't pick its own
+  address by sending that header.
+  - **On Render, 1 is too few** (#117): the first deploy logged every
+    visitor as a `10.x` address, so the per-IP limits counted the whole site
+    as one client. Too many hops is worse, because the visitor's own forged
+    header would be believed. The right value is measured on the host
+    (`docs/process/deployment.md` §5).
 - **Users behind a shared address**, such as a campus network, share the IP
   allowance with everyone else there. 20 wrong passwords per 15 minutes is
   generous for that, and only wrong passwords count.

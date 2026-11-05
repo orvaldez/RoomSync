@@ -37,8 +37,8 @@ shared.
 | 8 | Merge conflicts | Technical | Medium → **High** | Medium → Low | Both | **Occurred**, managed |
 | 9 | Authentication or authorization vulnerabilities | Security | Medium | High | Both | **Mitigated**, two fixes; one residual accepted |
 | 10 | Application defects | Technical | Medium | Medium | Both | **Occurred**, caught before release |
-| 11 | Deployment problems | Deployment | Medium | High | Agustin | **Open** |
-| 12 | Free hosting tier limitations | Deployment | Medium | Medium | Agustin | **Open** |
+| 11 | Deployment problems | Deployment | Medium | High | Agustin | **Occurred**, early; one open (IP) |
+| 12 | Free hosting tier limitations | Deployment | Medium | Medium | Agustin | **Mitigated**; moved to Neon |
 | 13 | GitHub or Render unavailable near a deadline | Deployment | Low | Medium | Agustin | **Occurred** once, mitigated |
 | 14 | Data loss | Data | Low | High | Agustin | **Open** (production) |
 | 15 | Requirements change significantly | Scheduling | Low | Medium | Both | **Mitigated** |
@@ -46,7 +46,7 @@ shared.
 | 17 | A release or merge lands on the wrong commit or branch | Process | Medium | Medium | Both | **Occurred** twice; new rules |
 | 18 | The test toolchain can't be upgraded on one machine | Technical | Certain | Low | Both | **Accepted** |
 | 19 | AI-generated changes merged without being understood | Process | Medium | High | Both | **Mitigated** |
-| 20 | A production secret leaks | Security | Low | High | Agustin | **Open** |
+| 20 | A production secret leaks | Security | Low | High | Agustin | **Mitigated** (#117); deploy hook in #118 |
 | 21 | Rate limits reset or split when the server restarts or scales | Security | Medium | Low | Agustin | **Accepted** |
 | 22 | Security events go unnoticed | Security | Medium | Medium | Orlando | **Mitigated** (#99) |
 
@@ -202,25 +202,37 @@ shared.
 
 - **Mitigation (proposal):** deploy a basic version well before the final
   milestone, and containerize so local and deployed environments match.
-- **What happened:** not yet deployed. Milestone 3's plan follows the proposal:
-  containers by November 7 (#116), the first live deployment by November 10
-  (#117), CD by November 12 (#118), three weeks before the due date.
-- **Status:** **Open.** Known areas to check: the secure cookie and `trust
-  proxy` over Render's HTTPS proxy (`server/src/middleware/session.ts`),
-  migrations on deploy, and the client's `/api` proxy in production.
+- **What happened:** deployed on November 4, six days before the plan's
+  target (#117, [`deployment.md`](./deployment.md)). The three areas this risk
+  named all worked:
+  - the secure cookie over Render's HTTPS, checked by registering, refreshing
+    and staying signed in
+  - migrations on start
+  - `/api` through the static site's rewrite
+
+  One problem only showed up live: Render puts more than one proxy in front of
+  the API, so with one trusted hop every visitor's address was logged as a
+  `10.x` proxy. The per-IP limits then counted the whole site as one visitor:
+  ten registrations site-wide in 15 minutes would block everyone. #117 makes
+  the hop count `TRUST_PROXY_HOPS`, measured on Render (`deployment.md` §5).
+- **Status:** **Occurred**, early, as the proposal intended. Open until
+  `TRUST_PROXY_HOPS` is measured.
 
 ### 12. Free hosting tier limitations
 
 - **Mitigation (proposal):** warm the app before a demonstration, and consider a
   low-cost paid tier if the free database tier is too small.
-- **What happened:** not yet deployed. #117 records the free tier's actual
-  limits once the service exists, and the demo script (#124) includes warming
-  the site up. Impact raised from Low to Medium: Render's free PostgreSQL
-  databases are believed to expire about 30 days after they are created, so
-  one created on November 10 would expire around December 10, possibly before
-  grading is finished. #117 confirms the terms and either budgets for a paid
-  tier for December or plans a re-create.
-- **Status:** **Open.**
+- **What happened:** confirmed on November 4. Render's free PostgreSQL expires
+  30 days after it is created, so the one created that day would have stopped
+  on December 4, possibly during grading. **The database moved to Neon,**
+  whose free plan doesn't expire, with no code change. **The client became a
+  Render Static Site,** which never sleeps, so a visitor waits for at most one
+  wake-up, the API's: **32 seconds** measured. The limits are measured in
+  [`deployment.md`](./deployment.md) §4. Before the demo, the API is warmed up
+  (§6, #124).
+- **Status:** **Mitigated.** The cold start is accepted, with warm-up as the
+  mitigation. If it proves too slow for grading, Render's paid instance
+  ($7 a month) removes it.
 
 ### 13. GitHub or Render unavailable near a deadline
 
@@ -238,10 +250,12 @@ shared.
 
 - **Mitigation (proposal):** the host's database backups, and seed data to
   rebuild a working database.
-- **What happened:** there is no production data yet. Locally, the seed rebuilds
-  the demonstration household in one command and refuses to run in production.
-- **Status:** **Open** until #117. The backup and restore procedure goes in the
-  [maintenance plan](./maintenance-plan.md) once the host exists.
+- **What happened:** production data now exists, on Neon's free plan, which
+  keeps a 6-hour restore window and one manual snapshot, but no longer-term
+  backup. The [maintenance plan](./maintenance-plan.md) §7 adds a `pg_dump`
+  before every migration and before the demo. The seed can still rebuild the
+  demonstration household, from a laptop (`deployment.md` §7).
+- **Status:** **Open:** the restore hasn't been tested yet.
 
 ### 15. Requirements change significantly
 
@@ -318,7 +332,11 @@ shared.
   `.env` is ignored by Git. The server refuses to start in production with the
   example secret. Rotating a secret is in the
   [maintenance plan](./maintenance-plan.md).
-- **Status:** **Open** until #117 and #118, when the secrets first exist.
+- **What happened:** since #117, `SESSION_SECRET` (generated in Render) and
+  `DATABASE_URL` (Neon's) exist only in Render's environment settings. Neither
+  went through the repository, a pull request or a chat. Rotating the database
+  password is in the maintenance plan §6.
+- **Status:** **Mitigated** for these two. The deploy hook arrives with #118.
 
 ### 21. Rate limits reset or split when the server restarts or scales
 

@@ -41,6 +41,13 @@ Every version is a GitHub release whose notes match its section below.
   after a confirmation, a deleted expense shown struck through, editing with
   the form filled in, and the "Recorded by" line from #127. Client coverage
   rises from 57% to 70% of statements, and its floor with it (#133).
+- RoomSync is live at https://roomsync-ykvd.onrender.com: the client as a
+  Render Static Site, the API as a Render web service from the server image,
+  and the database on Neon. Every setting and the measured free-tier limits
+  are in `docs/process/deployment.md` (#117, #136).
+- `TRUST_PROXY_HOPS`: how many proxies in front of the server to trust for the
+  visitor's IP in production, default 1. On Render, 1 makes every visitor look
+  like the same proxy to the per-IP rate limits (#136).
 
 ### Changed
 
@@ -50,6 +57,8 @@ Every version is a GitHub release whose notes match its section below.
   the component into tested helpers, and its preview into its own component.
   `ExpenseForm`'s cyclomatic complexity falls from 33 to 9, and the metrics
   report records it. No change to what the form does (#134).
+- Compose publishes PostgreSQL on `127.0.0.1` only, so the local database
+  and its example login aren't reachable from the local network (#136).
 
 ### Fixed
 

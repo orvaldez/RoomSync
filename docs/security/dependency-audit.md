@@ -26,8 +26,10 @@ two weeks old.
 - **`ip-address` 10.7.4** (October 11) is the first release with the fix.
   10.7.5 and 10.7.6 are newer than two weeks.
 - **`body-parser` 1.20.9** (October 22) is the only fixed release on the 1.x
-  line Express 4 uses. It was 13 days old on this date and reaches two weeks
-  before this change can merge.
+  line Express 4 uses. It was 13 days old when #132 merged, the evening of
+  November 4: a day early, on purpose, because it fixes a high-severity
+  denial of service and the two-week rule guards against brand-new releases,
+  which this wasn't.
 
 `npm audit fix` was tried first, but it also raised ESLint and
 typescript-eslint, which have nothing to do with either advisory, so the two
