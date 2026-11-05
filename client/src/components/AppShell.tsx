@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 
 /** Header and layout for signed-in pages. */
@@ -17,7 +17,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="shell">
       <header className="shell-header">
-        <span className="shell-brand">RoomSync</span>
+        {/* The usual way home from any screen, as on most sites. */}
+        <Link to="/" className="shell-brand">
+          RoomSync
+        </Link>
 
         <div className="shell-user">
           {/* The name is the useful identifier here; showing the email in the

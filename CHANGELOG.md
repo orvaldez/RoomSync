@@ -59,6 +59,8 @@ Every version is a GitHub release whose notes match its section below.
   report records it. No change to what the form does (#134).
 - Compose publishes PostgreSQL on `127.0.0.1` only, so the local database
   and its example login aren't reachable from the local network (#136).
+- The RoomSync name in the header is now a link to the dashboard, from any
+  signed-in screen (#140).
 
 ### Fixed
 
