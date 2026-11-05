@@ -17,7 +17,9 @@ import { normalizeEmail } from "../services/validation";
  * strings, or invitation tokens. The account a login was for is recorded only
  * as an HMAC of its email, keyed with SESSION_SECRET: the same account gives
  * the same value, so repeated attempts show up together, but the address
- * can't be read back from the log.
+ * can't be read back without SESSION_SECRET. Someone who has the secret can
+ * still check a guessed email against the log, so the log is only as private
+ * as the secret.
  */
 
 export type SecurityEvent =
@@ -53,11 +55,14 @@ function eventFor(error: AppError, signedIn: boolean): SecurityEvent | null {
 
 /**
  * Logging is on by default and off under the test runners, so test output
- * stays readable. SECURITY_LOG=on or SECURITY_LOG=off overrides either way.
+ * stays readable. SECURITY_LOG=on or SECURITY_LOG=off overrides either way,
+ * in any capitalization and with surrounding spaces ignored, so "On" in a
+ * host's settings doesn't silently fall back to the default.
  */
 export function securityLogEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  if (env.SECURITY_LOG === "on") return true;
-  if (env.SECURITY_LOG === "off") return false;
+  const override = env.SECURITY_LOG?.trim().toLowerCase();
+  if (override === "on") return true;
+  if (override === "off") return false;
   return env.NODE_ENV !== "test" && env.NODE_ENV !== "integration";
 }
 

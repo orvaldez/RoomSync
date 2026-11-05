@@ -73,7 +73,7 @@ Every version is a GitHub release whose notes match its section below.
   failed login, rate limit reached, refused request (`403`), and unknown
   household asked for by a signed-in user, with the route, the IP and the
   email as an HMAC rather than as typed. Off in tests; `SECURITY_LOG=on` or
-  `off` overrides (#130).
+  `off`, in any capitalization, overrides (#130, #139).
 - `body-parser` 1.20.8 → 1.20.9 (high, through Express) and `ip-address`
   10.7.3 → 10.7.4 (moderate, through `express-rate-limit`). The server has no
   production advisories again; `docs/security/dependency-audit.md` has the
