@@ -106,7 +106,7 @@ form's validation, unchanged, and five more between 11 and 14.
 
 **The refactor, measured (#134):** `ExpenseForm` went from **33 to 9**. Its
 starting values, wording and preview key moved to tested helpers in
-`lib/expenseForm.ts` (`initialFormValues` 5, `formCopy` 1, `previewKeyFor`
+`lib/expenseForm.ts` (`initialFormValues` 5, `formCopy` 2, `previewKeyFor`
 4), and the preview to its own `SplitPreview` component (9). The client's
 maximum is now `buildDraft` (22), and 6 functions are over 10 instead of 7.
 The mean fell from 2.74 to 2.68 across the same 249 functions.
