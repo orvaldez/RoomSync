@@ -33,38 +33,6 @@ export function isBehindTlsProxy(nodeEnv = process.env.NODE_ENV): boolean {
   return nodeEnv === "production";
 }
 
-/**
- * How many proxies in front of the server Express should trust, from
- * `TRUST_PROXY_HOPS` (#117). Only used where `isBehindTlsProxy()` is true.
- *
- * Express reads the client's address from `X-Forwarded-For`, counting this
- * many proxy hops back from the server. Too few, and every visitor appears as
- * the nearest proxy's private address, so the per-IP rate limits (#71) count
- * the whole site as one visitor and the security log (#99) records the proxy.
- * Too many, and a visitor's own forged `X-Forwarded-For` is believed, so they
- * pick their address and walk around the per-IP limits.
- *
- * The right number is a property of the host, not of the code, so it is
- * configuration: measured on the host with a forged header and recorded in
- * `docs/process/deployment.md`. Unset means 1, the value before #117.
- */
-export function trustedProxyHops(raw = process.env.TRUST_PROXY_HOPS): number {
-  if (raw === undefined || raw.trim() === "") {
-    return 1;
-  }
-
-  const hops = Number(raw);
-  if (!Number.isInteger(hops) || hops < 1 || hops > 5) {
-    // Refuse to start rather than guess: a wrong value fails silently.
-    throw new Error(
-      `TRUST_PROXY_HOPS must be a whole number from 1 to 5, not "${raw}". ` +
-        "See docs/process/deployment.md."
-    );
-  }
-
-  return hops;
-}
-
 declare module "express-session" {
   interface SessionData {
     userId?: string;

@@ -37,7 +37,7 @@ shared.
 | 8 | Merge conflicts | Technical | Medium → **High** | Medium → Low | Both | **Occurred**, managed |
 | 9 | Authentication or authorization vulnerabilities | Security | Medium | High | Both | **Mitigated**, two fixes; one residual accepted |
 | 10 | Application defects | Technical | Medium | Medium | Both | **Occurred**, caught before release |
-| 11 | Deployment problems | Deployment | Medium | High | Agustin | **Occurred**, early; one open (IP) |
+| 11 | Deployment problems | Deployment | Medium | High | Agustin | **Occurred**, early; fixed |
 | 12 | Free hosting tier limitations | Deployment | Medium | Medium | Agustin | **Mitigated**; moved to Neon |
 | 13 | GitHub or Render unavailable near a deadline | Deployment | Low | Medium | Agustin | **Occurred** once, mitigated |
 | 14 | Data loss | Data | Low | High | Agustin | **Open** (production) |
@@ -213,10 +213,11 @@ shared.
   One problem only showed up live: Render puts more than one proxy in front of
   the API, so with one trusted hop every visitor's address was logged as a
   `10.x` proxy. The per-IP limits then counted the whole site as one visitor:
-  ten registrations site-wide in 15 minutes would block everyone. #117 makes
-  the hop count `TRUST_PROXY_HOPS`, measured on Render (`deployment.md` §5).
-- **Status:** **Occurred**, early, as the proposal intended. Open until
-  `TRUST_PROXY_HOPS` is measured.
+  ten registrations site-wide in 15 minutes would block everyone. Measuring
+  the proxy chain on Render showed the visitor 3 hops back on one path and 5
+  on the other, so no hop count works; #PRNUM trusts the proxies by address
+  instead (`deployment.md` §5).
+- **Status:** **Occurred**, early, as the proposal intended, and fixed.
 
 ### 12. Free hosting tier limitations
 

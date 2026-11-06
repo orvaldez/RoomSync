@@ -225,16 +225,20 @@ them, and `npm run dev` restarts on every file save.
   instance behind a load balancer, each would count separately and the real
   limit would multiply. It would then need a shared store, such as a table in
   PostgreSQL, or Redis.
-- **The IP is `req.ip`.** In production Express trusts `TRUST_PROXY_HOPS`
-  proxy hops (`server/src/app.ts`, default 1), so `req.ip` is the client's
-  address as the outermost trusted proxy reports it in `X-Forwarded-For`.
-  Outside production no proxy is trusted, so a client can't pick its own
-  address by sending that header.
-  - **On Render, 1 is too few** (#117): the first deploy logged every
-    visitor as a `10.x` address, so the per-IP limits counted the whole site
-    as one client. Too many hops is worse, because the visitor's own forged
-    header would be believed. The right value is measured on the host
-    (`docs/process/deployment.md` §5).
+- **The IP is `req.ip`.** In production Express trusts the host's proxies
+  by address: private addresses (Render's `10.x`) and Cloudflare's published
+  ranges (`server/src/middleware/trusted-proxies.ts`, #PRNUM). `req.ip` is the
+  first address in `X-Forwarded-For`, from the right, that isn't one of them:
+  the visitor. Outside production no proxy is trusted, so a client can't pick
+  its own address by sending that header.
+  - **Why not a count of hops** (#117): on Render the visitor is 3 hops back
+    on a request straight to the API and 5 through the site's `/api`
+    rewrite. Too few and every visitor shares a proxy's address; too many and
+    a forged header is believed (`docs/process/deployment.md` §5).
+  - **Known gap:** a sender inside Cloudflare's network (a Cloudflare Worker,
+    for example) has a trusted address, so it could still forge its IP and
+    get its own allowance per forged address. Accepted: the per-email login
+    limit still applies to it, and the course project has no such traffic.
 - **Users behind a shared address**, such as a campus network, share the IP
   allowance with everyone else there. 20 wrong passwords per 15 minutes is
   generous for that, and only wrong passwords count.

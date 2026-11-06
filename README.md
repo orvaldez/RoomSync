@@ -191,7 +191,6 @@ the client needs no environment variables.
 | `LOGIN_MAX_FAILURES_PER_IP` | unset (20) | Optional. Wrong passwords allowed per IP address per window, across all accounts |
 | `REGISTER_MAX_PER_IP` | unset (10) | Optional. Registration attempts allowed per IP address per window |
 | `SECURITY_LOG` | unset | Optional. Security events (failed logins, rate limits, 403s, household 404s) are written to stdout as JSON lines, on by default and off under the test runners. `on` or `off` overrides that (`server/src/middleware/security-log.ts`, #99) |
-| `TRUST_PROXY_HOPS` | unset (1) | Production only. How many proxies in front of the server to trust when reading the visitor's IP from `X-Forwarded-For`, for the per-IP rate limits and the security log. It depends on the host, so it's measured there ([deployment.md](./docs/process/deployment.md) §5). A value other than a whole number from 1 to 5 stops the server from starting |
 | `TEST_DATABASE_URL` | `postgresql://roomsync:roomsync@localhost:5432/roomsync_test?schema=public` | Optional. The database `npm run test:integration` uses; the example value is also the default. Its name must end in `_test`, because every integration test empties it |
 
 `server/.env` is ignored by Git. Never commit a real secret.
@@ -420,8 +419,8 @@ All of them also run in CI on every pull request
 
 | Suite | Command | Needs | Expected |
 |---|---|---|---|
-| Server unit | `cd server && npx prisma generate && npm test` | Nothing running | `Tests 515 passed`, 0 failed |
-| Server coverage | `cd server && npm run test:coverage` | Nothing running | The same 515 pass, a coverage table prints, and every target in `vitest.config.ts` is met (the run fails if not) |
+| Server unit | `cd server && npx prisma generate && npm test` | Nothing running | `Tests 511 passed`, 0 failed |
+| Server coverage | `cd server && npm run test:coverage` | Nothing running | The same 511 pass, a coverage table prints, and every target in `vitest.config.ts` is met (the run fails if not) |
 | Server integration | `cd server && npm run test:integration` | `docker compose up -d db` | `Tests 38 passed` across 10 files, including the 500-expense timing check and the concurrent one-household-per-user check |
 | Client unit | `cd client && npm test` | Nothing running | `Tests 189 passed`, 0 failed, 15 files: the `lib` tests and the component tests |
 | Client coverage | `cd client && npm run test:coverage` | Nothing running | The same 189 pass and every target in `vitest.config.ts` is met |

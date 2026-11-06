@@ -41,6 +41,11 @@ needs both people for anything to merge to `main` (risk register, 16).
   a new advisory between audits.
 - **The test toolchain** stays on Vite 6 and Vitest 2 because of a machine
   constraint (risk register, 18). #101 tracks moving off it.
+- **Cloudflare's IP ranges,** at each milestone: compare
+  `server/src/middleware/trusted-proxies.ts` with
+  https://www.cloudflare.com/ips-v4 and https://www.cloudflare.com/ips-v6.
+  A missing range makes some visitors look like a Cloudflare address; it
+  doesn't let anyone forge theirs.
 
 ## 3. Reporting and fixing bugs
 
@@ -151,8 +156,8 @@ anyone's real data.
   plan, then deletes them. The security lines hold IP addresses, which are
   personal data, so nothing longer is set up. Neon keeps its monitoring for
   1 day.
-- **Known gap:** until `TRUST_PROXY_HOPS` is measured (`deployment.md` §5), the
-  logged IP is Render's internal proxy, not the visitor.
+- **The logged IP is the visitor's** on both ways into the API, since the
+  proxies are trusted by address (`deployment.md` §5).
 
 ## 9. After the semester
 

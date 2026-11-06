@@ -57,7 +57,7 @@ Environment variables:
 | `NODE_ENV` | `production` | Turns on the secure cookie, HSTS and `trust proxy` (`middleware/session.ts`) |
 | `DATABASE_URL` | Neon's **direct** connection string (Connect → connection pooling **off**) | Prisma's migrations need a direct connection rather than a pooled one, and the server keeps its own pool anyway |
 | `SESSION_SECRET` | Generated in Render ("Generate") | Never anywhere else. The server refuses the example value in production |
-| `TRUST_PROXY_HOPS` | **To measure** (§5) | Unset means 1 |
+| `TRUST_PROXY_HOPS` | **none: delete it** | Read only between #136 and #PRNUM. The proxies are now trusted by address (§5) |
 
 `PORT` is not set: Render sets it (10000), and the server reads it.
 
@@ -120,34 +120,57 @@ From the providers' documentation, checked the same day:
 | Logs | 7 days on the Hobby plan | Monitoring kept 1 day |
 | Expiry | None for web services and static sites | **None.** The free plan is permanent |
 
-## 5. Measuring `TRUST_PROXY_HOPS`
+## 5. The visitor's IP address
 
 The API needs the visitor's real address for the per-IP rate limits (#71) and
-the security log (#99). It reads it from `X-Forwarded-For`, trusting
-`TRUST_PROXY_HOPS` proxies back from itself (`trustedProxyHops`,
-`middleware/session.ts`). At the default of 1, the first deploy logged a `10.x`
-address for every request: Render puts more than one proxy in front. Its
-documentation doesn't say how many, and its proxy keeps any
-`X-Forwarded-For` a visitor sends, so the number has to be measured, not
-guessed. `session.test.ts` shows how each value plays out.
+the security log (#99). It reads it from `X-Forwarded-For`, skipping the
+proxies it trusts. At first (#136) it trusted a number of hops, set by
+`TRUST_PROXY_HOPS`. Render's documentation doesn't say how many proxies sit in
+front, and its proxy keeps any `X-Forwarded-For` a visitor sends, so the
+number was measured.
 
-For each value from 2 upward:
+**How it was measured,** on November 4, 2026: for each value, set it on
+`roomsync-api`, send a failed login with a forged header, once through the
+site and once straight to the API, and read `"ip"` on the `login_failed` lines
+in the API's logs:
 
-1. Set `TRUST_PROXY_HOPS` on `roomsync-api` and save, which redeploys it.
-2. Send a failed login with a forged header:
-   ```bash
-   curl -s -H 'Content-Type: application/json' -H 'X-Forwarded-For: 203.0.113.7' \
-     -d '{"email":"nobody@example.invalid","password":"x"}' \
-     https://roomsync-ykvd.onrender.com/api/auth/login
-   ```
-3. Find that request's `login_failed` line in the API's logs and read `"ip"`:
-   - **a `10.`, `172.16`–`172.31.` or `192.168.` address:** too few hops; try the next value.
-   - **`203.0.113.7`:** too many. The forged header was believed, so go back one.
-   - **anything else:** the visitor's real address. That's the value. Check it
-     against a request without the forged header, which should log the same
-     address.
+```bash
+curl -s -H 'Content-Type: application/json' -H 'X-Forwarded-For: 203.0.113.7' \
+  -d '{"email":"nobody@example.invalid","password":"x"}' \
+  https://roomsync-ykvd.onrender.com/api/auth/login      # or roomsync-api-1wjb…
+```
 
-**Result:** *to record here once measured.*
+**What it showed:**
+
+| Trusted hops | Straight to the API | Through the site's `/api` |
+|---|---|---|
+| 1 | Render `10.x` | Render `10.x` |
+| 2 | Cloudflare `104.23.x` | Render `10.x` |
+| 3 | **the visitor** | Cloudflare `104.23.x` |
+| 4 | **`203.0.113.7`, the forged one** | Cloudflare `104.23.x` |
+| 5 | | **the visitor** |
+
+Render's services sit behind Cloudflare, and the static site's rewrite runs
+on Cloudflare too, so a request through the site crosses Cloudflare and
+Render's proxies twice. **No single count works:** 3 leaves the site path on a
+Cloudflare address shared by many visitors, and 5 lets anyone calling the API
+directly choose their own address.
+
+**The fix (#PRNUM):** trust the proxies by address instead. In production the
+server trusts private addresses (Render's `10.x`) and Cloudflare's published
+ranges (`server/src/middleware/trusted-proxies.ts`), and takes the first
+address from the right that isn't one of them. That is the visitor on both
+paths, and a forged entry, which sits to the left of it, is never reached.
+`trusted-proxies.test.ts` replays both measured chains.
+
+- **Cloudflare's ranges** are copied from https://www.cloudflare.com/ips-v4
+  and https://www.cloudflare.com/ips-v6 (November 6, 2026), and re-checked at
+  each milestone (maintenance plan §2).
+- **Known gap:** a request sent from inside Cloudflare's network, such as a
+  Cloudflare Worker, has a trusted source address, so its own forged header
+  would be believed. Accepted for this project.
+- **To check after a deploy:** a forged login through the site and one
+  straight to the API should both log your own address, never `203.0.113.7`.
 
 ## 6. Before the live demo
 

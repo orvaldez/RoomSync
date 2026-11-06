@@ -7,11 +7,8 @@ import expenseRoutes from "./routes/expense.routes";
 import choreRoutes from "./routes/chore.routes";
 import balanceRoutes from "./routes/balance.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
-import {
-  buildSessionMiddleware,
-  isBehindTlsProxy,
-  trustedProxyHops,
-} from "./middleware/session";
+import { buildSessionMiddleware, isBehindTlsProxy } from "./middleware/session";
+import { TRUSTED_PROXIES } from "./middleware/trusted-proxies";
 import { errorHandler } from "./middleware/error-handler";
 import { securityHeaders } from "./middleware/security-headers";
 
@@ -20,17 +17,17 @@ const app = express();
 // Don't advertise the framework and its version (threat model S4).
 app.disable("x-powered-by");
 
-// Trust the first proxy hop, so `req.secure` reflects the browser's
-// connection rather than the plain HTTP the proxy forwards. Required for the
-// `secure: true` session cookie to be set at all in production.
+// Trust the host's proxies, so `req.secure` reflects the browser's
+// connection rather than the plain HTTP the proxy forwards (required for the
+// `secure: true` session cookie to be set at all in production), and `req.ip`
+// is the visitor rather than a proxy (the per-IP rate limits and the security
+// log). Trusted by address, not by count, because the count differs between
+// paths on Render; see middleware/trusted-proxies.ts.
 //
 // Deliberately not enabled outside production: trusting a proxy that isn't
 // there lets any client spoof its address through X-Forwarded-For.
-//
-// The number of hops is TRUST_PROXY_HOPS (default 1), because it depends on
-// the host's proxy chain; see trustedProxyHops and docs/process/deployment.md.
 if (isBehindTlsProxy()) {
-  app.set("trust proxy", trustedProxyHops());
+  app.set("trust proxy", TRUSTED_PROXIES);
 }
 
 // First, so every response carries them, errors and 404s included.
